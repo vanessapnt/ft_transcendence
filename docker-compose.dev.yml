@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      # Hot reload : changements apparaissent instantanément
+      - ./frontend/pong:/usr/share/nginx/html
+    environment:
+      - NODE_ENV=development
+    networks:
+      - transcendence-network
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Hot reload pour backend
+      - ./backend:/app
+    environment:
+      - NODE_ENV=development  # si on utilise Node.js
+    networks:
+      - transcendence-network
+
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - transcendence-network
+
+networks:
+  transcendence-network:
+    driver: bridge

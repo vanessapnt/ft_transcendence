@@ -4,14 +4,24 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     volumes:
-      # Hot reload : changements apparaissent instantanément
-      - ./frontend/pong:/usr/share/nginx/html
+      # Hot reload : les changements TypeScript sont compilés automatiquement
+      - ./frontend/pong:/app/pong:delegated
+      - ./frontend/tsconfig.json:/app/tsconfig.json:ro
+      - ./frontend/package.json:/app/package.json:ro
+      # Exclure node_modules pour éviter les conflits
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
     networks:
       - transcendence-network
+    stdin_open: true
+    tty: true
+    stop_grace_period: 2s
 
   backend:
     build: ./backend

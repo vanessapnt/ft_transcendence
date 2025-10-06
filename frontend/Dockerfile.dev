@@ -1,0 +1,27 @@
+# Dockerfile pour développement TypeScript
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Installer les dépendances globales
+RUN npm install -g typescript live-server
+
+# Copier les fichiers de configuration
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Installer les dépendances du projet
+RUN npm install
+
+# Exposer les ports
+EXPOSE 3000 3001
+
+# Script de démarrage pour dev
+RUN echo '#!/bin/sh' > /start-dev.sh && \
+    echo 'echo "Starting TypeScript compiler in watch mode..."' >> /start-dev.sh && \
+    echo 'tsc --watch &' >> /start-dev.sh && \
+    echo 'echo "Starting live server..."' >> /start-dev.sh && \
+    echo 'live-server --port=3000 --host=0.0.0.0 --no-browser --watch=dist,pong' >> /start-dev.sh && \
+    chmod +x /start-dev.sh
+
+CMD ["/start-dev.sh"]

@@ -1,11 +1,31 @@
-# Image de base nginx pour servir des fichiers statiques
+# Multi-stage build : TypeScript compilation puis nginx
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Copier les fichiers de configuration TypeScript
+COPY package*.json tsconfig.json ./
+
+# Installer les dépendances (seulement si package.json existe)
+RUN if [ -f package.json ]; then npm install; fi
+
+# Copier le code source TypeScript (seulement si src/ existe)
+COPY src/ ./src/ 2>/dev/null || true
+
+# Compiler TypeScript (seulement si src/ contient des fichiers)
+RUN if [ -d src ] && [ "$(ls -A src)" ]; then npm run build; fi
+
+# Stage final avec nginx
 FROM nginx:alpine
 
 # Supprimer les fichiers par défaut de nginx
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copier directement les fichiers du jeu Pong dans le répertoire racine
+# Copier les fichiers du jeu Pong (toujours présents)
 COPY pong/* /usr/share/nginx/html/
+
+# Copier les fichiers TypeScript compilés (si ils existent)
+COPY --from=builder /app/dist/* /usr/share/nginx/html/ 2>/dev/null || true
 
 # Créer une configuration nginx simple
 RUN echo 'server { \

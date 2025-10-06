@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    environment:
+      - NODE_ENV=production
+    networks:
+      - transcendence-network
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      - NODE_ENV=production
+    networks:
+      - transcendence-network
+    restart: unless-stopped
+
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - transcendence-network
+    restart: unless-stopped
+
+volumes: {}
+
+networks:
+  transcendence-network:
+    driver: bridge

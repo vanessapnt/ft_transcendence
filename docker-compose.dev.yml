@@ -10,8 +10,6 @@ services:
     volumes:
       # Hot reload : changements apparaissent instantanément
       - ./frontend/pong:/usr/share/nginx/html
-    environment:
-      - NODE_ENV=development
     networks:
       - transcendence-network
 
@@ -22,8 +20,6 @@ services:
     volumes:
       # Hot reload pour backend
       - ./backend:/app
-    environment:
-      - NODE_ENV=development  # si on utilise Node.js
     networks:
       - transcendence-network
 

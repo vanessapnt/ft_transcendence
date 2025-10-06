@@ -2,13 +2,11 @@
   "name": "transcendence-frontend",
   "version": "1.0.0",
   "description": "Frontend TypeScript pour le projet transcendence",
-  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "build:watch": "tsc --watch",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist",
-    "start": "npm run build && node dist/index.js"
+    "clean": "rm -rf pong/*.js pong/*.js.map pong/*.d.ts",
+    "start": "npm run build && live-server --port=3000 --open=pong"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

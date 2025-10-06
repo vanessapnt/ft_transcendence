@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    // Environment Settings - Configuration pour le navigateur
+    "module": "ES6",
+    "target": "ES6",
+    "lib": ["DOM", "ES6"],
+    
+    // File Layout
+    "outDir": "./",
+    "rootDir": "./",
+
+    // Other Outputs
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    // Stricter Typechecking Options
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Recommended Options
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node"
+  },
+  "include": ["*.ts"],
+  "exclude": ["node_modules"]
+}

@@ -27,11 +27,13 @@ services:
       - backend
     volumes:
       - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
     networks:
       - transcendence-network
     restart: unless-stopped
 
-volumes: {}
+volumes:
+  nginx_logs:
 
 networks:
   transcendence-network:

@@ -32,8 +32,88 @@ services:
       - transcendence-network
     restart: unless-stopped
 
+  # ==== ELK Stack Production ====
+  # Elasticsearch (stockage et indexation des logs)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    container_name: elasticsearch-prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9200:9200"  # Bind seulement localhost en prod
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"  # Plus de RAM en prod
+      - xpack.security.enabled=false
+      - cluster.name=transcendence-prod
+      - node.name=transcendence-node-prod
+    volumes:
+      - elasticsearch_prod_data:/usr/share/elasticsearch/data
+    networks:
+      - transcendence-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Logstash (traitement et enrichissement des logs)
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.15.0
+    container_name: logstash-prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5044:5044"  # Beats input (localhost seulement)
+      - "127.0.0.1:5001:5000/tcp"  # TCP input (localhost seulement)
+      - "127.0.0.1:9600:9600"  # API Logstash (localhost seulement)
+    environment:
+      LS_JAVA_OPTS: "-Xmx512m -Xms512m"  # Plus de RAM en prod
+    volumes:
+      - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+    networks:
+      - transcendence-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Kibana (interface de visualisation des logs)
+  kibana:
+      image: docker.elastic.co/kibana/kibana:7.15.0
+      container_name: kibana-prod
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:5601:5601"
+      environment:
+        ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+        SERVER_NAME: "transcendence-kibana-prod"
+        # Supprimer SERVER_BASEPATH pour accès direct
+        # SERVER_BASEPATH: "/kibana"  # ← Commenté
+        LOGGING_QUIET: "true"
+        ELASTICSEARCH_USERNAME: ""
+        ELASTICSEARCH_PASSWORD: ""
+      networks:
+        - transcendence-network
+      depends_on:
+        elasticsearch:
+          condition: service_healthy
+      healthcheck:
+        test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]  # ← Corrigé
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 90s
+
 volumes:
   nginx_logs:
+  elasticsearch_prod_data:
+    driver: local
 
 networks:
   transcendence-network:

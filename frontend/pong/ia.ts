@@ -14,7 +14,6 @@ let ballHeight: number = 10;
 let player1Score: number = 0;
 let player2Score: number = 0;
 
-// x and y are the top left corner of the rectangle
 interface Player {
     x: number;
     y: number;
@@ -39,7 +38,6 @@ let player2: Player = {
     velocityY: 0
 };
 
-// It moves by 1 pixel per frame on x axis and 2 pixels per frame on y axis
 interface Ball {
     x: number;
     y: number;
@@ -58,9 +56,6 @@ let ball: Ball = {
     velocityY: 2
 };
 
-let targetY: number = boardHeight / 2; // Position cible pour l'IA
-
-// function called after the html and css elements are loaded
 window.onload = function() {
     board = document.getElementById("board") as HTMLCanvasElement;
     board.height = boardHeight;
@@ -81,55 +76,42 @@ function update(): void {
     requestAnimationFrame(update);
     context.clearRect(0, 0, board.width, board.height);
 
-    // Player 1 (humain)
+    // Player 1
     context.fillStyle = "white";
     let nextPlayer1Y: number = player1.y + player1.velocityY;
     if (!outOfBounds(nextPlayer1Y, playerHeight))
         player1.y = nextPlayer1Y;
     context.fillRect(player1.x, player1.y, playerWidth, playerHeight);
 
-    // Player 2 (IA) - se déplace vers la position cible
-    if (ball.velocityX > 0) { // Si la balle va vers player2
-        targetY = predictBallY(ball);
+    // Player 2 (IA) - utilise la logique des triangles semblables
+    if (ball.velocityX > 0) {
+        let impactY: number = findImpact(ball, player2, board);
+        player2.y = impactY - player2.height / 2;
+        
+        // Limiter player2 dans les bornes
+        if (player2.y < 0) player2.y = 0;
+        if (player2.y + player2.height > boardHeight) 
+            player2.y = boardHeight - player2.height;
     }
     
-    // Déplacement fluide de l'IA
-    const aiSpeed = 2.5;
-    const centerPlayer2 = player2.y + player2.height / 2;
-    
-    if (centerPlayer2 < targetY - 5) {
-        player2.velocityY = aiSpeed;
-    } else if (centerPlayer2 > targetY + 5) {
-        player2.velocityY = -aiSpeed;
-    } else {
-        player2.velocityY = 0;
-    }
-
-    let nextPlayer2Y: number = player2.y + player2.velocityY;
-    if (!outOfBounds(nextPlayer2Y, playerHeight))
-        player2.y = nextPlayer2Y;
     context.fillRect(player2.x, player2.y, playerWidth, playerHeight);
 
-    // Mouvement de la balle
     ball.x += ball.velocityX;
     ball.y += ball.velocityY;
     context.fillRect(ball.x, ball.y, ballWidth, ballHeight);
 
-    // Si la balle touche le haut ou le bas
     if (outOfBounds(ball.y, ballHeight))
         ball.velocityY *= -1;
 
-    // Collision avec les joueurs
     if (detectCollision(ball, player1)) {
         ball.velocityX *= -1;
-        ball.x = player1.x + player1.width; // Évite que la balle reste coincée
+        ball.x = player1.x + player1.width;
     }
     else if (detectCollision(ball, player2)) {
         ball.velocityX *= -1;
-        ball.x = player2.x - ball.width; // Évite que la balle reste coincée
+        ball.x = player2.x - ball.width;
     }
 
-    // Score
     if (ball.x < 0) {
         player2Score++;
         resetGame(1);
@@ -139,7 +121,6 @@ function update(): void {
         resetGame(-1);
     }
 
-    // Affichage du score
     context.font = "16px 'Press Start 2P', monospace";
     context.fillText("PLAYER 1", boardWidth/5 - 30, 35);
     context.fillText("AI", boardWidth*4/5 - 20, 35);
@@ -147,31 +128,8 @@ function update(): void {
     context.fillText(player1Score.toString(), boardWidth/5, 75);
     context.fillText(player2Score.toString(), boardWidth*4/5 - 45, 75);
 
-    // Ligne pointillée au milieu
     for (let i = 10; i < board.height; i += 25)
         context.fillRect(board.width / 2 - 10, i, 5, 5);
-}
-
-function predictBallY(ball: Ball): number {
-    let x = ball.x;
-    let y = ball.y;
-    let vx = ball.velocityX;
-    let vy = ball.velocityY;
-    
-    // Simule la trajectoire jusqu'à atteindre player2
-    while (x < player2.x) {
-        x += vx;
-        y += vy;
-        
-        // Gère les rebonds sur les bords
-        if (y <= 0 || y + ballHeight >= boardHeight) {
-            vy *= -1;
-            if (y <= 0) y = 0;
-            if (y + ballHeight >= boardHeight) y = boardHeight - ballHeight;
-        }
-    }
-    
-    return y + ballHeight / 2; // Retourne le centre de la balle
 }
 
 function outOfBounds(yPosition: number, Height: number): boolean {
@@ -209,7 +167,82 @@ function resetGame(direction: number): void {
         velocityX: direction,
         velocityY: 2
     };
-    targetY = boardHeight / 2;
+}
+
+// Votre logique des triangles semblables - CORRIGÉE
+function findImpact(ball: Ball, player2: Player, board: HTMLCanvasElement): number {
+    let x = ball.x;
+    let y = ball.y;
+    let velocityX = ball.velocityX;
+    let velocityY = ball.velocityY;
+    
+    // Protection contre velocityY trop petit
+    if (Math.abs(velocityY) < 0.1) {
+        return y;
+    }
+    
+    const targetX = player2.x; // On vise player2, pas le bord du board
+    let iterations = 0;
+    
+    // Boucle jusqu'à atteindre player2.x
+    while (x < targetX && iterations < 50) {
+        iterations++;
+        
+        // AB = distance verticale jusqu'au bord (haut ou bas)
+        // BC = velocityX (distance horizontale par frame)
+        // AD = distance verticale jusqu'au prochain rebond
+        // DE = distance horizontale jusqu'au prochain rebond
+        
+        const AB = Math.abs(velocityY);
+        const BC = Math.abs(velocityX);
+        
+        let AD: number;
+        if (velocityY > 0) {
+            // Va vers le bas
+            AD = board.height - y;
+        } else {
+            // Va vers le haut
+            AD = y;
+        }
+        
+        // Triangles semblables : AB/AD = BC/DE
+        // Donc : DE = BC * (AD / AB)
+        const DE = BC * (AD / AB);
+        
+        // Si on dépasse player2.x avant le rebond
+        if (x + DE >= targetX) {
+            // On calcule où sera la balle exactement à targetX
+            // EP = distance restante horizontalement
+            const EP = targetX - x;
+            // PO/EP = AD/DE  donc  PO = EP * (AD / DE)
+            const PO = EP * (AD / DE);
+            
+            // Calculer la position finale Y
+            if (velocityY > 0) {
+                y = y + PO;
+            } else {
+                y = y - PO;
+            }
+            
+            return y;
+        }
+        
+        // Sinon on rebondit
+        x = x + DE;
+        
+        // Après le rebond, y est au bord
+        if (velocityY > 0) {
+            y = board.height;
+        } else {
+            y = 0;
+        }
+        
+        // Inverser la direction verticale
+        velocityY *= -1;
+    }
+    
+    // Fallback si problème
+    return board.height / 2;
 }
 
 })();

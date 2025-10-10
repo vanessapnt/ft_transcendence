@@ -118,7 +118,7 @@ function update(): void {
 
     //score
     context.font = "16px 'Press Start 2P', monospace";
-    context.fillText("PLAYER 1", boardWidth/5 - 30, 35);
+    context.fillText("PLAYER 11", boardWidth/5 - 30, 35);
     context.fillText("PLAYER 2", boardWidth*4/5 - 75, 35);
     context.font = "32px 'Press Start 2P', monospace";
     context.fillText(player1Score.toString(), boardWidth/5, 75);

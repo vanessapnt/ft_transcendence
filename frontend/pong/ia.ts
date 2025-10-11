@@ -87,23 +87,39 @@ function update(): void {
 
     // Player 2 (IA)
     if (ball.velocityX > 0) {
-        if (predictedImpactY === null)
-            predictedImpactY = findImpact(ball, player2, board);
-        
-        let centerPlayer2 = player2.y + player2.height / 2;
-        if (Math.abs(predictedImpactY - centerPlayer2) > 3)
+        if (ball.x > boardWidth / 3)
         {
-            if (predictedImpactY > centerPlayer2) {
-                player2.y += 3;
-            } else {
-                player2.y -= 3;
+            if (predictedImpactY === null)
+                predictedImpactY = findImpact(ball, player2, board);
+            
+            let centerPlayer2 = player2.y + player2.height / 2;
+            if (Math.abs(predictedImpactY - centerPlayer2) > 3)
+            {
+                if (predictedImpactY > centerPlayer2) {
+                    player2.y += 3;
+                } else {
+                    player2.y -= 3;
+                }
             }
         }
+    } else {
+        predictedImpactY = null;
+
+        let centerY = (boardHeight / 2) - (playerHeight / 2);
+        let centerPlayer2 = player2.y + player2.height / 2;
         
-        if (player2.y < 0) player2.y = 0;
-        if (player2.y + player2.height > boardHeight) 
-            player2.y = boardHeight - player2.height;
+        if (Math.abs(centerY - player2.y) > 3) {
+            if (centerY > player2.y) {
+                player2.y += 2;
+            } else {
+                player2.y -= 2;
+            }
+        }
     }
+    
+    if (player2.y < 0) player2.y = 0;
+    if (player2.y + player2.height > boardHeight) 
+        player2.y = boardHeight - player2.height;
     
     context.fillRect(player2.x, player2.y, playerWidth, playerHeight);
 
@@ -131,7 +147,6 @@ function update(): void {
             ball.velocityX *= -1;
             ball.x = player2.x - ball.width;
         } else {
-
             ball.velocityY *= -1;
         }
     }
@@ -201,6 +216,8 @@ function findImpact(ball: Ball, player2: Player, board: HTMLCanvasElement): numb
     let ballVelocityX = ball.velocityX;
     let ballVelocityY = ball.velocityY;
     
+    const initialDistance = player2.x - ball.x;
+    
     while(ballX < player2.x)
     {
         ballX += ballVelocityX;
@@ -214,8 +231,13 @@ function findImpact(ball: Ball, player2: Player, board: HTMLCanvasElement): numb
             ballVelocityY *= -1;
         }
     }
+
+    const currentDistance = player2.x - ball.x;
+    const proximityFactor = Math.max(0, currentDistance / initialDistance);
     
-    let error = (Math.random() - 0.5) * 130;
+    const maxError = 110 * proximityFactor;
+    let error = (Math.random() - 0.5) * maxError;
+    
     let predictedY = ballY + ballHeight / 2 + error;
     
     return predictedY;

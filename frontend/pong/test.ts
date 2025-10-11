@@ -14,8 +14,6 @@ let ballHeight: number = 10;
 let player1Score: number = 0;
 let player2Score: number = 0;
 
-let predictedImpactY: number | null = null;
-
 interface Player {
     x: number;
     y: number;
@@ -85,15 +83,14 @@ function update(): void {
         player1.y = nextPlayer1Y;
     context.fillRect(player1.x, player1.y, playerWidth, playerHeight);
 
-    // Player 2 (IA)
-    if (ball.velocityX > 0) {
-        if (predictedImpactY === null)
-            predictedImpactY = findImpact(ball, player2, board);
-        
-        let centerPlayer2 = player2.y + player2.height / 2;
-        if (Math.abs(predictedImpactY - centerPlayer2) > 3)
-        {
-            if (predictedImpactY > centerPlayer2) {
+    // Player 2 (IA) - Suit la balle
+    if (ball.velocityX > 0)
+    {
+        let ballCenterY = ball.y + ball.height / 2;
+        let player2CenterY = player2.y + player2.height / 2;
+
+        if (Math.abs(ballCenterY - player2CenterY) > 3) {
+            if (ballCenterY > player2CenterY) {
                 player2.y += 3;
             } else {
                 player2.y -= 3;
@@ -117,7 +114,6 @@ function update(): void {
     if (detectCollision(ball, player1)) {
         ball.velocityX *= -1;
         ball.x = player1.x + player1.width;
-        predictedImpactY = null;
     }
     else if (detectCollision(ball, player2)) {
         ball.velocityX *= -1;
@@ -179,30 +175,6 @@ function resetGame(direction: number): void {
         velocityX: direction * 2,
         velocityY: 4
     };
-    predictedImpactY = null;
-}
-
-// on simule le mouvement de la balle jusqu'à ce qu'elle atteigne le joueur 2
-function findImpact(ball: Ball, player2: Player, board: HTMLCanvasElement): number {
-    let ballX = ball.x;
-    let ballY = ball.y;
-    let ballVelocityX = ball.velocityX;
-    let ballVelocityY = ball.velocityY;
-
-    while(ballX < player2.x)
-    {
-        ballX += ballVelocityX;
-        ballY += ballVelocityY;
-        if (ballY <= 0) {
-            ballY = 0;
-            ballVelocityY *= -1;
-        }
-        else if (ballY + ballHeight >= boardHeight) {
-            ballY = boardHeight - ballHeight;
-            ballVelocityY *= -1;
-        }
-    }
-    return ballY + ballHeight / 2;
 }
 
 })();

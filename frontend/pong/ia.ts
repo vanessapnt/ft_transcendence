@@ -112,16 +112,28 @@ function update(): void {
     context.fillRect(ball.x, ball.y, ballWidth, ballHeight);
 
     if (outOfBounds(ball.y, ballHeight))
+    {
         ball.velocityY *= -1;
-
-    if (detectCollision(ball, player1)) {
-        ball.velocityX *= -1;
-        ball.x = player1.x + player1.width;
         predictedImpactY = null;
     }
+
+    if (detectCollision(ball, player1)) {
+        if (ball.x >= player1.x + playerWidth / 2) {
+            ball.velocityX *= -1;
+            ball.x = player1.x + player1.width;
+            predictedImpactY = null;
+        } else {
+            ball.velocityY *= -1;
+        }
+    }
     else if (detectCollision(ball, player2)) {
-        ball.velocityX *= -1;
-        ball.x = player2.x - ball.width;
+        if (ball.x + ball.width <= player2.x + playerWidth / 2) {
+            ball.velocityX *= -1;
+            ball.x = player2.x - ball.width;
+        } else {
+
+            ball.velocityY *= -1;
+        }
     }
 
     if (ball.x < 0) {
@@ -188,7 +200,7 @@ function findImpact(ball: Ball, player2: Player, board: HTMLCanvasElement): numb
     let ballY = ball.y;
     let ballVelocityX = ball.velocityX;
     let ballVelocityY = ball.velocityY;
-
+    
     while(ballX < player2.x)
     {
         ballX += ballVelocityX;
@@ -202,7 +214,11 @@ function findImpact(ball: Ball, player2: Player, board: HTMLCanvasElement): numb
             ballVelocityY *= -1;
         }
     }
-    return ballY + ballHeight / 2;
+    
+    let error = (Math.random() - 0.5) * 130;
+    let predictedY = ballY + ballHeight / 2 + error;
+    
+    return predictedY;
 }
 
 })();

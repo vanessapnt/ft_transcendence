@@ -1,68 +1,64 @@
 # Makefile pour le projet transcendence
 
-.PHONY: dev dev-front dev-frontend-only stop build clean prod help logs
+.PHONY: dev prod stop build clean logs help
 
 # Commandes par défaut
 help:
-	@echo "╔═══════════════════════════════════════════════════════════╗"
-	@echo "║        🎮 Transcendence - Commandes disponibles 🎮       ║"
-	@echo "╠═══════════════════════════════════════════════════════════╣"
-	@echo "║  make dev               → Mode développement (tout)       ║"
-	@echo "║  make dev-front         → Frontend + nginx seulement      ║"
-	@echo "║  make dev-frontend-only → Frontend uniquement (port 3000) ║"
-	@echo "║  make prod              → Mode production                 ║"
-	@echo "║  make stop              → Arrêter tous les services       ║"
-	@echo "║  make build             → Rebuilder les images            ║"
-	@echo "║  make clean             → Nettoyer tout                   ║"
-	@echo "║  make logs              → Afficher les logs               ║"
-	@echo "╚═══════════════════════════════════════════════════════════╝"
+	@echo "╔═══════════════════════════════════════════════════╗"
+	@echo "║     🎮 Transcendence - Commandes disponibles 🎮  ║"
+	@echo "╠═══════════════════════════════════════════════════╣"
+	@echo "║  make dev    → Lancer en mode développement      ║"
+	@echo "║  make prod   → Lancer en mode production         ║"
+	@echo "║  make stop   → Arrêter les services              ║"
+	@echo "║  make build  → Rebuilder les images              ║"
+	@echo "║  make clean  → Nettoyer tout (volumes inclus)    ║"
+	@echo "║  make logs   → Afficher les logs                 ║"
+	@echo "╚═══════════════════════════════════════════════════╝"
 
-# Mode développement (avec hot-reload TypeScript)
+# Mode développement
 dev:
 	@echo "🚀 Démarrage en mode développement..."
-	@echo "📝 TypeScript sera compilé automatiquement"
-	@echo "🌐 Frontend disponible sur http://localhost:3000"
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+	docker-compose -f docker-compose.dev.yml up
 
-# Frontend + nginx seulement
-dev-front:
-	@echo "🎨 Démarrage du frontend + nginx..."
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up frontend nginx
-
-# Frontend seulement (sans nginx) - accès direct sur port 3000
-dev-frontend-only:
-	@echo "🎮 Démarrage du frontend uniquement..."
-	@echo "🌐 Accès direct : http://localhost:3000"
-	@echo "📝 TypeScript auto-compile activé"
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up frontend
+# Mode développement avec initialisation Kibana
+dev-init:
+	@echo "🚀 Démarrage en mode développement avec init Kibana..."
+	@echo "🛑 Arrêt des services existants..."
+	-docker-compose -f docker-compose.dev.yml down 2>/dev/null
+	@echo "🔄 Démarrage de l'environnement complet..."
+	docker-compose -f docker-compose.dev.yml up -d
+	@echo "✅ Environnement prêt ! Dashboard Kibana en cours d'initialisation..."
+	@echo "🌐 Frontend: http://localhost:3000"
+	@echo "🌐 Backend: http://localhost:5000"
+	@echo "📊 Kibana: http://localhost:5601"
 
 # Mode production
 prod:
 	@echo "🚀 Démarrage en mode production..."
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+	docker-compose -f docker-compose.prod.yml up -d
 
 # Arrêter les services
 stop:
 	@echo "🛑 Arrêt des services..."
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+	-docker-compose -f docker-compose.dev.yml down 2>/dev/null
+	-docker-compose -f docker-compose.prod.yml down 2>/dev/null
 
 # Rebuilder les images
 build:
 	@echo "🔨 Reconstruction des images..."
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml build --no-cache
+	docker-compose -f docker-compose.dev.yml build --no-cache
 
-# Nettoyer tout (images, containers, volumes)
+# Nettoyer tout
 clean:
 	@echo "🧹 Nettoyage complet..."
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v --remove-orphans
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml down -v --remove-orphans
+	-docker-compose -f docker-compose.dev.yml down -v --remove-orphans 2>/dev/null
+	-docker-compose -f docker-compose.prod.yml down -v --remove-orphans 2>/dev/null
 	docker system prune -f
 	@echo "✨ Nettoyage terminé !"
 
 # Afficher les logs
 logs:
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f
+	docker-compose -f docker-compose.dev.yml logs -f
 
 # Nettoyer les fichiers JS générés localement
 clean-js:

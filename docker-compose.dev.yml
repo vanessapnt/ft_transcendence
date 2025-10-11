@@ -28,6 +28,7 @@ services:
     volumes:
       # Hot reload pour backend
       - ./backend:/app
+      - sqlite_data:/app/data
     networks:
       - transcendence-network
 
@@ -40,6 +41,13 @@ services:
       - backend
     networks:
       - transcendence-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - NGINX_LOG_LEVEL=warn
 
   # ==== Major module: Infrastructure setup for log management. ====
   # Elasticsearch (récupère tous les logs du projet)
@@ -53,6 +61,7 @@ services:
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - xpack.security.enabled=false
+      - logger.level=WARN
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     networks: 
@@ -63,12 +72,17 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
   
   # Logstash (rend les logs plus clairs et riches)
   logstash:
     image: docker.elastic.co/logstash/logstash:7.15.0
     container_name: logstash
-    restart: always
+    #restart: always
     ports:
       - "5044:5044"
       - "5001:5000/tcp"
@@ -76,14 +90,14 @@ services:
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
     volumes:
-      - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:rw
       - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
     networks:
       - transcendence-network
     depends_on:
       - elasticsearch
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9600 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -99,6 +113,10 @@ services:
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
       SERVER_NAME: "transcendence-kibana"
+      LOGGING_QUIET: "true"
+    volumes:
+      - kibana_data:/usr/share/kibana/data
+      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
     networks:
       - transcendence-network
     depends_on:
@@ -110,9 +128,30 @@ services:
       timeout: 10s
       retries: 3
       start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Service d'initialisation automatique de Kibana
+  kibana-init:
+    image: alpine/curl:latest
+    container_name: kibana-init
+    restart: "no"
+    volumes:
+      - ./kibana/init-kibana.sh:/scripts/init-kibana.sh:ro
+    networks:
+      - transcendence-network
+    depends_on:
+      kibana:
+        condition: service_healthy
+    command: sh /scripts/init-kibana.sh
 
 volumes:
   elasticsearch_data:
+  kibana_data:
+  sqlite_data:
 
 networks:
   transcendence-network:

@@ -227,7 +227,7 @@ services:
     container_name: kibana-init-prod
     restart: "no"
     volumes:
-      - ./kibana/init-kibana.sh:/scripts/init-kibana.sh:ro
+      - ./elk/kibana/init-kibana.sh:/scripts/init-kibana.sh:ro
     networks:
       - transcendence-network
     depends_on:

@@ -7,30 +7,27 @@ help:
 	@echo "╔═══════════════════════════════════════════════════╗"
 	@echo "║     🎮 Transcendence - Commandes disponibles 🎮  ║"
 	@echo "╠═══════════════════════════════════════════════════╣"
-	@echo "║  make dev    → Lancer en mode développement      ║"
-	@echo "║  make prod   → Lancer en mode production         ║"
-	@echo "║  make stop   → Arrêter les services              ║"
-	@echo "║  make build  → Rebuilder les images              ║"
-	@echo "║  make clean  → Nettoyer tout (volumes inclus)    ║"
-	@echo "║  make logs   → Afficher les logs                 ║"
+	@echo "║  make dev         → Mode développement            ║"
+	@echo "║  make dev-verbose → Mode dev avec logs détaillés  ║"
+	@echo "║  make prod        → Lancer en mode production     ║"
+	@echo "║  make stop        → Arrêter les services          ║"
+	@echo "║  make build       → Rebuilder les images          ║"
+	@echo "║  make clean       → Nettoyer tout (volumes inclus)║"
+	@echo "║  make logs        → Afficher les logs             ║"
+	@echo "║  make links       → Afficher tous les liens       ║"
 	@echo "╚═══════════════════════════════════════════════════╝"
 
 # Mode développement
-dev:
-	@echo "🚀 Démarrage en mode développement..."
-	docker-compose -f docker-compose.dev.yml up
+dev-verbose: ## 🚀 Lance l'environnement de développement avec logs détaillés
+	@echo "🔧 Démarrage de l'environnement de développement (mode verbose)..."
+	@VERBOSE=1 docker-compose -f docker-compose.dev.yml up --build
 
-# Mode développement avec initialisation Kibana
-dev-init:
-	@echo "🚀 Démarrage en mode développement avec init Kibana..."
-	@echo "🛑 Arrêt des services existants..."
-	-docker-compose -f docker-compose.dev.yml down 2>/dev/null
-	@echo "🔄 Démarrage de l'environnement complet..."
-	docker-compose -f docker-compose.dev.yml up -d
-	@echo "✅ Environnement prêt ! Dashboard Kibana en cours d'initialisation..."
-	@echo "🌐 Frontend: http://localhost:3000"
-	@echo "🌐 Backend: http://localhost:5000"
-	@echo "📊 Kibana: http://localhost:5601"
+dev: ## 🚀 Lance l'environnement de développement avec monitoring
+	@echo "🔧 Démarrage de l'environnement de développement..."
+	@docker-compose -f docker-compose.dev.yml up -d --build > /dev/null 2>&1
+	@echo ""
+	@echo "⏳ Initialisation en cours..."
+	@./scripts/dev-startup.sh
 
 # Mode production
 prod:
@@ -59,6 +56,21 @@ clean:
 # Afficher les logs
 logs:
 	docker-compose -f docker-compose.dev.yml logs -f
+
+# Afficher tous les liens disponibles
+links:
+	@echo "╔═══════════════════════════════════════════════════════════╗"
+	@echo "║                   📊 SERVICES DISPONIBLES                ║"
+	@echo "╠═══════════════════════════════════════════════════════════╣"
+	@echo "║  🎮 Jeu Pong:      http://localhost:3000                 ║"
+	@echo "║  📊 Dashboard:     http://localhost:3000/dashboard.html  ║"
+	@echo "║  📈 Kibana (ELK):  http://localhost:5601                 ║"
+	@echo "║  📈 Grafana:       http://localhost:3001                 ║"
+	@echo "║  🔌 API Backend:   http://localhost:8000/api/health      ║"
+	@echo "║  🔍 Elasticsearch: http://localhost:9200/_cat/health?v   ║"
+	@echo "╚═══════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "💡 Tip: Cmd+Clic (macOS) ou Ctrl+Clic (Linux/Windows) pour ouvrir"
 
 # Nettoyer les fichiers JS générés localement
 clean-js:

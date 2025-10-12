@@ -8,5 +8,9 @@ xpack.encryptedSavedObjects.encryptionKey: "transcendence-encryption-key-32-char
 xpack.security.encryptionKey: "transcendence-security-key-32-chars-min"
 xpack.reporting.encryptionKey: "transcendence-reporting-key-32-chars"
 logging.quiet: true
+logging.verbose: false
+logging.silent: false
+logging.dest: stdout
+logging.json: false
 # Désactiver les fonctionnalités de sécurité pour l'environnement de dev
 xpack.security.enabled: false

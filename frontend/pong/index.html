@@ -1,16 +1,130 @@
 <!DOCTYPE html>
 <html>
     <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pong</title>
-    <link rel="stylesheet" href="pong.css">
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <script src="ia.js" defer></script>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Pong</title>
+        <link rel="stylesheet" href="pong.css">
+        <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+        <script src="ia.js" defer></script>
+        <style>
+            #home-view {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                background: #000;
+                color: white;
+                font-family: 'Press Start 2P', cursive;
+                text-align: center;
+            }
+
+            #home-view h1 {
+                font-size: 4rem;
+                margin-bottom: 2rem;
+                color: #00ff00;
+                text-shadow: 0 0 10px #00ff00;
+            }
+
+            #home-view button {
+                font-family: 'Press Start 2P', cursive;
+                font-size: 1.2rem;
+                padding: 1rem 2rem;
+                background: #00ff00;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                margin: 10px;
+            }
+
+            #home-view button:hover {
+                background: #00cc00;
+                transform: scale(1.05);
+            }
+
+            .signup-btn {
+                background: #0080ff !important;
+            }
+
+            .signup-btn:hover {
+                background: #0066cc !important;
+            }
+
+            #game-view {
+                display: none;
+            }
+
+            #board {
+                display: block;
+                margin: 0 auto;
+            }
+
+            .menu-button {
+                font-family: 'Press Start 2P', cursive;
+                font-size: 0.8rem;
+                padding: 10px 20px;
+                background: #ff4444;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-top: 20px;
+            }
+
+            .menu-button:hover {
+                background: #cc0000;
+            }
+        </style>
     </head>
 
     <body>
-        <canvas id="board"></canvas>
-    </body>
+        <div id="home-view">
+            <h1>PONG</h1>
+            <button onclick="showGame()">START GAME</button>
+            <button class="signup-btn" onclick="showSignup()">SIGN UP</button>
+        </div>
 
+        <div id="game-view">
+            <canvas id="board"></canvas>
+            <div style="text-align: center;">
+                <button class="menu-button" onclick="showHome()">MENU</button>
+            </div>
+        </div>
+
+        <script>
+            function showGame() {
+                document.getElementById('home-view').style.display = 'none';
+                document.getElementById('game-view').style.display = 'block';
+                window.history.pushState({page: "game"}, "", "#game");
+            }
+
+            function showHome() {
+                document.getElementById('game-view').style.display = 'none';
+                document.getElementById('home-view').style.display = 'flex';
+                window.history.pushState({page: "home"}, "", "#home");
+            }
+
+            function showSignup() {
+                alert("Sign Up functionality coming soon!");
+            }
+
+            window.addEventListener('popstate', function(event) {
+                if (window.location.hash === '#home' || window.location.hash === '') {
+                    showHome();
+                } else if (window.location.hash === '#game') {
+                    showGame();
+                }
+            });
+
+            window.addEventListener('load', function() {
+                if (window.location.hash === '#game') {
+                    showGame();
+                } else {
+                    showHome();
+                }
+            });
+        </script>
+    </body>
 </html>

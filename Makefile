@@ -32,7 +32,8 @@ dev: ## 🚀 Lance l'environnement de développement avec monitoring
 # Mode production
 prod:
 	@echo "🚀 Démarrage en mode production..."
-	docker-compose -f docker-compose.prod.yml up -d
+	@docker-compose -f docker-compose.prod.yml up -d --build > /dev/null 2>&1 || true
+	@./scripts/prod-startup.sh
 
 # Arrêter les services
 stop:

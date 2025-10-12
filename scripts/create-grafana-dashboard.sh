@@ -4,18 +4,25 @@ echo "🎨 Création du dashboard Transcendence System Monitoring..."
 
 # Attendre que Grafana soit prêt
 echo "⏳ Vérification de Grafana..."
+# Attendre que Grafana soit prêt
 while ! curl -f http://localhost:3001/api/health >/dev/null 2>&1; do
-    echo "Attente de Grafana..."
-    sleep 5
+    sleep 2
 done
-
-echo "✅ Grafana prêt, création du dashboard..."
-
-# Créer le dashboard via API
-curl -X POST http://admin:transcendence123@localhost:3001/api/dashboards/db \
+# UID fixe pour le dashboard
+DASHBOARD_TITLE="🎮 Transcendence System Monitoring"
+DASHBOARD_UID="transcendence-system-monitoring"
+# Supprimer tous les dashboards du même titre (pour nettoyage)
+EXISTING_UIDS=$(curl -s -u admin:transcendence123 "http://localhost:3001/api/search?query=$(echo $DASHBOARD_TITLE | jq -sRr @uri)" | jq -r --arg title "$DASHBOARD_TITLE" '.[] | select(.title == $title) | .uid')
+for uid in $EXISTING_UIDS; do
+  if [ "$uid" != "$DASHBOARD_UID" ]; then
+    curl -s -X DELETE -u admin:transcendence123 "http://localhost:3001/api/dashboards/uid/$uid" >/dev/null
+  fi
+done
+curl -s -X POST http://admin:transcendence123@localhost:3001/api/dashboards/db \
 -H "Content-Type: application/json" \
 -d '{
   "dashboard": {
+    "uid": "transcendence-system-monitoring",
     "id": null,
     "title": "🎮 Transcendence System Monitoring",
     "tags": ["transcendence", "system", "production"],
@@ -153,22 +160,4 @@ curl -X POST http://admin:transcendence123@localhost:3001/api/dashboards/db \
     "refresh": "5s"
   },
   "overwrite": true
-}'
-
-if [ $? -eq 0 ]; then
-    echo "✅ Dashboard créé avec succès !"
-    echo ""
-    echo "🌐 Accès au dashboard :"
-    echo "   URL: http://localhost:3001"
-    echo "   Login: admin / transcendence123"
-    echo "   Dashboard: 🎮 Transcendence System Monitoring"
-    echo ""
-    echo "📊 Panels créés :"
-    echo "   • Services Status (4 services)"
-    echo "   • CPU Usage % (gauge)"
-    echo "   • Memory Usage % (gauge)" 
-    echo "   • System Info (RAM + CPU cores)"
-    echo "   • CPU Timeline (graphique temps réel)"
-else
-    echo "❌ Erreur lors de la création du dashboard"
-fi
+}' >/dev/null

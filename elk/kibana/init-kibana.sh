@@ -109,45 +109,72 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-log_info "📊 Mise à jour du dashboard avec les visualisations..."
 
-# 4. Mettre à jour le dashboard avec les visualisations
-RESPONSE=$(curl -s -X PUT "kibana:5601/api/saved_objects/dashboard/transcendence-dashboard" \
-  -H "Content-Type: application/json" \
-  -H "kbn-xsrf: true" \
-  -d '{
-    "attributes": {
-      "title": "ft_transcendence Dashboard",
-      "description": "Dashboard principal pour le monitoring de transcendence",
-      "panelsJSON": "[{\"version\":\"7.15.0\",\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":15,\"i\":\"1\"},\"panelIndex\":\"1\",\"embeddableConfig\":{},\"panelRefName\":\"panel_1\"},{\"version\":\"7.15.0\",\"gridData\":{\"x\":24,\"y\":0,\"w\":24,\"h\":15,\"i\":\"2\"},\"panelIndex\":\"2\",\"embeddableConfig\":{},\"panelRefName\":\"panel_2\"},{\"version\":\"7.15.0\",\"gridData\":{\"x\":0,\"y\":15,\"w\":48,\"h\":15,\"i\":\"3\"},\"panelIndex\":\"3\",\"embeddableConfig\":{},\"panelRefName\":\"panel_3\"}]",
-      "optionsJSON": "{\"useMargins\":true,\"syncColors\":false,\"hidePanelTitles\":false}",
-      "version": 2,
-      "timeRestore": false,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
-      }
-    },
-    "references": [
-      {
-        "name": "panel_1",
-        "type": "visualization",
-        "id": "status-pie-chart"
-      },
-      {
-        "name": "panel_2", 
-        "type": "visualization",
-        "id": "services-bar-chart"
-      },
-      {
-        "name": "panel_3",
-        "type": "visualization", 
-        "id": "logs-timeline"
-      }
-    ]
-  }' 2>/dev/null)
+log_info "📊 Création/mise à jour du dashboard avec les visualisations..."
 
-if [ $? -ne 0 ]; then
-    log_error "Échec mise à jour dashboard"
+
+
+# Nettoyage strict : supprimer tous les dashboards du même titre (même ceux avec un ID généré)
+DASHBOARD_TITLE="ft_transcendence Dashboard"
+MAIN_DASHBOARD_ID="transcendence-dashboard"
+ALL_IDS=$(curl -s -X GET "kibana:5601/api/saved_objects/_find?type=dashboard&fields=title&per_page=1000" -H "kbn-xsrf: true" | jq -r --arg title "$DASHBOARD_TITLE" '.saved_objects[] | select(.attributes.title == $title) | .id')
+for id in $ALL_IDS; do
+  curl -s -X DELETE "kibana:5601/api/saved_objects/dashboard/$id" -H "kbn-xsrf: true" >/dev/null
+done
+
+
+# Créer/mettre à jour le dashboard avec l'ID fixe :
+EXIST=$(curl -s -X GET "kibana:5601/api/saved_objects/dashboard/$MAIN_DASHBOARD_ID" -H "kbn-xsrf: true")
+if echo "$EXIST" | grep -q '"id":"transcendence-dashboard"'; then
+  # Dashboard existe, faire un PUT (update)
+  curl -s -X PUT "kibana:5601/api/saved_objects/dashboard/$MAIN_DASHBOARD_ID" \
+    -H "Content-Type: application/json" \
+    -H "kbn-xsrf: true" \
+    -d '{
+      "attributes": {
+        "title": "ft_transcendence Dashboard",
+        "description": "Dashboard principal pour le monitoring de transcendence",
+        "panelsJSON": "[{\"version\":\"7.15.0\",\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":15,\"i\":\"1\"},\"panelIndex\":\"1\",\"embeddableConfig\":{},\"panelRefName\":\"panel_1\"},{\"version\":\"7.15.0\",\"gridData\":{\"x\":24,\"y\":0,\"w\":24,\"h\":15,\"i\":\"2\"},\"panelIndex\":\"2\",\"embeddableConfig\":{},\"panelRefName\":\"panel_2\"},{\"version\":\"7.15.0\",\"gridData\":{\"x\":0,\"y\":15,\"w\":48,\"h\":15,\"i\":\"3\"},\"panelIndex\":\"3\",\"embeddableConfig\":{},\"panelRefName\":\"panel_3\"}]",
+        "optionsJSON": "{\"useMargins\":true,\"syncColors\":false,\"hidePanelTitles\":false}",
+        "version": 2,
+        "timeRestore": false,
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
+        }
+      },
+      "references": [
+        { "name": "panel_1", "type": "visualization", "id": "status-pie-chart" },
+        { "name": "panel_2", "type": "visualization", "id": "services-bar-chart" },
+        { "name": "panel_3", "type": "visualization", "id": "logs-timeline" }
+      ]
+    }' >/dev/null
+else
+  # Dashboard absent, faire un POST (création)
+  curl -s -X POST "kibana:5601/api/saved_objects/dashboard/$MAIN_DASHBOARD_ID" \
+    -H "Content-Type: application/json" \
+    -H "kbn-xsrf: true" \
+    -d '{
+      "attributes": {
+        "title": "ft_transcendence Dashboard",
+        "description": "Dashboard principal pour le monitoring de transcendence",
+        "panelsJSON": "[{\"version\":\"7.15.0\",\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":15,\"i\":\"1\"},\"panelIndex\":\"1\",\"embeddableConfig\":{},\"panelRefName\":\"panel_1\"},{\"version\":\"7.15.0\",\"gridData\":{\"x\":24,\"y\":0,\"w\":24,\"h\":15,\"i\":\"2\"},\"panelIndex\":\"2\",\"embeddableConfig\":{},\"panelRefName\":\"panel_2\"},{\"version\":\"7.15.0\",\"gridData\":{\"x\":0,\"y\":15,\"w\":48,\"h\":15,\"i\":\"3\"},\"panelIndex\":\"3\",\"embeddableConfig\":{},\"panelRefName\":\"panel_3\"}]",
+        "optionsJSON": "{\"useMargins\":true,\"syncColors\":false,\"hidePanelTitles\":false}",
+        "version": 2,
+        "timeRestore": false,
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
+        }
+      },
+      "references": [
+        { "name": "panel_1", "type": "visualization", "id": "status-pie-chart" },
+        { "name": "panel_2", "type": "visualization", "id": "services-bar-chart" },
+        { "name": "panel_3", "type": "visualization", "id": "logs-timeline" }
+      ]
+    }' >/dev/null
+fi
+
+if ! echo "$RESPONSE" | grep -q '"id":"transcendence-dashboard"'; then
+    log_error "Échec création/mise à jour dashboard : $RESPONSE"
     exit 1
 fi
 

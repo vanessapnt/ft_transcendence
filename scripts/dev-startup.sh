@@ -9,10 +9,18 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration (progression complète)
-SERVICES=("backend" "frontend" "elasticsearch" "logstash" "kibana")
-SERVICE_PORTS=("8000" "3000" "9200" "5044" "5601")
-SERVICE_URLS=("http://localhost:8000" "http://localhost:3000" "http://localhost:9200" "http://localhost:5044" "http://localhost:5601")
-SERVICE_NAMES=("Backend API" "Frontend App" "Elasticsearch" "Logstash (Beats input)" "Kibana Dashboard")
+SERVICES=(
+    "backend" "frontend" "nginx" "elasticsearch" "logstash" "kibana" "kibana-init" "prometheus" "grafana" "node-exporter"
+)
+SERVICE_PORTS=(
+    "8000" "3000" "80" "9200" "5044" "5601" "" "9090" "3001" "9100"
+)
+SERVICE_URLS=(
+    "http://localhost:8000" "http://localhost:3000" "http://localhost" "http://localhost:9200" "http://localhost:5044" "http://localhost:5601" "" "http://localhost:9090" "http://localhost:3001" "http://localhost:9100"
+)
+SERVICE_NAMES=(
+    "Backend API" "Frontend App" "Nginx Proxy" "Elasticsearch" "Logstash (Beats input)" "Kibana Dashboard" "Kibana Init" "Prometheus" "Grafana Monitoring" "Node Exporter"
+)
 
 print_header() {
     echo ""
@@ -77,6 +85,22 @@ check_service_health() {
     # Logstash : vérifier l'API HTTP 9600
     if [[ "$service_name" == "Logstash (Beats input)" ]]; then
         if curl -s --max-time $timeout http://localhost:9600 >/dev/null 2>&1; then
+            return 0
+        else
+            return 1
+        fi
+    # Nginx : vérifier port 80
+    elif [[ "$service_name" == "Nginx Proxy" ]]; then
+        if curl -s --max-time $timeout http://localhost >/dev/null 2>&1; then
+            return 0
+        else
+            return 1
+        fi
+    # Kibana Init : prêt si le conteneur n'existe plus ou est exited
+    elif [[ "$service_name" == "Kibana Init" ]]; then
+        # On considère prêt si le conteneur n'est pas running
+        status=$(docker ps -a --filter "name=kibana-init" --format '{{.Status}}')
+        if [[ -z "$status" || "$status" == Exited* || "$status" == "Created"* ]]; then
             return 0
         else
             return 1
@@ -151,22 +175,35 @@ show_service_links() {
     echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    # N'afficher que les liens cliquables pour Frontend, Kibana et Grafana
-    local link_names=("Frontend App (Jeu)" "Kibana Dashboard" "Grafana Monitoring")
-    local link_urls=("http://localhost:3000" "http://localhost:5601" "http://localhost:3001")
-    for i in "${!link_names[@]}"; do
-        local status_icon="�"
-        local status_text="OFFLINE"
-        if curl -s --max-time 2 "${link_urls[$i]}" >/dev/null 2>&1; then
-            status_icon="🟢"
-            status_text="ONLINE "
-        fi
-        printf "  %s %s %-24s %s\n" "$status_icon" "$status_text" "${link_names[$i]}" "${link_urls[$i]}"
-    done
+    # Afficher le lien Frontend App (Jeu) séparément
+    local frontend_name="Frontend App (Jeu)"
+    local frontend_url="http://localhost:3000"
+    local status_icon="�"
+    local status_text="OFFLINE"
+    if curl -s --max-time 2 "$frontend_url" >/dev/null 2>&1; then
+        status_icon="🟢"
+        status_text="ONLINE "
+    fi
+    printf "  %s %s %-24s %s\n" "$status_icon" "$status_text" "$frontend_name" "$frontend_url"
     echo ""
-    echo -e "${BOLD}${BLUE}📊 Dashboards spéciaux :${NC}"
-    echo -e "  🔍 Logs ELK Stack     ${BLUE}http://localhost:5601/app/dashboards#/view/transcendence-dashboard${NC}"
-    echo -e "  🎮 Game Interface     ${BLUE}http://localhost:3000/pong${NC}"
+    echo -e "${BOLD}${BLUE}📊 Dashboards :${NC}"
+    # Afficher les dashboards Kibana et Grafana
+    # Lien direct vers le dashboard Kibana
+    local dash_names=("Kibana Dashboard" "Grafana Monitoring")
+    local dash_urls=("http://localhost:5601/app/dashboards#/view/transcendence-dashboard" "http://localhost:3001/d/$(echo transcendence-system-monitoring)/")
+    for i in "${!dash_names[@]}"; do
+        local d_icon="�"
+        local d_text="OFFLINE"
+        # Tester la racine du service pour l'état (pas la page dashboard)
+        local health_url="${dash_urls[$i]}"
+        if [ $i -eq 0 ]; then health_url="http://localhost:5601"; fi
+        if [ $i -eq 1 ]; then health_url="http://localhost:3001"; fi
+        if curl -s --max-time 2 "$health_url" >/dev/null 2>&1; then
+            d_icon="🟢"
+            d_text="ONLINE "
+        fi
+        printf "    %s %s %-22s %s\n" "$d_icon" "$d_text" "${dash_names[$i]}" "${dash_urls[$i]}"
+    done
     echo ""
     echo -e "${YELLOW}💡 Tip: Utilisez ${BOLD}'make logs'${NC}${YELLOW} pour voir les logs en temps réel${NC}"
     echo -e "${YELLOW}💡 Tip: Utilisez ${BOLD}'make links'${NC}${YELLOW} pour réafficher ces liens${NC}"
@@ -178,6 +215,10 @@ main() {
     print_header
     wait_for_services
     show_service_links
+    # Création automatique du dashboard Grafana (silencieux, sans affichage)
+    if [ -x "$(dirname "$0")/create-grafana-dashboard.sh" ]; then
+        bash "$(dirname "$0")/create-grafana-dashboard.sh" >/dev/null 2>&1
+    fi
 }
 
 # Exécution si appelé directement

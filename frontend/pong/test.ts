@@ -14,8 +14,6 @@ let ballHeight: number = 10;
 let player1Score: number = 0;
 let player2Score: number = 0;
 
-let predictedImpactY: number | null = null;
-
 interface Player {
     x: number;
     y: number;
@@ -85,41 +83,24 @@ function update(): void {
         player1.y = nextPlayer1Y;
     context.fillRect(player1.x, player1.y, playerWidth, playerHeight);
 
-    // Player 2 (IA)
-    if (ball.velocityX > 0) {
-        if (ball.x > boardWidth / 3)
-        {
-            if (predictedImpactY === null)
-                predictedImpactY = findImpact(ball, player2, board);
-            
-            let centerPlayer2 = player2.y + player2.height / 2;
-            if (Math.abs(predictedImpactY - centerPlayer2) > 3)
-            {
-                if (predictedImpactY > centerPlayer2) {
-                    player2.y += 3;
-                } else {
-                    player2.y -= 3;
-                }
-            }
-        }
-    } else {
-        predictedImpactY = null;
+    // Player 2 (IA) - Suit la balle
+    if (ball.velocityX > 0)
+    {
+        let ballCenterY = ball.y + ball.height / 2;
+        let player2CenterY = player2.y + player2.height / 2;
 
-        let centerY = (boardHeight / 2) - (playerHeight / 2);
-        let centerPlayer2 = player2.y + player2.height / 2;
-        
-        if (Math.abs(centerY - player2.y) > 3) {
-            if (centerY > player2.y) {
-                player2.y += 2;
+        if (Math.abs(ballCenterY - player2CenterY) > 3) {
+            if (ballCenterY > player2CenterY) {
+                player2.y += 3;
             } else {
-                player2.y -= 2;
+                player2.y -= 3;
             }
         }
+        
+        if (player2.y < 0) player2.y = 0;
+        if (player2.y + player2.height > boardHeight) 
+            player2.y = boardHeight - player2.height;
     }
-    
-    if (player2.y < 0) player2.y = 0;
-    if (player2.y + player2.height > boardHeight) 
-        player2.y = boardHeight - player2.height;
     
     context.fillRect(player2.x, player2.y, playerWidth, playerHeight);
 
@@ -128,27 +109,15 @@ function update(): void {
     context.fillRect(ball.x, ball.y, ballWidth, ballHeight);
 
     if (outOfBounds(ball.y, ballHeight))
-    {
         ball.velocityY *= -1;
-        predictedImpactY = null;
-    }
 
     if (detectCollision(ball, player1)) {
-        if (ball.x >= player1.x + playerWidth / 2) {
-            ball.velocityX *= -1;
-            ball.x = player1.x + player1.width;
-            predictedImpactY = null;
-        } else {
-            ball.velocityY *= -1;
-        }
+        ball.velocityX *= -1;
+        ball.x = player1.x + player1.width;
     }
     else if (detectCollision(ball, player2)) {
-        if (ball.x + ball.width <= player2.x + playerWidth / 2) {
-            ball.velocityX *= -1;
-            ball.x = player2.x - ball.width;
-        } else {
-            ball.velocityY *= -1;
-        }
+        ball.velocityX *= -1;
+        ball.x = player2.x - ball.width;
     }
 
     if (ball.x < 0) {
@@ -206,41 +175,6 @@ function resetGame(direction: number): void {
         velocityX: direction * 2,
         velocityY: 4
     };
-    predictedImpactY = null;
-}
-
-// on simule le mouvement de la balle jusqu'à ce qu'elle atteigne le joueur 2
-function findImpact(ball: Ball, player2: Player, board: HTMLCanvasElement): number {
-    let ballX = ball.x;
-    let ballY = ball.y;
-    let ballVelocityX = ball.velocityX;
-    let ballVelocityY = ball.velocityY;
-    
-    const initialDistance = player2.x - ball.x;
-    
-    while(ballX < player2.x)
-    {
-        ballX += ballVelocityX;
-        ballY += ballVelocityY;
-        if (ballY <= 0) {
-            ballY = 0;
-            ballVelocityY *= -1;
-        }
-        else if (ballY + ballHeight >= boardHeight) {
-            ballY = boardHeight - ballHeight;
-            ballVelocityY *= -1;
-        }
-    }
-
-    const currentDistance = player2.x - ball.x;
-    const proximityFactor = Math.max(0, currentDistance / initialDistance);
-    
-    const maxError = 110 * proximityFactor;
-    let error = (Math.random() - 0.5) * maxError;
-    
-    let predictedY = ballY + ballHeight / 2 + error;
-    
-    return predictedY;
 }
 
 })();

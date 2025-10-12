@@ -10,7 +10,7 @@ COPY package*.json tsconfig.json ./
 RUN if [ -f package.json ]; then npm install; fi
 
 # Copier le code source TypeScript (seulement si src/ existe)
-COPY src/ ./src/ 2>/dev/null || true
+COPY src/ ./src/
 
 # Compiler TypeScript (seulement si src/ contient des fichiers)
 RUN if [ -d src ] && [ "$(ls -A src)" ]; then npm run build; fi
@@ -25,7 +25,7 @@ RUN rm -rf /usr/share/nginx/html/*
 COPY pong/* /usr/share/nginx/html/
 
 # Copier les fichiers TypeScript compilés (si ils existent)
-COPY --from=builder /app/dist/* /usr/share/nginx/html/ 2>/dev/null || true
+COPY --from=builder /app/dist/* /usr/share/nginx/html/
 
 # Créer une configuration nginx simple
 RUN echo 'server { \

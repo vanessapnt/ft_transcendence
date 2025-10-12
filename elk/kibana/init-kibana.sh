@@ -1,18 +1,31 @@
 #!/bin/bash
 # Script d'initialisation Kibana pour ft_transcendence
 
-echo "🔄 Initialisation des dashboards Kibana..."
+# Mode silencieux par défaut, verbose si VERBOSE=1
+VERBOSE=${VERBOSE:-0}
+
+log_info() {
+    if [ "$VERBOSE" = "1" ]; then
+        echo "$1"
+    fi
+}
+
+log_error() {
+    echo "❌ ERROR: $1" >&2
+}
+
+log_info "🔄 Initialisation des dashboards Kibana..."
 
 # Attendre que Kibana soit disponible (sans jq)
-until curl -s http://kibana:5601/api/status | grep -q '"state":"green"'; do
-  echo "⏳ Attente de Kibana..."
+until curl -s http://kibana:5601/api/status 2>/dev/null | grep -q '"state":"green"'; do
+  log_info "⏳ Attente de Kibana..."
   sleep 5
 done
 
-echo "✅ Kibana disponible, création des index patterns..."
+log_info "✅ Kibana disponible, création des index patterns..."
 
 # Créer l'index pattern pour les logs de transcendence
-curl -X POST "kibana:5601/api/saved_objects/index-pattern/transcendence-logs" \
+RESPONSE=$(curl -s -X POST "kibana:5601/api/saved_objects/index-pattern/transcendence-logs" \
   -H "Content-Type: application/json" \
   -H "kbn-xsrf: true" \
   -d '{
@@ -20,13 +33,17 @@ curl -X POST "kibana:5601/api/saved_objects/index-pattern/transcendence-logs" \
       "title": "transcendence-logs-*",
       "timeFieldName": "@timestamp"
     }
-  }'
+  }' 2>/dev/null)
 
-echo ""
-echo "📊 Création des visualisations..."
+if [ $? -ne 0 ]; then
+    log_error "Échec création index pattern"
+    exit 1
+fi
+
+log_info "📊 Création des visualisations..."
 
 # 1. Créer une visualisation pour les statuts de logs
-curl -X POST "kibana:5601/api/saved_objects/visualization/status-pie-chart" \
+RESPONSE=$(curl -s -X POST "kibana:5601/api/saved_objects/visualization/status-pie-chart" \
   -H "Content-Type: application/json" \
   -H "kbn-xsrf: true" \
   -d '{
@@ -39,13 +56,17 @@ curl -X POST "kibana:5601/api/saved_objects/visualization/status-pie-chart" \
         "searchSourceJSON": "{\"index\":\"transcendence-logs\",\"query\":{\"match_all\":{}}}"
       }
     }
-  }'
+  }' 2>/dev/null)
 
-echo ""
-echo "📈 Création visualisation services..."
+if [ $? -ne 0 ]; then
+    log_error "Échec création visualisation status"
+    exit 1
+fi
+
+log_info "📈 Création visualisation services..."
 
 # 2. Créer une visualisation pour les services
-curl -X POST "kibana:5601/api/saved_objects/visualization/services-bar-chart" \
+RESPONSE=$(curl -s -X POST "kibana:5601/api/saved_objects/visualization/services-bar-chart" \
   -H "Content-Type: application/json" \
   -H "kbn-xsrf: true" \
   -d '{
@@ -58,13 +79,17 @@ curl -X POST "kibana:5601/api/saved_objects/visualization/services-bar-chart" \
         "searchSourceJSON": "{\"index\":\"transcendence-logs\",\"query\":{\"match_all\":{}}}"
       }
     }
-  }'
+  }' 2>/dev/null)
 
-echo ""
-echo "⏰ Création timeline des logs..."
+if [ $? -ne 0 ]; then
+    log_error "Échec création visualisation services"
+    exit 1
+fi
+
+log_info "⏰ Création timeline des logs..."
 
 # 3. Créer une timeline des logs
-curl -X POST "kibana:5601/api/saved_objects/visualization/logs-timeline" \
+RESPONSE=$(curl -s -X POST "kibana:5601/api/saved_objects/visualization/logs-timeline" \
   -H "Content-Type: application/json" \
   -H "kbn-xsrf: true" \
   -d '{
@@ -77,13 +102,17 @@ curl -X POST "kibana:5601/api/saved_objects/visualization/logs-timeline" \
         "searchSourceJSON": "{\"index\":\"transcendence-logs\",\"query\":{\"match_all\":{}}}"
       }
     }
-  }'
+  }' 2>/dev/null)
 
-echo ""
-echo "📊 Mise à jour du dashboard avec les visualisations..."
+if [ $? -ne 0 ]; then
+    log_error "Échec création timeline"
+    exit 1
+fi
+
+log_info "📊 Mise à jour du dashboard avec les visualisations..."
 
 # 4. Mettre à jour le dashboard avec les visualisations
-curl -X PUT "kibana:5601/api/saved_objects/dashboard/transcendence-dashboard" \
+RESPONSE=$(curl -s -X PUT "kibana:5601/api/saved_objects/dashboard/transcendence-dashboard" \
   -H "Content-Type: application/json" \
   -H "kbn-xsrf: true" \
   -d '{
@@ -115,9 +144,17 @@ curl -X PUT "kibana:5601/api/saved_objects/dashboard/transcendence-dashboard" \
         "id": "logs-timeline"
       }
     ]
-  }'
+  }' 2>/dev/null)
 
-echo ""
-echo "✅ Configuration Kibana terminée !"
-echo "🌐 Accédez à Kibana : http://localhost:5601"
-echo "📊 Dashboard : http://localhost:5601/app/dashboards#/view/transcendence-dashboard"
+if [ $? -ne 0 ]; then
+    log_error "Échec mise à jour dashboard"
+    exit 1
+fi
+
+log_info "✅ Configuration Kibana terminée !"
+
+# Seulement afficher les liens si mode verbose
+if [ "$VERBOSE" = "1" ]; then
+    echo "🌐 Accédez à Kibana : http://localhost:5601"
+    echo "📊 Dashboard : http://localhost:5601/app/dashboards#/view/transcendence-dashboard"
+fi

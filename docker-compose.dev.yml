@@ -44,10 +44,10 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "1m"
+        max-file: "1"
     environment:
-      - NGINX_LOG_LEVEL=warn
+      - NGINX_LOG_LEVEL=error
 
   # ==== Major module: Infrastructure setup for log management. ====
   # Elasticsearch (récupère tous les logs du projet)
@@ -61,7 +61,9 @@ services:
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - xpack.security.enabled=false
-      - logger.level=WARN
+      - logger.level=ERROR
+      - logger.org.elasticsearch=ERROR
+      - logger.discovery=ERROR
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     networks: 
@@ -89,6 +91,7 @@ services:
       - "9600:9600"
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+      LOG_LEVEL: "error"
     volumes:
       - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:rw
       - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
@@ -114,9 +117,10 @@ services:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
       SERVER_NAME: "transcendence-kibana"
       LOGGING_QUIET: "true"
+      LOGGING_ROOT_LEVEL: "error"
     volumes:
       - kibana_data:/usr/share/kibana/data
-      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - ./elk/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
     networks:
       - transcendence-network
     depends_on:
@@ -139,8 +143,10 @@ services:
     image: alpine/curl:latest
     container_name: kibana-init
     restart: "no"
+    environment:
+      - VERBOSE=${VERBOSE:-0}
     volumes:
-      - ./kibana/init-kibana.sh:/scripts/init-kibana.sh:ro
+      - ./elk/kibana/init-kibana.sh:/scripts/init-kibana.sh:ro
     networks:
       - transcendence-network
     depends_on:

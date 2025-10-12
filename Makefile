@@ -1,6 +1,7 @@
 # Makefile pour le projet transcendence
 
 .PHONY: dev prod stop build clean logs help
+.ONESHELL:
 
 # Commandes par défaut
 help:
@@ -23,8 +24,25 @@ dev-verbose: ## 🚀 Lance l'environnement de développement avec logs détaill�
 	@VERBOSE=1 docker-compose -f docker-compose.dev.yml up --build
 
 dev: ## 🚀 Lance l'environnement de développement avec monitoring
+dev: ## 🚀 Lance l'environnement de développement avec monitoring
 	@echo "🔧 Démarrage de l'environnement de développement..."
-	@docker-compose -f docker-compose.dev.yml up -d --build > /dev/null 2>&1
+	@sh -lc '\
+docker-compose -f docker-compose.dev.yml up -d --build > /dev/null 2>&1 &\
+DC_PID=$$!;\
+i=0;\
+echo "";\
+echo "⏳ Démarrage des services...";\
+while kill -0 $$DC_PID 2>/dev/null; do\
+  case $$((i % 3)) in\
+    0) c="|" ;;\
+    1) c="/" ;;\
+    2) c="-" ;;\
+  esac;\
+  printf "\\r  %s " "$$c" 2>/dev/null || true;\
+  i=$$((i+1));\
+  sleep 0.2;\
+done;\
+wait $$DC_PID || true'
 	@echo ""
 	@echo "⏳ Initialisation en cours..."
 	@./scripts/dev-startup.sh
@@ -32,6 +50,23 @@ dev: ## 🚀 Lance l'environnement de développement avec monitoring
 # Mode production
 prod:
 	@echo "🚀 Démarrage en mode production..."
+	@sh -lc '\
+docker-compose -f docker-compose.dev.yml up -d --build > /dev/null 2>&1 &\
+DC_PID=$$!;\
+i=0;\
+echo "";\
+echo "⏳ Démarrage des services...";\
+while kill -0 $$DC_PID 2>/dev/null; do\
+  case $$((i % 3)) in\
+    0) c="|" ;;\
+    1) c="/" ;;\
+    2) c="-" ;;\
+  esac;\
+  printf "\\r  %s " "$$c" 2>/dev/null || true;\
+  i=$$((i+1));\
+  sleep 0.2;\
+done;\
+wait $$DC_PID || true'
 	@docker-compose -f docker-compose.prod.yml up -d --build > /dev/null 2>&1 || true
 	@./scripts/prod-startup.sh
 

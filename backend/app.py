@@ -3,7 +3,8 @@ from flask_cors import CORS
 
 from flask_sqlalchemy import SQLAlchemy
 import os
-
+from flask import session
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 CORS(app)
@@ -19,6 +20,12 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
         return {'id': self.id, 'username': self.username}
@@ -84,6 +91,33 @@ def test_database():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+    if User.query.filter_by(username=username).first():
+        return jsonify({'error': 'Username already exists'}), 400
+    user = User(username=username)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    return jsonify({'message': 'User registered succesfully'})
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+    user = User.query.filter_by(username=username).first()
+    if user and user.check_password(password):
+        return jsonify({'message': 'Login successful', 'user': user.to_dict()})
+    return jsonify({'error': 'Invalid credentials'}), 401
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)

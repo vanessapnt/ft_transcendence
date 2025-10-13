@@ -80,6 +80,10 @@
     </head>
 
     <body>
+        <div id="user-info" style="position: absolute; top: 20px; right: 30px; color: #00ff00; font-family: 'Press Start 2P', cursive; font-size: 1em; display: none;">
+            <span id="username-label"></span>
+            <button id="logout-btn" style="margin-left:20px; font-size:0.8em; background:#ff4444; color:white; border:none; border-radius:5px; padding:5px 15px; cursor:pointer; display:none;">Logout</button>
+        </div>
         <div id="home-view">
             <h1>PONG</h1>
             <button onclick="showGame()">START GAME</button>
@@ -106,10 +110,130 @@
                 window.history.pushState({page: "home"}, "", "#home");
             }
 
+            function setUser(username) {
+                const userInfo = document.getElementById('user-info');
+                const usernameLabel = document.getElementById('username-label');
+                const logoutBtn = document.getElementById('logout-btn');
+                const signupBtn = document.querySelector('.signup-btn');
+                usernameLabel.textContent = username;
+                userInfo.style.display = 'block';
+                logoutBtn.style.display = 'inline-block';
+                if (signupBtn) signupBtn.style.display = 'none';
+                logoutBtn.onclick = function() {
+                    userInfo.style.display = 'none';
+                    if (signupBtn) signupBtn.style.display = 'inline-block';
+                };
+            }
+            
             function showSignup() {
-                alert("Sign Up functionality coming soon!");
+                if (!document.getElementById('signup-form')) {
+                    const form = document.createElement('form');
+                    form.id = 'signup-form';
+                    form.style.marginTop = '30px';
+                    form.innerHTML = `
+                        <h2>Sign Up</h2>
+                        <input type="text" id="signup-username" placeholder="Username" required style="margin:10px;padding:10px;font-size:1em;">
+                        <input type="password" id="signup-password" placeholder="Password" required style="margin:10px;padding:10px;font-size:1em;">
+                        <button type="submit" style="margin:10px;padding:10px 20px;font-size:1em;">Register</button>
+                        <button type="button" id="cancel-signup" style="margin:10px;padding:10px 20px;font-size:1em;">Cancel</button>
+                        <button type="button" id="show-login" style="margin:10px;padding:10px 20px;font-size:1em;background:#0080ff;color:white;">Login</button>
+                        <div id="signup-message" style="margin-top:10px;color:#ff4444;"></div>
+                    `;
+                    document.getElementById('home-view').appendChild(form);
+
+                    form.onsubmit = async function(e) {
+                        e.preventDefault();
+                        const username = document.getElementById('signup-username').value;
+                        const password = document.getElementById('signup-password').value;
+                        const messageDiv = document.getElementById('signup-message');
+                        messageDiv.textContent = '';
+                        try {
+                            const res = await fetch('http://localhost:8000/api/register', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ username, password })
+                            });
+                            const data = await res.json();
+                            if (res.ok) {
+                                messageDiv.style.color = '#00ff00';
+                                messageDiv.textContent = 'Registration successful!';
+                                setUser(username);
+                                setTimeout(() => {
+                                    form.remove();
+                                }, 1500);
+                            } else {
+                                messageDiv.style.color = '#ff4444';
+                                messageDiv.textContent = data.error || 'Registration failed';
+                            }
+                        } catch (err) {
+                            messageDiv.style.color = '#ff4444';
+                            messageDiv.textContent = 'Server error';
+                        }
+                    };
+
+                    document.getElementById('cancel-signup').onclick = function() {
+                        form.remove();
+                    };
+
+                    // Ajoute le comportement du bouton Login
+                    document.getElementById('show-login').onclick = function() {
+                        form.remove();
+                        showLogin();
+                    };
+                }
             }
 
+            // Ajoute la fonction showLogin pour afficher un formulaire de connexion minimaliste
+            function showLogin() {
+                if (!document.getElementById('login-form')) {
+                    const form = document.createElement('form');
+                    form.id = 'login-form';
+                    form.style.marginTop = '30px';
+                    form.innerHTML = `
+                        <h2>Login</h2>
+                        <input type="text" id="login-username" placeholder="Username" required style="margin:10px;padding:10px;font-size:1em;">
+                        <input type="password" id="login-password" placeholder="Password" required style="margin:10px;padding:10px;font-size:1em;">
+                        <button type="submit" style="margin:10px;padding:10px 20px;font-size:1em;">Login</button>
+                        <button type="button" id="cancel-login" style="margin:10px;padding:10px 20px;font-size:1em;">Cancel</button>
+                        <div id="login-message" style="margin-top:10px;color:#ff4444;"></div>
+                    `;
+                    document.getElementById('home-view').appendChild(form);
+
+                    form.onsubmit = async function(e) {
+                        e.preventDefault();
+                        const username = document.getElementById('login-username').value;
+                        const password = document.getElementById('login-password').value;
+                        const messageDiv = document.getElementById('login-message');
+                        messageDiv.textContent = '';
+                        try {
+                            const res = await fetch('http://localhost:8000/api/login', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ username, password })
+                            });
+                            const data = await res.json();
+                            if (res.ok) {
+                                messageDiv.style.color = '#00ff00';
+                                messageDiv.textContent = 'Login successful!';
+                                setUser(username);
+                                setTimeout(() => {
+                                    form.remove();
+                                }, 1500);
+                            } else {
+                                messageDiv.style.color = '#ff4444';
+                                messageDiv.textContent = data.error || 'Login failed';
+                            }
+                        } catch (err) {
+                            messageDiv.style.color = '#ff4444';
+                            messageDiv.textContent = 'Server error';
+                        }
+                    };
+
+                    document.getElementById('cancel-login').onclick = function() {
+                        form.remove();
+                    };
+                }
+            }
             window.addEventListener('popstate', function(event) {
                 if (window.location.hash === '#home' || window.location.hash === '') {
                     showHome();

@@ -25,6 +25,12 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+    environment:
+      - GITHUB_CLIENT_ID=Ov23liMyoGPzLgzpVjQt
+      - GITHUB_CLIENT_SECRET=8deed7b039363328750614a3c42945da6f92d0d3
+      - FRONTEND_URL=http://localhost
+      - SECRET_KEY=change_me_for_dev
+
     volumes:
       # Hot reload pour backend
       - ./backend:/app

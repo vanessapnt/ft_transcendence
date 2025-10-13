@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, redirect
 from flask_cors import CORS
 
 from flask_sqlalchemy import SQLAlchemy
@@ -7,9 +7,15 @@ from flask import session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask import send_from_directory
+from authlib.integrations.flask_client import OAuth
 
 app = Flask(__name__)
 CORS(app)
+
+app.secret_key = os.environ.get('SECRET_KEY', 'dev_secret_change_me')
+app.config['SESSION_COOKIE_SAMESITE'] = os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax')
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', '0') == '1'
+
 
 @app.route('/avatars/<filename>')
 def uploaded_file(filename):
@@ -22,6 +28,18 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Init database
 db = SQLAlchemy(app)
 
+# Init OAuth
+oauth = OAuth(app)
+oauth.register(
+    name='github',
+    client_id=os.environ.get('GITHUB_CLIENT_ID'),
+    client_secret=os.environ.get('GITHUB_CLIENT_SECRET'),
+    access_token_url='https://github.com/login/oauth/access_token',
+    authorize_url='https://github.com/login/oauth/authorize',
+    api_base_url='https://api.github.com/',
+    client_kwargs={'scope': 'user:email'},
+)
+
 # User
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -29,7 +47,8 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     display_name = db.Column(db.String(80), unique=True, nullable=False)
     avatar_url = db.Column(db.String(255), nullable=True)
-
+    oauth_provider = db.Column(db.String(50), nullable=True)
+    oauth_id = db.Column(db.String(255), nullable=True, unique=True)
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
     def check_password(self, password):
@@ -107,26 +126,36 @@ def test_database():
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     username = data.get('username')
     password = data.get('password')
     display_name = data.get('display_name')
+
     if not username or not password or not display_name:
         return jsonify({'error': 'All fields required'}), 400
+
     if User.query.filter_by(username=username).first():
         return jsonify({'error': 'Username already exists'}), 400
+
     if User.query.filter_by(display_name=display_name).first():
         return jsonify({'error': 'Display name already exists'}), 400
-    user = User(username=username, display_name=display_name, avatar_url='/avatars/default_avatar.png')
+
+    user = User(
+        username=username, 
+        display_name=display_name, 
+        avatar_url=None
+    )
     user.set_password(password)
+
     db.session.add(user)
     db.session.commit()
     return jsonify({
         'message': 'User registered succesfully',
         'id': user.id,
         'username': user.username,
-        'display_name': user.display_name
-    })
+        'display_name': user.display_name,
+        'avatar_url': user.avatar_url
+    }), 201
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -145,6 +174,44 @@ def login():
         })
     return jsonify({'error': 'Invalid credentials'}), 401
 
+@app.route('/api/oauth/login/github')
+def oauth_login_github():
+    redirect_uri = os.environ.get('OAUTH_REDIRECT_URI') or request.host_url + 'api/oauth/callback/github'
+    return oauth.github.authorize_redirect(redirect_uri)
+
+@app.route('/api/oauth/callback/github')
+def oauth_callback_github():
+    token = oauth.github.authorize_access_token()
+    if not token:
+        return jsonify({'error': 'OAuth failed'}), 400
+    profile = oauth.github.get('user').json()
+    github_id = str(profile.get('id'))
+    username = profile.get('login') or f'gh_{github.id}'
+    display_name = profile.get('name') or username
+    avatar = profile.get('avatar_url')
+
+    user = User.query.filter_by(oauth_provider='github', oauth_id=github_id).first()
+    if not user:
+        base_username = username
+        i = 1
+        while User.query.filter_by(username=username).first():
+            username = f"{base_username}_{i}"
+            i += i
+        user = User (
+            username=username,
+            display_name=display_name,
+            oauth_provider='github',
+            oauth_id=github_id,
+            avatar_url=avatar or '/avatars/default_avatar.png'
+        )
+        user.password_hash = ''
+        db.session.add(user)
+        db.session.commit()
+    session['user_id'] = user.id
+
+    frontend_url = os.environ.get('FRONTEND_URL') or ('http://localhost:3000' if request.host.split(':')[1] != '8000' else 'http://localhost:3000')
+    return redirect(f"{frontend_url}/#oauth_success?id={user.id}&username={user.username}&display_name={user.display_name}&avatar_url={user.avatar_url}")
+
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     user = User.query.get(user_id)
@@ -153,7 +220,6 @@ def update_user(user_id):
     data = request.get_json()
     display_name = data.get('display_name')
     if display_name:
-        # Autorise le display_name égal à son propre username
         if display_name == user.username:
             user.display_name = display_name
         else:

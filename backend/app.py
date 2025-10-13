@@ -5,9 +5,15 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 from flask import session
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from flask import send_from_directory
 
 app = Flask(__name__)
 CORS(app)
+
+@app.route('/avatars/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 # Configuration SQLite - Simple et fonctionnelle
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///transcendence.db'  # Fichier dans /app/
@@ -21,6 +27,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    display_name = db.Column(db.String(80), unique=True, nullable=False)
+    avatar_url = db.Column(db.String(255), nullable=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -28,7 +36,12 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
-        return {'id': self.id, 'username': self.username}
+        return {
+            'id': self.id,
+            'username': self.username,
+            'display_name': self.display_name,
+            'avatar_url': self.avatar_url
+            }
 
 # Tables - Initialisation simple
 with app.app_context():
@@ -97,15 +110,23 @@ def register():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
-    if not username or not password:
-        return jsonify({'error': 'Username and password required'}), 400
+    display_name = data.get('display_name')
+    if not username or not password or not display_name:
+        return jsonify({'error': 'All fields required'}), 400
     if User.query.filter_by(username=username).first():
         return jsonify({'error': 'Username already exists'}), 400
-    user = User(username=username)
+    if User.query.filter_by(display_name=display_name).first():
+        return jsonify({'error': 'Display name already exists'}), 400
+    user = User(username=username, display_name=display_name, avatar_url='/avatars/default_avatar.png')
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
-    return jsonify({'message': 'User registered succesfully'})
+    return jsonify({
+        'message': 'User registered succesfully',
+        'id': user.id,
+        'username': user.username,
+        'display_name': user.display_name
+    })
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -116,8 +137,58 @@ def login():
         return jsonify({'error': 'Username and password required'}), 400
     user = User.query.filter_by(username=username).first()
     if user and user.check_password(password):
-        return jsonify({'message': 'Login successful', 'user': user.to_dict()})
+        return jsonify({
+            'message': 'Login successful',
+            'id': user.id,
+            'username': user.username,
+            'display_name': user.display_name
+        })
     return jsonify({'error': 'Invalid credentials'}), 401
+
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+def update_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    data = request.get_json()
+    display_name = data.get('display_name')
+    if display_name:
+        # Autorise le display_name égal à son propre username
+        if display_name == user.username:
+            user.display_name = display_name
+        else:
+            existing_user = User.query.filter_by(display_name=display_name).first()
+            if existing_user and existing_user.id != user.id:
+                return jsonify({'error': 'Display name already exists'}), 400
+            user.display_name = display_name
+    db.session.commit()
+    return jsonify({'message': 'User updated', 'user': user.to_dict()})
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'avatars')
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+@app.route('/api/users/<int:user_id>/avatar', methods=['POST'])
+def upload_avatar(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    if 'avatar' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['avatar']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    if file and allowed_file(file.filename):
+        filename = secure_filename(f"user_{user_id}_" + file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        file.save(filepath)
+        user.avatar_url = f"/avatars/{filename}"
+        db.session.commit()
+        return jsonify({'message': 'Avatar uploaded', 'avatar_url': user.avatar_url})
+    return jsonify({'error': 'Invalid file type'}), 400
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)

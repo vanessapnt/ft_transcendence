@@ -29,6 +29,8 @@ services:
       # Hot reload pour backend
       - ./backend:/app
       - sqlite_data:/app/data
+      - ./backend:/app
+      - ./backend/avatars:/app/avatars
     networks:
       - transcendence-network
 

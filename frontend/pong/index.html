@@ -92,7 +92,7 @@
 
         <div id="home-view">
             <h1>PONG</h1>
-            <button onclick="showGame()">START GAME</button>
+            <button onclick="startGame()">START GAME</button>
             <button class="signup-btn" onclick="showSignup()">SIGN UP</button>
             <button id="oauth-github" onclick="oauthLogin()" style="margin:10px;padding:10px 20px;font-size:1em;background:#24292e;color:#fff;border:none;border-radius:10px;cursor:pointer;">
                 Login with GitHub
@@ -107,6 +107,10 @@
         </div>
 
         <script>
+            function startGame() {
+                showGame();
+                PongGame.start(); //dans ia.js
+            }
             function showGame() {
                 document.getElementById('home-view').style.display = 'none';
                 document.getElementById('game-view').style.display = 'block';

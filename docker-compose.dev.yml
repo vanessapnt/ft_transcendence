@@ -25,25 +25,26 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+<<<<<<< HEAD
     environment:
       - GITHUB_CLIENT_ID=Ov23liMyoGPzLgzpVjQt
       - GITHUB_CLIENT_SECRET=8deed7b039363328750614a3c42945da6f92d0d3
       - FRONTEND_URL=http://localhost
       - SECRET_KEY=change_me_for_dev
 
+=======
+      - "8080:80"
+>>>>>>> origin
     volumes:
-      # Hot reload pour backend
-      - ./backend:/app
       - sqlite_data:/app/data
       - ./backend:/app
-      - ./backend/avatars:/app/avatars
     networks:
       - transcendence-network
 
   nginx:
     build: ./nginx
     ports:
-      - "80:80"
+      - "8081:80"
     depends_on:
       - frontend
       - backend
@@ -60,7 +61,7 @@ services:
   # ==== Major module: Infrastructure setup for log management. ====
   # Elasticsearch (récupère tous les logs du projet)
   elasticsearch:
-    image:  docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
     container_name: elasticsearch
     restart: always
     ports:
@@ -74,10 +75,10 @@ services:
       - logger.discovery=ERROR
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
-    networks: 
+    networks:
       - transcendence-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -87,7 +88,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-  
+
   # Logstash (rend les logs plus clairs et riches)
   logstash:
     image: docker.elastic.co/logstash/logstash:7.15.0
@@ -108,18 +109,18 @@ services:
     depends_on:
       - elasticsearch
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9600 || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:9600 || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
-  
+
   # Kibana (interface de visualisation des logs)
   kibana:
     image: docker.elastic.co/kibana/kibana:7.15.0
     container_name: kibana
     restart: always
-    ports: 
+    ports:
       - "5601:5601"
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
@@ -133,9 +134,9 @@ services:
       - transcendence-network
     depends_on:
       elasticsearch:
-        condition: service_healthy  # ✅ Attendre qu'ES soit prêt
+        condition: service_healthy # ✅ Attendre qu'ES soit prêt
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -160,7 +161,7 @@ services:
     depends_on:
       kibana:
         condition: service_healthy
-    command: sh /scripts/init-kibana.sh
+    command: sh -c "apk add --no-cache jq && sh /scripts/init-kibana.sh"
 
   # === Monitoring (module minor)
   prometheus:
@@ -182,7 +183,7 @@ services:
     networks:
       - transcendence-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -212,7 +213,7 @@ services:
     depends_on:
       - prometheus
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -222,18 +223,17 @@ services:
         max-size: "10m"
         max-file: "3"
 
-
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter-prod
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9100:9100"
+      - "127.0.0.1:9101:9100"
     volumes:
       # ⚠️ Accès aux infos système du HOST
-      - /proc:/host/proc:ro          # ← Processus système
-      - /sys:/host/sys:ro            # ← Infos hardware
-      - /:/rootfs:ro                 # ← Filesystem complet
+      - /proc:/host/proc:ro # ← Processus système
+      - /sys:/host/sys:ro # ← Infos hardware
+      - /:/rootfs:ro # ← Filesystem complet
     command:
       # Configuration pour Docker
       - '--path.procfs=/host/proc'
@@ -244,7 +244,7 @@ services:
     networks:
       - transcendence-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -260,6 +260,7 @@ volumes:
   elasticsearch_data:
   kibana_data:
   sqlite_data:
+
 
 networks:
   transcendence-network:

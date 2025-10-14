@@ -87,13 +87,16 @@
         </div>
 
         <div id="avatar-container" style="position:absolute;top:20px;left:30px;">
-            <img id="avatar-img" src="default_avatar.png" style="width:48px;height:48px;border-radius:50%;border:2px solid #00ff00;display:none;">
+           <img id="avatar-img" src="" style="width:48px;height:48px;border-radius:50%;border:2px solid #00ff00;display:none;">
         </div>
 
         <div id="home-view">
             <h1>PONG</h1>
             <button onclick="startGame()">START GAME</button>
             <button class="signup-btn" onclick="showSignup()">SIGN UP</button>
+            <button id="oauth-github" onclick="oauthLogin()" style="margin:10px;padding:10px 20px;font-size:1em;background:#24292e;color:#fff;border:none;border-radius:10px;cursor:pointer;">
+                Login with GitHub
+            </button>
         </div>
 
         <div id="game-view">
@@ -132,12 +135,25 @@
                 return url;
             }
 
+            function oauthLogin() {
+                console.log('[OAuth] click');
+                // En dev : frontend sur :3000, backend sur :8000
+                const port = window.location.port;
+                const isDevFrontend = port && port !== '80' && port !== '443';
+                const backendOrigin = isDevFrontend ? `${window.location.protocol}//${window.location.hostname}:8000` : '';
+                const oauthPath = '/api/oauth/login/github';
+                const target = backendOrigin ? `${backendOrigin}${oauthPath}` : oauthPath;
+                console.log('[OAuth] redirect to', target);
+                window.location.href = target;
+            }
+
             function setUser(username, displayName, userId, avatarUrl) {
                 const userInfo = document.getElementById('user-info');
                 const usernameLabel = document.getElementById('username-label');
                 const logoutBtn = document.getElementById('logout-btn');
                 const editProfileBtn = document.getElementById('edit-profile-btn');
                 const signupBtn = document.querySelector('.signup-btn');
+                const oauthBtn = document.getElementById('oauth-github');
                 const avatarImg = document.getElementById('avatar-img');
                 usernameLabel.textContent = displayName ? `${displayName} (${username})` : username;
                 userInfo.style.display = 'block';
@@ -145,6 +161,7 @@
                 editProfileBtn.style.display = 'inline-block';
 
                 if (signupBtn) signupBtn.style.display = 'none';
+                if (oauthBtn) oauthBtn.style.display = 'none';
                 
                 window.currentUserId = userId;
                 window.currentAvatarUrl = avatarUrl;
@@ -173,6 +190,7 @@
                 logoutBtn.onclick = function() {
                     userInfo.style.display = 'none';
                     if (signupBtn) signupBtn.style.display = 'inline-block';
+                    if (oauthBtn) oauthBtn.style.display = 'inline-block';
                     avatarImg.style.display = 'none';
                     window.currentAvatarUrl = null;
                 };
@@ -213,7 +231,9 @@
                                 messageDiv.style.color = '#00ff00';
                                 messageDiv.textContent = 'Registration successful!';
                                 // Use backend response to get userId and display_name
-                                setUser(data.username, data.display_name, data.id, data.avatar_url);
+                                // If avatar_url is missing, use default
+                                const avatarUrl = data.avatar_url || '/avatars/default_avatar.png';
+                                setUser(data.username, data.display_name, data.id, avatarUrl);
                                 setTimeout(() => {
                                     form.remove();
                                 }, 1500);
@@ -236,6 +256,8 @@
                         form.remove();
                         showLogin();
                     };
+
+                    
                 }
             }
 
@@ -394,7 +416,21 @@ function showEditProfile(currentUsername, currentDisplayName) {
 }
 
             window.addEventListener('load', function() {
-                if (window.location.hash === '#game') {
+                if (window.location.hash.startsWith('#oauth_success')) {
+                    const hash = window.location.hash;
+                    const query = hash.split('?')[1];
+                    if (query) {
+                        const params = new URLSearchParams(query);
+                        const id = params.get('id');
+                        const username = params.get('username');
+                        const display_name = params.get('display_name');
+                        const avatar_url = params.get('avatar_url');
+                        if (id && username && display_name) {
+                            setUser(username, display_name, id, avatar_url);
+                        }
+                    }
+                    window.location.hash = '#home';
+                } else if (window.location.hash === '#game') {
                     showGame();
                 } else {
                     showHome();

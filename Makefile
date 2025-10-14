@@ -16,6 +16,7 @@ help:
 	@echo "║  make clean       → Nettoyer tout (volumes inclus)║"
 	@echo "║  make logs        → Afficher les logs             ║"
 	@echo "║  make links       → Afficher tous les liens       ║"
+	@echo "║  make reset-db    → Supprimer la DB et relancer   ║"
 	@echo "╚═══════════════════════════════════════════════════╝"
 
 # Mode développement
@@ -75,6 +76,18 @@ stop:
 	@echo "🛑 Arrêt des services..."
 	-docker-compose -f docker-compose.dev.yml down 2>/dev/null
 	-docker-compose -f docker-compose.prod.yml down 2>/dev/null
+
+# Supprimer la base de données
+reset-db: ## 🗑️ Supprime la base de données et relance le dev
+	@echo "🗑️ Suppression de la base de données..."
+	@docker-compose -f docker-compose.dev.yml down -v
+	@rm -f backend/instance/transcendence.db
+	@mkdir -p backend/avatars
+	@if [ -f backend/avatars/default_avatar.png ]; then mv backend/avatars/default_avatar.png /tmp/default_avatar_backup.png; fi
+	@rm -f backend/avatars/*
+	@if [ -f /tmp/default_avatar_backup.png ]; then mv /tmp/default_avatar_backup.png backend/avatars/default_avatar.png; fi
+	@echo "🔄 Relance du mode développement..."
+	@make dev
 
 # Rebuilder les images
 build:

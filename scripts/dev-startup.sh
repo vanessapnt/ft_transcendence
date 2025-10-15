@@ -40,8 +40,8 @@ show_progress_bar() {
     local empty=$((width - filled))
     
     printf "\r${YELLOW}[${NC}"
-    printf "%*s" $filled | tr ' ' '█'
-    printf "%*s" $empty | tr ' ' '░'
+    printf "%*s" $filled | tr ' ' '#'
+    printf "%*s" $empty | tr ' ' '-'
     printf "${YELLOW}] %d%% (%d/%d services)${NC}" $percentage $current $total
 }
 
@@ -58,20 +58,22 @@ show_individual_progress() {
         local bar_width=30
         # Efface la ligne avant d'afficher le nouveau statut
         tput el
+        # Remplace les caractères unicode par des caractères ASCII
+        local filled_bar=$(printf "%*s" $bar_width | tr ' ' '#')
+        local empty_bar=$(printf "%*s" $bar_width | tr ' ' '-')
         if [ "$status" = "ready" ]; then
-            local filled_bar=$(printf "%*s" $bar_width | tr ' ' '█')
             printf "  %-25s ${GREEN}[%s] ✅ READY${NC}\n" "$service_name" "$filled_bar"
         elif [ "$status" = "starting" ]; then
             local filled=$((bar_width * 3 / 4))
             local empty=$((bar_width - filled))
-            local filled_bar=$(printf "%*s" $filled | tr ' ' '█')
-            local empty_bar=$(printf "%*s" $empty | tr ' ' '░')
+            local filled_bar=$(printf "%*s" $filled | tr ' ' '#')
+            local empty_bar=$(printf "%*s" $empty | tr ' ' '-')
             printf "  %-25s ${YELLOW}[%s%s] 🔄 STARTING${NC}\n" "$service_name" "$filled_bar" "$empty_bar"
         else
             local filled=$((bar_width / 4))
             local empty=$((bar_width - filled))
-            local filled_bar=$(printf "%*s" $filled | tr ' ' '█')
-            local empty_bar=$(printf "%*s" $empty | tr ' ' '░')
+            local filled_bar=$(printf "%*s" $filled | tr ' ' '#')
+            local empty_bar=$(printf "%*s" $empty | tr ' ' '-')
             printf "  %-25s ${RED}[%s%s] ⏳ WAITING${NC}\n" "$service_name" "$filled_bar" "$empty_bar"
         fi
     done
@@ -89,9 +91,9 @@ check_service_health() {
         else
             return 1
         fi
-    # Nginx : vérifier port 80
+    # Nginx : vérifier port 8081
     elif [[ "$service_name" == "Nginx Proxy" ]]; then
-        if curl -s --max-time $timeout http://localhost >/dev/null 2>&1; then
+        if curl -s --max-time $timeout http://localhost:8081 >/dev/null 2>&1; then
             return 0
         else
             return 1

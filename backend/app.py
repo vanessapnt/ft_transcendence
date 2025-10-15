@@ -32,8 +32,8 @@ db = SQLAlchemy(app)
 oauth = OAuth(app)
 oauth.register(
     name='github',
-    client_id=os.environ.get('GITHUB_CLIENT_ID'),
-    client_secret=os.environ.get('GITHUB_CLIENT_SECRET'),
+    client_id=os.environ.get('Ov23liMyoGPzLgzpVjQt'),
+    client_secret=os.environ.get('8deed7b039363328750614a3c42945da6f92d0d3'),
     access_token_url='https://github.com/login/oauth/access_token',
     authorize_url='https://github.com/login/oauth/authorize',
     api_base_url='https://api.github.com/',

@@ -25,16 +25,11 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
-<<<<<<< HEAD
     environment:
       - GITHUB_CLIENT_ID=Ov23liMyoGPzLgzpVjQt
       - GITHUB_CLIENT_SECRET=8deed7b039363328750614a3c42945da6f92d0d3
       - FRONTEND_URL=http://localhost
       - SECRET_KEY=change_me_for_dev
-
-=======
-      - "8080:80"
->>>>>>> origin
     volumes:
       - sqlite_data:/app/data
       - ./backend:/app
@@ -91,7 +86,7 @@ services:
 
   # Logstash (rend les logs plus clairs et riches)
   logstash:
-    image: docker.elastic.co/logstash/logstash:7.15.0
+    build: ./elk/logstash
     container_name: logstash
     #restart: always
     ports:
@@ -101,9 +96,6 @@ services:
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
       LOG_LEVEL: "error"
-    volumes:
-      - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:rw
-      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
     networks:
       - transcendence-network
     depends_on:

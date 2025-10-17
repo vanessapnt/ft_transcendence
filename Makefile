@@ -5,18 +5,20 @@
 
 # Commandes par défaut
 help:
-	@echo "╔═══════════════════════════════════════════════════╗"
-	@echo "║     🎮 Transcendence - Commandes disponibles 🎮  ║"
-	@echo "╠═══════════════════════════════════════════════════╣"
-	@echo "║  make dev         → Mode développement            ║"
-	@echo "║  make dev-verbose → Mode dev avec logs détaillés  ║"
-	@echo "║  make prod        → Lancer en mode production     ║"
-	@echo "║  make stop        → Arrêter les services          ║"
-	@echo "║  make build       → Rebuilder les images          ║"
-	@echo "║  make clean       → Nettoyer tout (volumes inclus)║"
-	@echo "║  make logs        → Afficher les logs             ║"
-	@echo "║  make links       → Afficher tous les liens       ║"
-	@echo "╚═══════════════════════════════════════════════════╝"
+	@echo "╔════════════════════════════════════════════════════════╗"
+	@echo "║     🎮 Transcendence - Commandes disponibles 🎮        ║"
+	@echo "╠════════════════════════════════════════════════════════╣"
+	@echo "║  make dev              → Mode développement            ║"
+	@echo "║  make dev-verbose      → Mode dev avec logs détaillés  ║"
+	@echo "║  make prod             → Lancer en mode production     ║"
+	@echo "║  make stop             → Arrêter les services          ║"
+	@echo "║  make build            → Rebuilder les images          ║"
+	@echo "║  make clean            → Nettoyer tout (volumes inclus)║"
+	@echo "║  make logs             → Afficher les logs             ║"
+	@echo "║  make links            → Afficher tous les liens       ║"
+	@echo "║  make serve-pong       → Servir frontend/pong (jeu)    ║"
+	@echo "║  make serve-pong-dev   → Watch .ts + live-reload (dev) ║"
+	@echo "╚════════════════════════════════════════════════════════╝"
 
 # Mode développement
 dev-verbose: ## 🚀 Lance l'environnement de développement avec logs détaillés
@@ -92,6 +94,28 @@ clean:
 # Afficher les logs
 logs:
 	docker-compose -f docker-compose.dev.yml logs -f
+
+# Serve the `frontend/pong` folder directly so index is available at /
+.PHONY: serve-pong
+serve-pong: ## 🕹️ Serve `frontend/pong` on port 3000 (open http://localhost:3000/)
+	@echo "🟢 Serving frontend/pong at http://localhost:3000 (Ctrl+C to stop)"
+	@cd frontend/pong && python3 -m http.server 3000
+
+# Dev: watch TypeScript and serve with live reload (requires Node/npm)
+.PHONY: serve-pong-dev
+serve-pong-dev: ## 🔁 Watch .ts and serve `frontend/pong` with live-reload on port 3000
+	@echo "🟢 Starting TypeScript watcher and live-reload server on http://localhost:3000"
+	@sh -c '\
+	cd frontend; \
+	# install dependencies if missing (first run)\
+	if [ ! -d node_modules ]; then \
+		echo "⬇️  node_modules not found — running npm install in frontend..."; \
+		npm install; \
+	fi; \
+	# start tsc in background, then start live-server in foreground; when live-server exits we kill tsc\
+	npx tsc -w > /dev/null 2>&1 & TSC_PID=$$!; \
+	npx live-server pong --port=3000 --quiet || true; \
+	kill $$TSC_PID 2>/dev/null || true'
 
 # Afficher tous les liens disponibles
 links:

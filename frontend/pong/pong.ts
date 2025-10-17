@@ -14,6 +14,13 @@ let ballHeight: number = 10;
 let player1Score: number = 0;
 let player2Score: number = 0;
 
+let player1Name: string = "PLAYER 1";
+let player2Name: string = "PLAYER 2";
+
+const WINNING_SCORE: number = 5;
+
+let onGameEndCallback: ((winner: string) => void) | null = null;
+
 // x and y are the top left corner of the rectangle
 interface Player {
     x: number;
@@ -58,24 +65,25 @@ let ball: Ball = {
     velocityY: 2
 };
 
+let isGameRunning: boolean = false;
+
 // function called after the html and css elements are loaded
 window.onload = function() {
     board = document.getElementById("board") as HTMLCanvasElement; //name of the canvas element in .html
+    if (!board)
+        return;
+    
     board.height = boardHeight;
     board.width = boardWidth;
     context = board.getContext("2d")!;
 
-    context.fillStyle = "white";
-    context.fillRect(player1.x, player1.y, playerWidth, playerHeight);
-    context.fillRect(player2.x, player2.y, playerWidth, playerHeight);
-    context.fillRect(ball.x, ball.y, ballWidth, ballHeight);
-
-    requestAnimationFrame(update); //calls update function before the next frame is rendered
     document.addEventListener("keydown", PlayerMoves); //when key is pressed, player moves
     document.addEventListener("keyup", PlayerStops); //when key is released, player stops moving
 };
 
 function update(): void {
+    if (!isGameRunning)
+        return;
     requestAnimationFrame(update);
     // clear the board for next frame
     context.clearRect(0, 0, board.width, board.height);
@@ -109,17 +117,19 @@ function update(): void {
     //game over
     if (ball.x < 0) {
         player2Score++;
+        checkWinner();
         resetGame(1); //serves to the right
     }
     else if (ball.x + ballWidth > boardWidth) {
         player1Score++;
+        checkWinner();
         resetGame(-1); //serves to the left
     }
 
     //score
     context.font = "16px 'Press Start 2P', monospace";
-    context.fillText("PLAYER 11", boardWidth/5 - 30, 35);
-    context.fillText("PLAYER 2", boardWidth*4/5 - 75, 35);
+    context.fillText(player1Name, boardWidth/5 - 30, 35);
+    context.fillText(player2Name, boardWidth*4/5 - 75, 35);
     context.font = "32px 'Press Start 2P', monospace";
     context.fillText(player1Score.toString(), boardWidth/5, 75);
     context.fillText(player2Score.toString(), boardWidth*4/5 - 45, 75);
@@ -127,6 +137,37 @@ function update(): void {
     // draw dotted line down the middle
     for (let i = 10; i < board.height; i += 25)
         context.fillRect(board.width / 2 - 10, i, 5, 5); 
+}
+
+function checkWinner(): void
+{
+    if (player1Score >= WINNING_SCORE) {
+        endGame(player1Name);
+    } else if (player2Score >= WINNING_SCORE) {
+        endGame(player2Name);
+    }
+}
+
+function endGame(winner: string): void {
+    isGameRunning = false;
+    
+    console.log(`Game Over! Winner: ${winner}`);
+    
+    context.fillStyle = "rgba(0, 0, 0, 0.8)";
+    context.fillRect(0, 0, boardWidth, boardHeight);
+    
+    context.fillStyle = "#00ff00";
+    context.font = "48px 'Press Start 2P', monospace";
+    context.textAlign = "center";
+    context.fillText("WINNER!", boardWidth / 2, boardHeight / 2 - 30);
+    context.fillText(winner, boardWidth / 2, boardHeight / 2 + 30);
+    context.textAlign = "left";
+    
+    if (onGameEndCallback) {
+        setTimeout(() => {
+            onGameEndCallback!(winner);
+        }, 2000);
+    }
 }
 
 function outOfBounds(yPosition: number, Height: number): boolean {
@@ -179,5 +220,43 @@ function resetGame(direction: number): void {
         velocityY: 2
     };
 }
+
+class PongGame {
+    start(): void
+    {
+        player1Score = 0;
+        player2Score = 0;
+        isGameRunning = true;
+        
+        player1.y = (boardHeight / 2) - (playerHeight / 2);
+        player2.y = (boardHeight / 2) - (playerHeight / 2);
+        resetGame(1);
+        
+        update();
+    }
+
+    setPlayerNames(name1: string, name2: string): void {
+        player1Name = name1;
+        player2Name = name2;
+    }
+
+    onGameEnd(callback: (winner: string) => void): void {
+        onGameEndCallback = callback;
+    }
+
+    pause(): void {
+        isGameRunning = false;
+    }
+
+    resume(): void
+    {
+        if (!isGameRunning) {
+            isGameRunning = true;
+            update();
+        }
+    }
+}
+
+(window as any).PongGame = new PongGame();
 
 })();

@@ -7,6 +7,7 @@
         <link rel="stylesheet" href="pong.css">
         <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
         <script src="pong.js" defer></script>
+        <script src="pongAI.js" defer></script>
         <script src="tournament.js" defer></script>
         <style>
             #home-view {
@@ -63,7 +64,7 @@
 
             #board {
                 display: block;
-                margin: 20 auto;
+                margin: 20px auto;
             }
 
             .menu-button {
@@ -93,9 +94,35 @@
                 cursor: pointer;
                 font-size: 1em;
             }
+            
             #tournament-view button:hover {
                 background: #00cc00;
                 transform: scale(1.05);
+            }
+
+            #pause-overlay button:hover {
+                transform: scale(1.05);
+                box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            }
+
+            #pause-overlay #resume-btn:hover {
+                background: #00cc00;
+            }
+
+            #pause-overlay #menu-btn:hover {
+                background: #cc0000;
+            }
+
+            .pause-hint {
+                position: absolute;
+                top: 10px;
+                left: 50%;
+                transform: translateX(-50%);
+                color: #00ff00;
+                font-family: 'Press Start 2P', cursive;
+                font-size: 0.7em;
+                opacity: 0.6;
+                z-index: 10;
             }
         </style>
     </head>
@@ -119,6 +146,7 @@
         </div>
 
         <div id="game-view">
+            <div class="pause-hint">Press SPACE to pause</div>
             <canvas id="board"></canvas>
             <div style="text-align: center;">
                 <button class="menu-button" onclick="showHome()">MENU</button>
@@ -143,10 +171,102 @@
             }
 
             function startGame() {
+                showGameModeSelection();
+            }
+
+            function showGameModeSelection() {
                 document.getElementById('home-view').style.display = 'none';
+                let modeSelection = document.getElementById('mode-selection');
+                if (!modeSelection) {
+                    modeSelection = document.createElement('div');
+                    modeSelection.id = 'mode-selection';
+                    modeSelection.style.cssText = `
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        background: #000;
+                        color: #00ff00;
+                        font-family: 'Press Start 2P', cursive;
+                    `;
+                    
+                    modeSelection.innerHTML = `
+                        <h1 style="font-size: 3em; margin-bottom: 50px; text-shadow: 0 0 10px #00ff00;">SELECT MODE</h1>
+                        <button id="mode-local" style="font-family: 'Press Start 2P', cursive; font-size: 1.2em; padding: 20px 40px; margin: 20px; background: #00ff00; color: #000; border: none; border-radius: 10px; cursor: pointer; min-width: 300px;">
+                            LOCAL 2 PLAYERS
+                        </button>
+                        <button id="mode-ai" style="font-family: 'Press Start 2P', cursive; font-size: 1.2em; padding: 20px 40px; margin: 20px; background: #00ff00; color: #000; border: none; border-radius: 10px; cursor: pointer; min-width: 300px;">
+                            VS AI
+                        </button>
+                        <button id="mode-back" style="font-family: 'Press Start 2P', cursive; font-size: 1em; padding: 15px 30px; margin: 40px 20px 20px; background: #ff4444; color: white; border: none; border-radius: 10px; cursor: pointer;">
+                            BACK
+                        </button>
+                    `;
+                    
+                    document.body.appendChild(modeSelection);
+                    
+                    const buttons = modeSelection.querySelectorAll('button');
+                    buttons.forEach(btn => {
+                        btn.addEventListener('mouseenter', function() {
+                            if (this.id !== 'mode-back') {
+                                this.style.background = '#00cc00';
+                                this.style.transform = 'scale(1.05)';
+                            } else {
+                                this.style.background = '#cc0000';
+                                this.style.transform = 'scale(1.05)';
+                            }
+                        });
+                        btn.addEventListener('mouseleave', function() {
+                            if (this.id !== 'mode-back') {
+                                this.style.background = '#00ff00';
+                                this.style.transform = 'scale(1)';
+                            } else {
+                                this.style.background = '#ff4444';
+                                this.style.transform = 'scale(1)';
+                            }
+                        });
+                    });
+                    
+                    document.getElementById('mode-local').onclick = () => {
+                        launchGame('local');
+                    };
+                    
+                    document.getElementById('mode-ai').onclick = () => {
+                        launchGame('ai');
+                    };
+                    
+                    document.getElementById('mode-back').onclick = () => {
+                        modeSelection.style.display = 'none';
+                        document.getElementById('home-view').style.display = 'flex';
+                    };
+                }
+                
+                modeSelection.style.display = 'flex';
+            }
+
+            function launchGame(mode) {
+                const modeSelection = document.getElementById('mode-selection');
+                if (modeSelection) {
+                    modeSelection.style.display = 'none';
+                }
+                
                 document.getElementById('game-view').style.display = 'block';
                 window.history.pushState({page: "game"}, "", "#game");
-                PongGame.start();
+                
+                if (window.PongGame && window.PongGame.resetPlayerNames) {
+                    window.PongGame.resetPlayerNames();
+                }
+                
+                if (mode === 'ai') {
+                    window.currentGameMode = 'ai';
+                    if (window.PongGameAI) {
+                        window.PongGameAI.start();
+                    }
+                } else {
+                    window.currentGameMode = 'local';
+                    PongGame.start();
+                }
             }
 
             function showGame() {
@@ -162,8 +282,16 @@
                 document.getElementById('home-view').style.display = 'flex';
                 window.history.pushState({page: "home"}, "", "#home");
                 
+                const pauseOverlay = document.getElementById('pause-overlay');
+                if (pauseOverlay) {
+                    pauseOverlay.style.display = 'none';
+                }
+                
                 if (window.Tournament) {
                     window.Tournament.reset();
+                }
+                if (window.PongGame) {
+                    window.PongGame.resetPlayerNames();
                 }
             }
 
@@ -186,7 +314,6 @@
                 }
             });
 
-            // Global helper to resolve avatar URLs for dev server (port 3000) vs production (Nginx)
             function getAvatarUrl(url) {
                 const defaultUrl = '/avatars/default_avatar.png';
                 if (!url) url = defaultUrl;
@@ -215,15 +342,10 @@
                 window.currentUserId = userId;
                 window.currentAvatarUrl = avatarUrl;
 
-                // Helper to resolve avatar URLs correctly when frontend is served
-                // from the dev server (port 3000) or through Nginx (port 80).
                 function getAvatarUrl(url) {
                     const defaultUrl = '/avatars/default_avatar.png';
                     if (!url) url = defaultUrl;
-                    // If url already absolute, return it
                     if (url.startsWith('http://') || url.startsWith('https://')) return url;
-                    // url is root-relative (e.g. /avatars/...) - if we're running on a non-standard port
-                    // (dev server), proxy to backend on port 8000. Otherwise use as-is (Nginx will handle it).
                     const port = window.location.port;
                     if (port && port !== '80' && port !== '443') {
                         return `${window.location.protocol}//${window.location.hostname}:8000${url}`;
@@ -278,7 +400,6 @@
                             if (res.ok) {
                                 messageDiv.style.color = '#00ff00';
                                 messageDiv.textContent = 'Registration successful!';
-                                // Use backend response to get userId and display_name
                                 setUser(data.username, data.display_name, data.id, data.avatar_url);
                                 setTimeout(() => {
                                     form.remove();
@@ -297,7 +418,6 @@
                         form.remove();
                     };
 
-                    // Ajoute le comportement du bouton Login
                     document.getElementById('show-login').onclick = function() {
                         form.remove();
                         showLogin();
@@ -305,7 +425,6 @@
                 }
             }
 
-            // Ajoute la fonction showLogin pour afficher un formulaire de connexion minimaliste
             function showLogin() {
                 if (!document.getElementById('login-form')) {
                     const form = document.createElement('form');
@@ -337,7 +456,6 @@
                             if (res.ok) {
                                 messageDiv.style.color = '#00ff00';
                                 messageDiv.textContent = 'Login successful!';
-                                // Use backend response to get userId and display_name
                                 setUser(data.username, data.display_name, data.id, data.avatar_url);
                                 setTimeout(() => {
                                     form.remove();
@@ -359,7 +477,6 @@
             }
 
             function showEditProfile(currentUsername, currentDisplayName) {
-                // Empêche d'ouvrir plusieurs formulaires
                 if (document.getElementById('edit-profile-form')) return;
 
                 const form = document.createElement('form');
@@ -389,7 +506,6 @@
                     messageDiv.textContent = '';
                     try {
                         const userId = window.currentUserId;
-                        // 1. Met à jour le display_name
                         if (display_name) {
                             const res = await fetch(`http://localhost:8000/api/users/${userId}`, {
                                 method: 'PUT',
@@ -403,7 +519,6 @@
                                 messageDiv.textContent = data.error || 'Update failed';
                             }
                         }
-                        // 2. Upload l'avatar si un fichier est sélectionné
                         if (avatarFile && updateOk) {
                             const formData = new FormData();
                             formData.append('avatar', avatarFile);
@@ -413,7 +528,6 @@
                             });
                             const dataAvatar = await resAvatar.json();
                             if (resAvatar.ok) {
-                                // resolve to absolute URL so image loads when frontend served on dev server
                                 function getAvatarUrl(url) {
                                     const defaultUrl = '/avatars/default_avatar.png';
                                     if (!url) url = defaultUrl;

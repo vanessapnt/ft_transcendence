@@ -221,10 +221,10 @@
                         const messageDiv = document.getElementById('signup-message');
                         messageDiv.textContent = '';
                         try {
-                            const res = await fetch('http://localhost:8000/api/register', {
+                            const res = await fetch('http://localhost:8000/api/auth/register', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ username, password, display_name })
+                                body: JSON.stringify({ username, email, password })
                             });
                             const data = await res.json();
                             if (res.ok) {
@@ -284,7 +284,7 @@
                         const messageDiv = document.getElementById('login-message');
                         messageDiv.textContent = '';
                         try {
-                            const res = await fetch('http://localhost:8000/api/login', {
+                            const res = await fetch('http://localhost:8000/api/auth/login', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ username, password })
@@ -354,10 +354,10 @@ function showEditProfile(currentUsername, currentDisplayName) {
             const userId = window.currentUserId;
             // 1. Met à jour le display_name
             if (display_name) {
-                const res = await fetch(`http://localhost:8000/api/users/${userId}`, {
+                const res = await fetch('http://localhost:8000/api/user/profile', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ display_name })
+                    body: JSON.stringify({ username: display_name })
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -370,7 +370,7 @@ function showEditProfile(currentUsername, currentDisplayName) {
             if (avatarFile && updateOk) {
                 const formData = new FormData();
                 formData.append('avatar', avatarFile);
-                const resAvatar = await fetch(`http://localhost:8000/api/users/${userId}/avatar`, {
+                const resAvatar = await fetch('http://localhost:8000/api/user/avatar', {
                     method: 'POST',
                     body: formData
                 });

@@ -59,169 +59,177 @@ services:
 
   # ==== Major module: Infrastructure setup for log management. ====
   # Elasticsearch (récupère tous les logs du projet)
-  # elasticsearch:
-  #   image:  docker.elastic.co/elasticsearch/elasticsearch:7.15.0
-  #   container_name: elasticsearch
-  #   restart: always
-  #   ports:
-  #     - "9200:9200"
-  #   environment:
-  #     - discovery.type=single-node
-  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-  #     - xpack.security.enabled=false
-  #     - logger.level=ERROR
-  #     - logger.org.elasticsearch=ERROR
-  #     - logger.discovery=ERROR
-  #   volumes:
-  #     - elasticsearch_data:/usr/share/elasticsearch/data
-  #   networks: 
-  #     - transcendence-network
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 60s
-  #     logging:
-  #       driver: "json-file"
-  #       options:
-  #         max-size: "10m"
-  #         max-file: "3"
+  elasticsearch:
+    image:  docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    container_name: elasticsearch
+    restart: always
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+      - logger.level=ERROR
+      - logger.org.elasticsearch=ERROR
+      - logger.discovery=ERROR
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks: 
+      - transcendence-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
   
   # Logstash (rend les logs plus clairs et riches)
-  # logstash:
-  #   image: docker.elastic.co/logstash/logstash:7.15.0
-  #   container_name: logstash
-  #   #restart: always
-  #   ports:
-  #     - "5044:5044"
-  #     - "5001:5000/tcp"
-  #     - "9600:9600"
-  #   environment:
-  #     LS_JAVA_OPTS: "-Xmx256m -Xms256m"
-  #     LOG_LEVEL: "error"
-  #   volumes:
-  #     - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:rw
-  #     - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
-  #   networks:
-  #     - transcendence-network
-  #   depends_on:
-  #     - elasticsearch
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "curl -f http://localhost:9600 || exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 60s
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.15.0
+    container_name: logstash
+    #restart: always
+    ports:
+      - "5044:5044"
+      - "5001:5000/tcp"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+      LOG_LEVEL: "error"
+    volumes:
+      - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:rw
+      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+    networks:
+      - transcendence-network
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Filebeat (collecte les logs Docker et les envoie à Logstash)
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.15.0
+    container_name: filebeat
+    user: root
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+    networks:
+      - transcendence-network
+    depends_on:
+      logstash:
+        condition: service_healthy
+    environment:
+      - LOG_LEVEL=error
+    restart: unless-stopped
   
   # Kibana (interface de visualisation des logs)
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:7.15.0
-  #   container_name: kibana
-  #   restart: always
-  #   ports: 
-  #     - "5601:5601"
-  #   environment:
-  #     ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-  #     SERVER_NAME: "transcendence-kibana"
-  #     LOGGING_QUIET: "true"
-  #     LOGGING_ROOT_LEVEL: "error"
-  #   volumes:
-  #     - kibana_data:/usr/share/kibana/data
-  #     - ./elk/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
-  #   networks:
-  #     - transcendence-network
-  #   depends_on:
-  #     elasticsearch:
-  #       condition: service_healthy  # ✅ Attendre qu'ES soit prêt
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 90s
-  #     logging:
-  #       driver: "json-file"
-  #       options:
-  #         max-size: "10m"
-  #         max-file: "3"
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.15.0
+    container_name: kibana
+    restart: always
+    ports: 
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      SERVER_NAME: "transcendence-kibana"
+      LOGGING_QUIET: "true"
+      LOGGING_ROOT_LEVEL: "error"
+    volumes:
+      - kibana_data:/usr/share/kibana/data
+      - ./elk/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    networks:
+      - transcendence-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy  # ✅ Attendre qu'ES soit prêt
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
 
   # Service d'initialisation automatique de Kibana
-  # kibana-init:
-  #   image: alpine/curl:latest
-  #   container_name: kibana-init
-  #   restart: "no"
-  #   environment:
-  #     - VERBOSE=${VERBOSE:-0}
-  #   volumes:
-  #     - ./elk/kibana/init-kibana.sh:/scripts/init-kibana.sh:ro
-  #   networks:
-  #     - transcendence-network
-  #   depends_on:
-  #     kibana:
-  #       condition: service_healthy
-  #   command: sh /scripts/init-kibana.sh
+  kibana-init:
+    image: alpine/curl:latest
+    container_name: kibana-init
+    restart: "no"
+    environment:
+      - VERBOSE=${VERBOSE:-0}
+    volumes:
+      - ./elk/kibana/init-kibana.sh:/scripts/init-kibana.sh:ro
+    networks:
+      - transcendence-network
+    depends_on:
+      kibana:
+        condition: service_healthy
+    command: sh /scripts/init-kibana.sh
 
-  # === Monitoring (module minor)
-  # prometheus:
-  #   image: prom/prometheus:latest
-  #   container_name: prometheus-prod
-  #   restart: unless-stopped
-  #   ports:
-  #     - "127.0.0.1:9090:9090"
-  #   volumes:
-  #     - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-  #     - prometheus_data:/prometheus
-  #   command:
-  #     - '--config.file=/etc/prometheus/prometheus.yml'
-  #     - '--storage.tsdb.path=/prometheus'
-  #     - '--web.console.libraries=/etc/prometheus/console_libraries'
-  #     - '--web.console.templates=/etc/prometheus/consoles'
-  #     - '--web.enable-lifecycle'
-  #     - '--log.level=warn'
-  #   networks:
-  #     - transcendence-network
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "3"
+    # === Monitoring (module minor)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--log.level=warn'
+    networks:
+      - transcendence-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # grafana:
-  #   image: grafana/grafana:latest
-  #   container_name: grafana-prod
-  #   restart: unless-stopped
-  #   ports:
-  #     - "127.0.0.1:3001:3000"
-  #   volumes:
-  #     - grafana_data:/var/lib/grafana
-  #     - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-  #     - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-  #   environment:
-  #     GF_SECURITY_ADMIN_USER: admin
-  #     GF_SECURITY_ADMIN_PASSWORD: transcendence123
-  #     GF_USERS_ALLOW_SIGN_UP: false
-  #     GF_LOG_LEVEL: warn
-  #   networks:
-  #     - transcendence-network
-  #     - prometheus
-  #   depends_on:
-  #     - prometheus
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "3"
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: transcendence123
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_LOG_LEVEL: warn
+    networks:
+      - transcendence-network
+      - prometheus
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 
   # node-exporter:
@@ -264,4 +272,6 @@ volumes:
 
 networks:
   transcendence-network:
+    driver: bridge
+  prometheus:
     driver: bridge

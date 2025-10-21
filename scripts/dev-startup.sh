@@ -11,16 +11,16 @@ BOLD='\033[1m'
 
 # Configuration (progression complète)
 SERVICES=(
-    "backend" "frontend" "nginx"
+    "backend" "frontend" "nginx" "elasticsearch" "logstash" "filebeat" "kibana" "prometheus" "grafana"
 )
 SERVICE_PORTS=(
-    "8000" "3000" "80"
+    "8000" "3000" "80" "9200" "9600" "N/A" "5601" "9090" "3001"
 )
 SERVICE_URLS=(
-    "http://localhost:8000" "http://localhost:3000" "http://localhost"
+    "http://localhost:8000" "http://localhost:3000" "http://localhost" "http://localhost:9200" "http://localhost:9600" "N/A" "http://localhost:5601" "http://localhost:9090" "http://localhost:3001"
 )
 SERVICE_NAMES=(
-    "Backend API" "Frontend App" "Nginx Proxy"
+    "Backend API" "Frontend App" "Nginx Proxy" "Elasticsearch" "Logstash" "Filebeat" "Kibana" "Prometheus" "Grafana"
 )
 
 print_header() {
@@ -85,8 +85,16 @@ check_service_health() {
     local service_name=$2
     local timeout=2
     
+    # Filebeat : vérifier que le conteneur est en cours d'exécution
+    if [[ "$service_name" == "Filebeat" ]]; then
+        status=$(docker ps --filter "name=filebeat" --format '{{.Status}}' | head -1)
+        if [[ "$status" == Up* ]]; then
+            return 0
+        else
+            return 1
+        fi
     # Logstash : vérifier l'API HTTP 9600
-    if [[ "$service_name" == "Logstash (Beats input)" ]]; then
+    elif [[ "$service_name" == "Logstash (Beats input)" ]]; then
         if curl -s --max-time $timeout http://localhost:9600 >/dev/null 2>&1; then
             return 0
         else

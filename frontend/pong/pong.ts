@@ -23,6 +23,7 @@ let onGameEndCallback: ((winner: string) => void) | null = null;
 
 let isGameRunning: boolean = false;
 let isPaused: boolean = false;
+let animationFrameId: number | null = null;
 
 interface Player {
     x: number;
@@ -32,21 +33,9 @@ interface Player {
     velocityY: number;
 }
 
-let player1: Player = {
-    x: 50,
-    y: (boardHeight / 2) - (playerHeight / 2),
-    width: playerWidth,
-    height: playerHeight,
-    velocityY: 0
-};
-
-let player2: Player = {
-    x: boardWidth - playerWidth - 50,
-    y: (boardHeight / 2) - (playerHeight / 2),
-    width: playerWidth,
-    height: playerHeight,
-    velocityY: 0
-};
+let player1: Player;
+let player2: Player;
+let ball: Ball;
 
 interface Ball {
     x: number;
@@ -57,14 +46,32 @@ interface Ball {
     velocityY: number;
 }
 
-let ball: Ball = {
-    x: (boardWidth / 2) - (ballWidth / 2),
-    y: (boardHeight / 2) - (ballHeight / 2),
-    width: ballWidth,
-    height: ballHeight,
-    velocityX: 2,
-    velocityY: 4
-};
+function initializeGameObjects(): void {
+    player1 = {
+        x: 50,
+        y: (boardHeight / 2) - (playerHeight / 2),
+        width: playerWidth,
+        height: playerHeight,
+        velocityY: 0
+    };
+
+    player2 = {
+        x: boardWidth - playerWidth - 50,
+        y: (boardHeight / 2) - (playerHeight / 2),
+        width: playerWidth,
+        height: playerHeight,
+        velocityY: 0
+    };
+
+    ball = {
+        x: (boardWidth / 2) - (ballWidth / 2),
+        y: (boardHeight / 2) - (ballHeight / 2),
+        width: ballWidth,
+        height: ballHeight,
+        velocityX: 2,
+        velocityY: 4
+    };
+}
 
 function togglePause(): void {
     if (!isGameRunning) return;
@@ -75,83 +82,43 @@ function togglePause(): void {
         showPauseMenu();
     } else {
         hidePauseMenu();
-        update();
     }
 }
 
 function showPauseMenu(): void {
     let pauseOverlay = document.getElementById('pause-overlay');
-    if (!pauseOverlay) {
-        pauseOverlay = document.createElement('div');
-        pauseOverlay.id = 'pause-overlay';
-        pauseOverlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        `;
-        
-        pauseOverlay.innerHTML = `
-            <h1 style="color: #00ff00; font-family: 'Press Start 2P', cursive; font-size: 3em; margin-bottom: 50px; text-shadow: 0 0 20px #00ff00;">PAUSED</h1>
-            <button id="resume-btn" style="font-family: 'Press Start 2P', cursive; font-size: 1.2em; padding: 20px 40px; margin: 15px; background: #00ff00; color: #000; border: none; border-radius: 10px; cursor: pointer; min-width: 250px;">
-                RESUME
-            </button>
-            <button id="menu-btn" style="font-family: 'Press Start 2P', cursive; font-size: 1.2em; padding: 20px 40px; margin: 15px; background: #ff4444; color: white; border: none; border-radius: 10px; cursor: pointer; min-width: 250px;">
-                MENU
-            </button>
-        `;
-        
-        document.body.appendChild(pauseOverlay);
-        
-        document.getElementById('resume-btn')!.onclick = () => {
-            togglePause();
-        };
-        
-        document.getElementById('menu-btn')!.onclick = () => {
-            if (confirm('Are you sure you want to quit to menu? Progress will be lost.')) {
-                hidePauseMenu();
-                isGameRunning = false;
-                isPaused = false;
-                (window as any).showHome();
-            }
-        };
+    if (pauseOverlay) {
+        pauseOverlay.classList.add('active');
     }
-    
-    pauseOverlay.style.display = 'flex';
 }
 
 function hidePauseMenu(): void {
     const pauseOverlay = document.getElementById('pause-overlay');
     if (pauseOverlay) {
-        pauseOverlay.style.display = 'none';
+        pauseOverlay.classList.remove('active');
     }
 }
 
-window.onload = function() {
-    board = document.getElementById("board") as HTMLCanvasElement;
-    if (!board)
-        return;
-    
-    board.height = boardHeight;
-    board.width = boardWidth;
-    context = board.getContext("2d")!;
-
+function setupEventListeners(): void {
     document.addEventListener("keydown", PlayerMoves);
     document.addEventListener("keyup", PlayerStops);
-};
+}
 
-function update(): void
-{
-    if (!isGameRunning || isPaused)
+function removeEventListeners(): void {
+    document.removeEventListener("keydown", PlayerMoves);
+    document.removeEventListener("keyup", PlayerStops);
+}
+
+function update(): void {
+    if (!isGameRunning)
         return;
-    requestAnimationFrame(update);
+    
+    if (isPaused) {
+        animationFrameId = requestAnimationFrame(update);
+        return;
+    }
+    
+    animationFrameId = requestAnimationFrame(update);
     context.clearRect(0, 0, board.width, board.height);
 
     context.fillStyle = "white";
@@ -167,15 +134,24 @@ function update(): void
 
     ball.x += ball.velocityX;
     ball.y += ball.velocityY;
-    context.fillRect(ball.x, ball.y, ballWidth, ballHeight);
 
-    if (outOfBounds(ball.y, ballHeight))
+    if (outOfBounds(ball.y, ballHeight)) {
         ball.velocityY *= -1;
+        if (ball.y <= 0) ball.y = 0;
+        if (ball.y + ballHeight >= boardHeight) ball.y = boardHeight - ballHeight;
+    }
 
-    if (detectCollision(ball, player1))
-            ball.velocityX *= -1;
-    else if (detectCollision(ball, player2))
-            ball.velocityX *= -1;
+    if (ball.x < boardWidth / 2 && detectCollision(ball, player1)) {
+        ball.velocityX = Math.abs(ball.velocityX);
+        ball.x = player1.x + player1.width;
+    }
+    
+    if (ball.x > boardWidth / 2 && detectCollision(ball, player2)) {
+        ball.velocityX = -Math.abs(ball.velocityX);
+        ball.x = player2.x - ball.width;
+    }
+
+    context.fillRect(ball.x, ball.y, ballWidth, ballHeight);
 
     if (ball.x < 0) {
         player2Score++;
@@ -196,11 +172,10 @@ function update(): void
     context.fillText(player2Score.toString(), boardWidth*4/5 - 45, 75);
 
     for (let i = 10; i < board.height; i += 25)
-        context.fillRect(board.width / 2 - 10, i, 5, 5); 
+        context.fillRect(board.width / 2 - 10, i, 5, 5);
 }
 
-function checkWinner(): void
-{
+function checkWinner(): void {
     if (player1Score >= WINNING_SCORE) {
         endGame(player1Name);
     } else if (player2Score >= WINNING_SCORE) {
@@ -234,8 +209,7 @@ function outOfBounds(yPosition: number, Height: number): boolean {
     return (yPosition <= 0 || yPosition + Height >= boardHeight);
 }
 
-function PlayerMoves(e: KeyboardEvent): void
-{
+function PlayerMoves(e: KeyboardEvent): void {
     if (e.code == "Space") {
         e.preventDefault();
         togglePause();
@@ -257,8 +231,7 @@ function PlayerMoves(e: KeyboardEvent): void
     }
 }
 
-function PlayerStops(e: KeyboardEvent): void
-{
+function PlayerStops(e: KeyboardEvent): void {
     if (e.code == "KeyW" || e.code == "KeyS") {
         player1.velocityY = 0;
     }
@@ -267,16 +240,22 @@ function PlayerStops(e: KeyboardEvent): void
     }
 }
 
-function detectCollision(a: Ball | Player, b: Ball | Player): boolean
-{
+function detectCollision(a: Ball | Player, b: Ball | Player): boolean {
     return a.x < b.x + b.width &&
            a.x + a.width > b.x &&
            a.y < b.y + b.height &&
            a.y + a.height > b.y;
 }
 
-function resetGame(direction: number): void
-{
+function isCollidingHorizontally(ball: Ball, player: Player): boolean {
+    const ballCenterX = ball.x + ball.width / 2;
+    const ballCenterY = ball.y + ball.height / 2;
+    const playerCenterY = player.y + player.height / 2;
+    
+    return Math.abs(ballCenterY - playerCenterY) < player.height / 2 + ball.height / 2;
+}
+
+function resetGame(direction: number): void {
     ball = {
         x: boardWidth/2,
         y: boardHeight/2,
@@ -287,19 +266,26 @@ function resetGame(direction: number): void
     };
 }
 
-class PongGame
-{
-    start(): void
-    {
+class PongGame {
+    start(): void {
+        board = document.getElementById("board") as HTMLCanvasElement;
+        if (!board) {
+            console.error("Canvas not found");
+            return;
+        }
+        
+        board.height = boardHeight;
+        board.width = boardWidth;
+        context = board.getContext("2d")!;
+
         player1Score = 0;
         player2Score = 0;
         isGameRunning = true;
         isPaused = false;
         
-        player1.y = (boardHeight / 2) - (playerHeight / 2);
-        player2.y = (boardHeight / 2) - (playerHeight / 2);
-        resetGame(1);
+        initializeGameObjects();
         
+        setupEventListeners();
         update();
     }
 
@@ -308,23 +294,29 @@ class PongGame
         player2Name = name2;
     }
 
+    resetPlayerNames(): void {
+        player1Name = "PLAYER 1";
+        player2Name = "PLAYER 2";
+    }
+
     onGameEnd(callback: (winner: string) => void): void {
         onGameEndCallback = callback;
     }
 
-    pause(): void {
+    stop(): void {
         isGameRunning = false;
-    }
-
-    resume(): void
-    {
-        if (!isGameRunning) {
-            isGameRunning = true;
-            update();
+        isPaused = false;
+        if (animationFrameId !== null) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
         }
+        removeEventListeners();
     }
 }
 
-(window as any).PongGame = new PongGame();
+if (!(window as any).PONG) {
+    (window as any).PONG = {};
+}
+(window as any).PONG.PongGame = new PongGame();
 
 })();

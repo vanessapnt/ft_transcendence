@@ -1,571 +1,125 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Pong</title>
-        <link rel="stylesheet" href="pong.css">
-        <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-        <script src="pong.js" defer></script>
-        <script src="pongAI.js" defer></script>
-        <script src="tournament.js" defer></script>
-        <style>
-            #home-view {
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                background: #000;
-                color: white;
-                font-family: 'Press Start 2P', cursive;
-                text-align: center;
-            }
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PONG</title>
+    <link rel="stylesheet" href="pong.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="user-info">
+        <!-- span : vide au départ et affiche dynamiquement le nom d'utilisateur -->
+        <span id="username-label"></span> 
+        <button id="edit-profile-btn">Edit Profile</button>
+        <button id="logout-btn">Logout</button>
+    </div>
 
-            #home-view h1 {
-                font-size: 4rem;
-                margin-bottom: 2rem;
-                color: #00ff00;
-                text-shadow: 0 0 10px #00ff00;
-            }
+    <div id="avatar-container">
+        <img id="avatar-img" src="default_avatar.png" alt="Avatar">
+    </div>
 
-            #home-view button {
-                font-family: 'Press Start 2P', cursive;
-                font-size: 1.2rem;
-                padding: 1rem 2rem;
-                background: #00ff00;
-                border: none;
-                border-radius: 10px;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                margin: 10px;
-            }
-
-            #home-view button:hover {
-                background: #00cc00;
-                transform: scale(1.05);
-            }
-
-            .signup-btn {
-                background: #0080ff !important;
-            }
-
-            .signup-btn:hover {
-                background: #0066cc !important;
-            }
-
-            #game-view, #tournament-view {
-                display: none;
-                background: #000;
-                min-height: 100vh;
-                color: #00ff00;
-                font-family: 'Press Start 2P', cursive;
-            }
-
-            #board {
-                display: block;
-                margin: 20px auto;
-            }
-
-            .menu-button {
-                font-family: 'Press Start 2P', cursive;
-                font-size: 0.8rem;
-                padding: 10px 20px;
-                background: #ff4444;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                margin-top: 20px;
-            }
-
-            .menu-button:hover {
-                background: #cc0000;
-            }
-
-            #tournament-view button {
-                font-family: 'Press Start 2P', cursive;
-                padding: 15px 30px;
-                margin: 10px;
-                background: #00ff00;
-                color: #000;
-                border: none;
-                border-radius: 10px;
-                cursor: pointer;
-                font-size: 1em;
-            }
-            
-            #tournament-view button:hover {
-                background: #00cc00;
-                transform: scale(1.05);
-            }
-
-            #pause-overlay button:hover {
-                transform: scale(1.05);
-                box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
-            }
-
-            #pause-overlay #resume-btn:hover {
-                background: #00cc00;
-            }
-
-            #pause-overlay #menu-btn:hover {
-                background: #cc0000;
-            }
-
-            .pause-hint {
-                position: absolute;
-                top: 10px;
-                left: 50%;
-                transform: translateX(-50%);
-                color: #00ff00;
-                font-family: 'Press Start 2P', cursive;
-                font-size: 0.7em;
-                opacity: 0.6;
-                z-index: 10;
-            }
-        </style>
-    </head>
-
-    <body>
-        <div id="user-info" style="position: absolute; top: 20px; right: 30px; color: #00ff00; font-family: 'Press Start 2P', cursive; font-size: 1em; display: none;">
-            <span id="username-label"></span>
-            <button id="edit-profile-btn" style="margin-left:20px; font-size:0.8em; background:#0080ff; color:white; border:none; border-radius:5px; padding:5px 15px; cursor:pointer; display:none;">Edit Profile</button>
-            <button id="logout-btn" style="margin-left:10px; font-size:0.8em; background:#ff4444; color:white; border:none; border-radius:5px; padding:5px 15px; cursor:pointer; display:none;">Logout</button>
-        </div>
-
-        <div id="avatar-container" style="position:absolute;top:20px;left:30px;">
-            <img id="avatar-img" src="default_avatar.png" style="width:48px;height:48px;border-radius:50%;border:2px solid #00ff00;display:none;">
-        </div>
-
-        <div id="home-view">
-            <h1>PONG</h1>
-            <button onclick="startGame()">START GAME</button>
-            <button onclick="configTournament()">TOURNAMENT</button>
+    <div id="home-view" class="screen active">
+        <h1>PONG</h1>
+        <div class="menu-buttons">
+            <button onclick="PONG.Nav.showModeSelection()">START GAME</button> <!--👍-->
+            <button onclick="PONG.Nav.showTournament()">TOURNAMENT</button> <!--👍-->
             <button class="signup-btn" onclick="showSignup()">SIGN UP</button>
         </div>
+    </div>
 
-        <div id="game-view">
-            <div class="pause-hint">Press SPACE to pause</div>
-            <canvas id="board"></canvas>
-            <div style="text-align: center;">
-                <button class="menu-button" onclick="showHome()">MENU</button>
+    <div id="mode-selection" class="screen">
+        <h1>SELECT MODE</h1>
+        <div class="mode-buttons">
+            <button id="mode-local">LOCAL 2 PLAYERS</button>
+            <button id="mode-ai">VS AI</button>
+            <button class="back-btn" onclick="PONG.Nav.showHome()">BACK</button>
+        </div>
+    </div>
+
+    <div id="game-view" class="screen">
+        <div class="pause-hint">Press SPACE to pause</div>
+        <canvas id="board"></canvas>
+        <button class="menu-button" onclick="PONG.Nav.showHome()">MENU</button>
+    </div>
+
+    <div id="tournament-view" class="screen">
+        <div id="tournament-selection" class="tournament-section active">
+            <h2>Select Number of Players</h2>
+            <div class="player-count-buttons">
+                <button onclick="PONG.Tournament.createTournament(2)">2 Players</button>
+                <button onclick="PONG.Tournament.createTournament(4)">4 Players</button>
+                <button onclick="PONG.Tournament.createTournament(8)">8 Players</button>
+            </div>
+            <button class="menu-button back-btn" onclick="PONG.Nav.showHome()">BACK TO MENU</button>
+        </div>
+
+        <div id="tournament-setup" class="tournament-section">
+            <h2>Enter Player Names</h2>
+            <div id="player-inputs-container"></div>
+            <button class="menu-button back-btn" onclick="PONG.Tournament.reset()">BACK</button>
+        </div>
+
+        <div id="tournament-status" class="tournament-section">
+            <div class="tournament-container">
+                <h1>TOURNAMENT STATUS</h1>
+                
+                <div class="tournament-next-match">
+                    <h2 id="next-match-title">NEXT MATCH</h2>
+                    <p class="match-versus" id="next-match-versus">
+                        Player 1 <span class="vs-text">VS</span> Player 2
+                    </p>
+                    <p class="match-controls" id="next-match-controls">
+                        Controls info
+                    </p>
+                </div>
+                
+                <div class="tournament-buttons">
+                    <button id="start-next-match-btn" class="tournament-btn-start">
+                        START MATCH
+                    </button>
+                    <button id="quit-tournament-btn" class="tournament-btn-quit">
+                        QUIT TOURNAMENT
+                    </button>
+                </div>
+
+                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;">Current Standings:</h3>
+                <div class="tournament-standings" id="standings-container"></div>
+                
+                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;">Match Results:</h3>
+                <div class="tournament-results" id="matches-container"></div>
             </div>
         </div>
 
-        <div id="tournament-view">
-            <h2 style="color: #00ff00; text-align: center; margin-top: 40px;">Select Number of Players</h2>
-            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 30px;">
-                <button onclick="Tournament.createTournament(2)">2 Players</button>
-                <button onclick="Tournament.createTournament(4)">4 Players</button>
-                <button onclick="Tournament.createTournament(8)">8 Players</button>
+        <div id="tournament-winner" class="tournament-section">
+            <div class="tournament-winner">
+                <h1>🏆 TOURNAMENT COMPLETE 🏆</h1>
+                <h2>WINNER: <span id="winner-name"></span></h2>
+                <p class="winner-score" id="winner-score">0 victories</p>
+                
+                <h3>Final Standings:</h3>
+                <div class="final-standings" id="final-standings-container"></div>
+
+                <button id="back-to-menu-btn" class="tournament-back-btn">
+                    BACK TO MENU
+                </button>
             </div>
-            <button class="menu-button" onclick="showHome()" style="display:block; margin:40px auto;">BACK TO MENU</button>
         </div>
+    </div>
 
-        <script>
-            function configTournament() {
-                document.getElementById('home-view').style.display = 'none';
-                document.getElementById('tournament-view').style.display = 'block';
-                window.history.pushState({page: "tournament"}, "", "#tournament");
-            }
+    <div id="pause-overlay" class="overlay">
+        <div class="overlay-content">
+            <h2>PAUSED</h2>
+            <button id="resume-btn">RESUME</button>
+            <button id="menu-btn" onclick="PONG.Nav.showHome()">MENU</button>
+        </div>
+    </div>
 
-            function startGame() {
-                showGameModeSelection();
-            }
-
-            function showGameModeSelection() {
-                document.getElementById('home-view').style.display = 'none';
-                let modeSelection = document.getElementById('mode-selection');
-                if (!modeSelection) {
-                    modeSelection = document.createElement('div');
-                    modeSelection.id = 'mode-selection';
-                    modeSelection.style.cssText = `
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                        align-items: center;
-                        height: 100vh;
-                        background: #000;
-                        color: #00ff00;
-                        font-family: 'Press Start 2P', cursive;
-                    `;
-                    
-                    modeSelection.innerHTML = `
-                        <h1 style="font-size: 3em; margin-bottom: 50px; text-shadow: 0 0 10px #00ff00;">SELECT MODE</h1>
-                        <button id="mode-local" style="font-family: 'Press Start 2P', cursive; font-size: 1.2em; padding: 20px 40px; margin: 20px; background: #00ff00; color: #000; border: none; border-radius: 10px; cursor: pointer; min-width: 300px;">
-                            LOCAL 2 PLAYERS
-                        </button>
-                        <button id="mode-ai" style="font-family: 'Press Start 2P', cursive; font-size: 1.2em; padding: 20px 40px; margin: 20px; background: #00ff00; color: #000; border: none; border-radius: 10px; cursor: pointer; min-width: 300px;">
-                            VS AI
-                        </button>
-                        <button id="mode-back" style="font-family: 'Press Start 2P', cursive; font-size: 1em; padding: 15px 30px; margin: 40px 20px 20px; background: #ff4444; color: white; border: none; border-radius: 10px; cursor: pointer;">
-                            BACK
-                        </button>
-                    `;
-                    
-                    document.body.appendChild(modeSelection);
-                    
-                    const buttons = modeSelection.querySelectorAll('button');
-                    buttons.forEach(btn => {
-                        btn.addEventListener('mouseenter', function() {
-                            if (this.id !== 'mode-back') {
-                                this.style.background = '#00cc00';
-                                this.style.transform = 'scale(1.05)';
-                            } else {
-                                this.style.background = '#cc0000';
-                                this.style.transform = 'scale(1.05)';
-                            }
-                        });
-                        btn.addEventListener('mouseleave', function() {
-                            if (this.id !== 'mode-back') {
-                                this.style.background = '#00ff00';
-                                this.style.transform = 'scale(1)';
-                            } else {
-                                this.style.background = '#ff4444';
-                                this.style.transform = 'scale(1)';
-                            }
-                        });
-                    });
-                    
-                    document.getElementById('mode-local').onclick = () => {
-                        launchGame('local');
-                    };
-                    
-                    document.getElementById('mode-ai').onclick = () => {
-                        launchGame('ai');
-                    };
-                    
-                    document.getElementById('mode-back').onclick = () => {
-                        modeSelection.style.display = 'none';
-                        document.getElementById('home-view').style.display = 'flex';
-                    };
-                }
-                
-                modeSelection.style.display = 'flex';
-            }
-
-            function launchGame(mode) {
-                const modeSelection = document.getElementById('mode-selection');
-                if (modeSelection) {
-                    modeSelection.style.display = 'none';
-                }
-                
-                document.getElementById('game-view').style.display = 'block';
-                window.history.pushState({page: "game"}, "", "#game");
-                
-                if (window.PongGame && window.PongGame.resetPlayerNames) {
-                    window.PongGame.resetPlayerNames();
-                }
-                
-                if (mode === 'ai') {
-                    window.currentGameMode = 'ai';
-                    if (window.PongGameAI) {
-                        window.PongGameAI.start();
-                    }
-                } else {
-                    window.currentGameMode = 'local';
-                    PongGame.start();
-                }
-            }
-
-            function showGame() {
-                document.getElementById('home-view').style.display = 'none';
-                document.getElementById('tournament-view').style.display = 'none';
-                document.getElementById('game-view').style.display = 'block';
-                window.history.pushState({page: "game"}, "", "#game");
-            }
-
-            function showHome() {
-                document.getElementById('game-view').style.display = 'none';
-                document.getElementById('tournament-view').style.display = 'none';
-                document.getElementById('home-view').style.display = 'flex';
-                window.history.pushState({page: "home"}, "", "#home");
-                
-                const pauseOverlay = document.getElementById('pause-overlay');
-                if (pauseOverlay) {
-                    pauseOverlay.style.display = 'none';
-                }
-                
-                if (window.Tournament) {
-                    window.Tournament.reset();
-                }
-                if (window.PongGame) {
-                    window.PongGame.resetPlayerNames();
-                }
-            }
-
-            window.addEventListener('popstate', function(event)
-            {
-                if (window.location.hash === '#home' || window.location.hash === '') {
-                    showHome();
-                } else if (window.location.hash === '#game') {
-                    showGame();
-                } else if (window.location.hash === '#tournament') {
-                    configTournament();
-                }
-            });
-
-            window.addEventListener('load', function() {
-                if (window.location.hash === '#game') {
-                    showGame();
-                } else {
-                    showHome();
-                }
-            });
-
-            function getAvatarUrl(url) {
-                const defaultUrl = '/avatars/default_avatar.png';
-                if (!url) url = defaultUrl;
-                if (url.startsWith('http://') || url.startsWith('https://')) return url;
-                const port = window.location.port;
-                if (port && port !== '80' && port !== '443') {
-                    return `${window.location.protocol}//${window.location.hostname}:8000${url}`;
-                }
-                return url;
-            }
-
-            function setUser(username, displayName, userId, avatarUrl) {
-                const userInfo = document.getElementById('user-info');
-                const usernameLabel = document.getElementById('username-label');
-                const logoutBtn = document.getElementById('logout-btn');
-                const editProfileBtn = document.getElementById('edit-profile-btn');
-                const signupBtn = document.querySelector('.signup-btn');
-                const avatarImg = document.getElementById('avatar-img');
-                usernameLabel.textContent = displayName ? `${displayName} (${username})` : username;
-                userInfo.style.display = 'block';
-                logoutBtn.style.display = 'inline-block';
-                editProfileBtn.style.display = 'inline-block';
-
-                if (signupBtn) signupBtn.style.display = 'none';
-                
-                window.currentUserId = userId;
-                window.currentAvatarUrl = avatarUrl;
-
-                function getAvatarUrl(url) {
-                    const defaultUrl = '/avatars/default_avatar.png';
-                    if (!url) url = defaultUrl;
-                    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-                    const port = window.location.port;
-                    if (port && port !== '80' && port !== '443') {
-                        return `${window.location.protocol}//${window.location.hostname}:8000${url}`;
-                    }
-                    return url;
-                }
-
-                avatarImg.src = getAvatarUrl(avatarUrl);
-                avatarImg.style.display = 'inline-block';
-                editProfileBtn.onclick = function() {
-                    showEditProfile(username, displayName);
-                };
-                logoutBtn.onclick = function() {
-                    userInfo.style.display = 'none';
-                    if (signupBtn) signupBtn.style.display = 'inline-block';
-                    avatarImg.style.display = 'none';
-                    window.currentAvatarUrl = null;
-                };
-            }
-            
-            function showSignup() {
-                if (!document.getElementById('signup-form')) {
-                    const form = document.createElement('form');
-                    form.id = 'signup-form';
-                    form.style.marginTop = '30px';
-                    form.innerHTML = `
-                        <h2>Sign Up</h2>
-                        <input type="text" id="signup-username" placeholder="Username" required style="margin:10px;padding:10px;font-size:1em;">
-                        <input type="password" id="signup-password" placeholder="Password" required style="margin:10px;padding:10px;font-size:1em;">
-                        <input type="text" id="signup-displayname" placeholder="Display Name" required style="margin:10px;padding:10px;font-size:1em;">
-                        <button type="submit" style="margin:10px;padding:10px 20px;font-size:1em;">Register</button>
-                        <button type="button" id="cancel-signup" style="margin:10px;padding:10px 20px;font-size:1em;">Cancel</button>
-                        <button type="button" id="show-login" style="margin:10px;padding:10px 20px;font-size:1em;background:#0080ff;color:white;">Login</button>
-                        <div id="signup-message" style="margin-top:10px;color:#ff4444;"></div>
-                    `;
-                    document.getElementById('home-view').appendChild(form);
-
-                    form.onsubmit = async function(e) {
-                        e.preventDefault();
-                        const username = document.getElementById('signup-username').value;
-                        const password = document.getElementById('signup-password').value;
-                        const display_name = document.getElementById('signup-displayname').value;
-                        const messageDiv = document.getElementById('signup-message');
-                        messageDiv.textContent = '';
-                        try {
-                            const res = await fetch('http://localhost:8000/api/register', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ username, password, display_name })
-                            });
-                            const data = await res.json();
-                            if (res.ok) {
-                                messageDiv.style.color = '#00ff00';
-                                messageDiv.textContent = 'Registration successful!';
-                                setUser(data.username, data.display_name, data.id, data.avatar_url);
-                                setTimeout(() => {
-                                    form.remove();
-                                }, 1500);
-                            } else {
-                                messageDiv.style.color = '#ff4444';
-                                messageDiv.textContent = data.error || 'Registration failed';
-                            }
-                        } catch (err) {
-                            messageDiv.style.color = '#ff4444';
-                            messageDiv.textContent = 'Server error';
-                        }
-                    };
-
-                    document.getElementById('cancel-signup').onclick = function() {
-                        form.remove();
-                    };
-
-                    document.getElementById('show-login').onclick = function() {
-                        form.remove();
-                        showLogin();
-                    };
-                }
-            }
-
-            function showLogin() {
-                if (!document.getElementById('login-form')) {
-                    const form = document.createElement('form');
-                    form.id = 'login-form';
-                    form.style.marginTop = '30px';
-                    form.innerHTML = `
-                        <h2>Login</h2>
-                        <input type="text" id="login-username" placeholder="Username" required style="margin:10px;padding:10px;font-size:1em;">
-                        <input type="password" id="login-password" placeholder="Password" required style="margin:10px;padding:10px;font-size:1em;">
-                        <button type="submit" style="margin:10px;padding:10px 20px;font-size:1em;">Login</button>
-                        <button type="button" id="cancel-login" style="margin:10px;padding:10px 20px;font-size:1em;">Cancel</button>
-                        <div id="login-message" style="margin-top:10px;color:#ff4444;"></div>
-                    `;
-                    document.getElementById('home-view').appendChild(form);
-
-                    form.onsubmit = async function(e) {
-                        e.preventDefault();
-                        const username = document.getElementById('login-username').value;
-                        const password = document.getElementById('login-password').value;
-                        const messageDiv = document.getElementById('login-message');
-                        messageDiv.textContent = '';
-                        try {
-                            const res = await fetch('http://localhost:8000/api/login', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ username, password })
-                            });
-                            const data = await res.json();
-                            if (res.ok) {
-                                messageDiv.style.color = '#00ff00';
-                                messageDiv.textContent = 'Login successful!';
-                                setUser(data.username, data.display_name, data.id, data.avatar_url);
-                                setTimeout(() => {
-                                    form.remove();
-                                }, 1500);
-                            } else {
-                                messageDiv.style.color = '#ff4444';
-                                messageDiv.textContent = data.error || 'Login failed';
-                            }
-                        } catch (err) {
-                            messageDiv.style.color = '#ff4444';
-                            messageDiv.textContent = 'Server error';
-                        }
-                    };
-
-                    document.getElementById('cancel-login').onclick = function() {
-                        form.remove();
-                    };
-                }
-            }
-
-            function showEditProfile(currentUsername, currentDisplayName) {
-                if (document.getElementById('edit-profile-form')) return;
-
-                const form = document.createElement('form');
-                form.id = 'edit-profile-form';
-                form.style.marginTop = '30px';
-                form.innerHTML = `
-                    <h2>Edit Profile</h2>
-                    <img id="edit-avatar-img" src="${getAvatarUrl(window.currentAvatarUrl)}" style="width:64px;height:64px;border-radius:50%;margin-bottom:10px;"><br>
-                    <label style="display:block;margin:10px 0 5px;">Avatar</label>
-                    <input type="file" id="edit-avatar" accept="image/*" style="margin:10px;">
-                    <label style="display:block;margin:10px 0 5px;">Username (non modifiable)</label>
-                    <input type="text" value="${currentUsername}" disabled style="margin:10px;padding:10px;font-size:1em;background:#222;color:#aaa;">
-                    <label style="display:block;margin:10px 0 5px;">Display Name</label>
-                    <input type="text" id="edit-displayname" value="${currentDisplayName}" required style="margin:10px;padding:10px;font-size:1em;">
-                    <button type="submit" style="margin:10px;padding:10px 20px;font-size:1em;">Save</button>
-                    <button type="button" id="cancel-edit-profile" style="margin:10px;padding:10px 20px;font-size:1em;">Cancel</button>
-                    <div id="edit-profile-message" style="margin-top:10px;color:#ff4444;"></div>
-                `;
-                document.getElementById('home-view').appendChild(form);
-
-                form.onsubmit = async function(e) {
-                    e.preventDefault();
-                    const display_name = document.getElementById('edit-displayname').value;
-                    const messageDiv = document.getElementById('edit-profile-message');
-                    const avatarFile = document.getElementById('edit-avatar').files[0];
-                    let updateOk = true;
-                    messageDiv.textContent = '';
-                    try {
-                        const userId = window.currentUserId;
-                        if (display_name) {
-                            const res = await fetch(`http://localhost:8000/api/users/${userId}`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ display_name })
-                            });
-                            const data = await res.json();
-                            if (!res.ok) {
-                                updateOk = false;
-                                messageDiv.style.color = '#ff4444';
-                                messageDiv.textContent = data.error || 'Update failed';
-                            }
-                        }
-                        if (avatarFile && updateOk) {
-                            const formData = new FormData();
-                            formData.append('avatar', avatarFile);
-                            const resAvatar = await fetch(`http://localhost:8000/api/users/${userId}/avatar`, {
-                                method: 'POST',
-                                body: formData
-                            });
-                            const dataAvatar = await resAvatar.json();
-                            if (resAvatar.ok) {
-                                function getAvatarUrl(url) {
-                                    const defaultUrl = '/avatars/default_avatar.png';
-                                    if (!url) url = defaultUrl;
-                                    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-                                    const port = window.location.port;
-                                    if (port && port !== '80' && port !== '443') {
-                                        return `${window.location.protocol}//${window.location.hostname}:8000${url}`;
-                                    }
-                                    return url;
-                                }
-                                document.getElementById('avatar-img').src = getAvatarUrl(dataAvatar.avatar_url);
-                                document.getElementById('edit-avatar-img').src = getAvatarUrl(dataAvatar.avatar_url);
-                                window.currentAvatarUrl = dataAvatar.avatar_url;
-                            } else {
-                                updateOk = false;
-                                messageDiv.style.color = '#ff4444';
-                                messageDiv.textContent = dataAvatar.error || 'Avatar upload failed';
-                            }
-                        }
-                        if (updateOk) {
-                            messageDiv.style.color = '#00ff00';
-                            messageDiv.textContent = 'Profile updated!';
-                            setTimeout(() => {
-                                form.remove();
-                                setUser(currentUsername, display_name, userId, window.currentAvatarUrl);
-                            }, 1000);
-                        }
-                    } catch (err) {
-                        messageDiv.style.color = '#ff4444';
-                        messageDiv.textContent = 'Server error';
-                    }
-                };
-
-                document.getElementById('cancel-edit-profile').onclick = function() {
-                    form.remove();
-                };
-            }
-
-        </script>
-    </body>
+    <!-- defer : script chargé en arrière-plan mais exécuté après le HTML -->
+    <script src="pong.js" defer></script>
+    <script src="pongAI.js" defer></script>
+    <script src="tournament.js" defer></script>
+    <script src="navigation.js" defer></script>
+    <script src="user.js" defer></script>
+</body>
 </html>

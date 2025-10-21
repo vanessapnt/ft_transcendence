@@ -23,8 +23,8 @@ let onGameEndCallback: ((winner: string) => void) | null = null;
 
 let isGameRunning: boolean = false;
 let isPaused: boolean = false;
-
 let predictedImpactY: number | null = null;
+let animationFrameId: number | null = null;
 
 interface Player {
     x: number;
@@ -83,64 +83,33 @@ function togglePause(): void {
 
 function showPauseMenu(): void {
     let pauseOverlay = document.getElementById('pause-overlay');
-    if (!pauseOverlay) {
-        pauseOverlay = document.createElement('div');
-        pauseOverlay.id = 'pause-overlay';
-        pauseOverlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        `;
-        
-        pauseOverlay.innerHTML = `
-            <h1 style="color: #00ff00; font-family: 'Press Start 2P', cursive; font-size: 3em; margin-bottom: 50px; text-shadow: 0 0 20px #00ff00;">PAUSED</h1>
-            <button id="resume-btn" style="font-family: 'Press Start 2P', cursive; font-size: 1.2em; padding: 20px 40px; margin: 15px; background: #00ff00; color: #000; border: none; border-radius: 10px; cursor: pointer; min-width: 250px;">
-                RESUME
-            </button>
-            <button id="menu-btn" style="font-family: 'Press Start 2P', cursive; font-size: 1.2em; padding: 20px 40px; margin: 15px; background: #ff4444; color: white; border: none; border-radius: 10px; cursor: pointer; min-width: 250px;">
-                MENU
-            </button>
-        `;
-        
-        document.body.appendChild(pauseOverlay);
-        
-        document.getElementById('resume-btn')!.onclick = () => {
-            togglePause();
-        };
-        
-        document.getElementById('menu-btn')!.onclick = () => {
-            if (confirm('Are you sure you want to quit to menu? Progress will be lost.')) {
-                hidePauseMenu();
-                isGameRunning = false;
-                isPaused = false;
-                (window as any).showHome();
-            }
-        };
+    if (pauseOverlay) {
+        pauseOverlay.classList.add('active');
     }
-    
-    pauseOverlay.style.display = 'flex';
 }
 
 function hidePauseMenu(): void {
     const pauseOverlay = document.getElementById('pause-overlay');
     if (pauseOverlay) {
-        pauseOverlay.style.display = 'none';
+        pauseOverlay.classList.remove('active');
     }
+}
+
+function setupEventListeners(): void {
+    document.addEventListener("keydown", PlayerMoves);
+    document.addEventListener("keyup", PlayerStops);
+}
+
+function removeEventListeners(): void {
+    document.removeEventListener("keydown", PlayerMoves);
+    document.removeEventListener("keyup", PlayerStops);
 }
 
 function update(): void {
     if (!isGameRunning || isPaused)
         return;
-    requestAnimationFrame(update);
     
+    animationFrameId = requestAnimationFrame(update);
     context.clearRect(0, 0, board.width, board.height);
 
     context.fillStyle = "white";
@@ -341,7 +310,10 @@ function findImpact(ball: Ball, player2: Player, board: HTMLCanvasElement): numb
 class PongGameAI {
     start(): void {
         board = document.getElementById("board") as HTMLCanvasElement;
-        if (!board) return;
+        if (!board) {
+            console.error("Canvas not found");
+            return;
+        }
         
         board.height = boardHeight;
         board.width = boardWidth;
@@ -360,19 +332,34 @@ class PongGameAI {
         
         resetGame(1);
 
-        document.removeEventListener("keydown", PlayerMoves);
-        document.removeEventListener("keyup", PlayerStops);
-        document.addEventListener("keydown", PlayerMoves);
-        document.addEventListener("keyup", PlayerStops);
+        removeEventListeners();
+        setupEventListeners();
         
         update();
+    }
+
+    setPlayerName(name: string): void {
+        player1Name = name;
     }
 
     onGameEnd(callback: (winner: string) => void): void {
         onGameEndCallback = callback;
     }
+
+    stop(): void {
+        isGameRunning = false;
+        isPaused = false;
+        if (animationFrameId !== null) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        removeEventListeners();
+    }
 }
 
-(window as any).PongGameAI = new PongGameAI();
+if (!(window as any).PONG) {
+    (window as any).PONG = {};
+}
+(window as any).PONG.PongGameAI = new PongGameAI();
 
 })();

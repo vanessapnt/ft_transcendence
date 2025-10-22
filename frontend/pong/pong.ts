@@ -25,6 +25,14 @@ let isGameRunning: boolean = false;
 let isPaused: boolean = false;
 let animationFrameId: number | null = null;
 
+// requestAnimationFrame(f) et cancelAnimationFrame(f) : méthodes de l’objet global window (Web API)
+// Implémentées par le moteur du navigateur (Chrome/Firefox/Safari…)
+
+
+// requestAnimationFrame(f) : demande au navigateur d’appeler la fonction f juste avant le prochain rafraîchissement d’écran (planifie une frame) et retourne un identifiant.
+// cancelAnimationFrame(id) : annule la requête d’animation planifiée correspondant à cet identifiant pour empêcher l’exécution du callback.
+
+
 interface Player {
     x: number;
     y: number;
@@ -109,7 +117,8 @@ function removeEventListeners(): void {
     document.removeEventListener("keyup", PlayerStops);
 }
 
-function update(): void {
+function update(): void
+{
     if (!isGameRunning)
         return;
     
@@ -303,11 +312,13 @@ class PongGame {
         onGameEndCallback = callback;
     }
 
-    stop(): void {
+    stop(): void
+    {
         isGameRunning = false;
         isPaused = false;
-        if (animationFrameId !== null) {
-            cancelAnimationFrame(animationFrameId);
+        if (animationFrameId !== null)
+        {
+            cancelAnimationFrame(animationFrameId); // prend l’identifiant et annule la requête côté navigateur
             animationFrameId = null;
         }
         removeEventListeners();

@@ -346,10 +346,12 @@ class PongGameAI {
         onGameEndCallback = callback;
     }
 
-    stop(): void {
+    stop(): void
+    {
         isGameRunning = false;
         isPaused = false;
-        if (animationFrameId !== null) {
+        if (animationFrameId !== null)
+        {
             cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
         }

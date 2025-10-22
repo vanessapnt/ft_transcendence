@@ -8,15 +8,19 @@ class Navigation
     // ScreenId est un type personnalisé qui restreint les valeurs possibles sinon erreur de compilation
     private currentScreen: ScreenId = 'home-view';
 
-    constructor() {
+    constructor()
+    {
         this.init();
     }
 
-    private init(): void {
+    private init(): void
+    {
+        // DOMContentLoaded : les fonctions sont appelées une fois que le DOM est entièrement chargé
+        // DOM : représentation en arbre du document HTML  accessible via l'objet global document
         document.addEventListener('DOMContentLoaded', () => {
-            this.setupModeSelectionButtons();
+            this.bindGameModeBtns();
             this.setupBrowserNavigation();
-            this.handleInitialRoute();
+            this.handleRouteChange();
             console.log('✅ Navigation initialized');
         });
     }
@@ -40,10 +44,12 @@ class Navigation
             console.error(`Screen not found: ${screenId}`);
     }
 
-    showHome(): void {
+    showHome(): void
+    {
         this.showScreen('home-view');
         window.history.pushState({ page: 'home' }, '', '#home');
         
+        // pour l'appel depuis pause overlay
         this.hidePauseOverlay();
         this.stopGames();
     }
@@ -97,69 +103,61 @@ class Navigation
         }
     }
 
-    private hidePauseOverlay(): void {
+    private hidePauseOverlay(): void
+    {
         const pauseOverlay = document.getElementById('pause-overlay');
         if (pauseOverlay) {
             pauseOverlay.classList.remove('active');
         }
     }
 
-    private stopGames(): void {
+    private stopGames(): void
+    {
         const gameModule = (window as any).PONG;
         
-        if (gameModule?.PongGame?.stop) {
+        if (gameModule?.PongGame?.stop)
             gameModule.PongGame.stop();
-        }
-        
-        if (gameModule?.PongGameAI?.stop) {
+
+        if (gameModule?.PongGameAI?.stop)
             gameModule.PongGameAI.stop();
-        }
     }
 
-    private setupModeSelectionButtons(): void {
+    // arrow function : this reste lié au contexte englobant (Navigation)
+    // fonction normale : this serait lié à l'élément déclencheur de l'événement (bouton)
+    private bindGameModeBtns(): void
+    {
         const localBtn = document.getElementById('mode-local');
         const aiBtn = document.getElementById('mode-ai');
         
-        if (localBtn) {
-            localBtn.onclick = () => this.launchGame('local');
-        }
-        
-        if (aiBtn) {
-            aiBtn.onclick = () => this.launchGame('ai');
-        }
+        localBtn?.addEventListener('click', () => this.launchGame('local'));
+        aiBtn?.addEventListener('click', () => this.launchGame('ai'));
     }
 
-    private setupBrowserNavigation(): void {
+    private setupBrowserNavigation(): void
+    {
+        //popstate : pop() sur la pile d'historique (back/forward)
         window.addEventListener('popstate', () => {
-            const hash = window.location.hash;
-            
-            if (hash === '#home' || hash === '') {
-                this.showHome();
-            } else if (hash === '#game') {
-                this.showGame();
-            } else if (hash === '#tournament') {
-                this.showTournament();
-            } else if (hash === '#mode') {
-                this.showModeSelection();
-            }
+            this.handleRouteChange();
         });
     }
 
-    private handleInitialRoute(): void{
+    private handleRouteChange(): void
+    {
         const hash = window.location.hash;
         
-        if (hash === '#game') {
+        if (hash === '#home' || hash === '') {
+            this.showHome();
+        } else if (hash === '#game') {
             this.showGame();
         } else if (hash === '#tournament') {
             this.showTournament();
         } else if (hash === '#mode') {
             this.showModeSelection();
-        } else {
-            this.showHome();
         }
     }
 
-    getCurrentScreen(): ScreenId {
+    getCurrentScreen(): ScreenId
+    {
         return this.currentScreen;
     }
 }

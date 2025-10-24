@@ -1,6 +1,6 @@
 # Makefile pour le projet transcendence
 
-.PHONY: dev prod stop build clean logs help
+.PHONY: dev prod stop build clean logs logs-prod help
 .ONESHELL:
 
 # Commandes par défaut
@@ -14,7 +14,8 @@ help:
 	@echo "║  make stop        → Arrêter les services          ║"
 	@echo "║  make build       → Rebuilder les images          ║"
 	@echo "║  make clean       → Nettoyer tout (volumes inclus)║"
-	@echo "║  make logs        → Afficher les logs             ║"
+	@echo "║  make logs        → Afficher les logs (dev)       ║"
+	@echo "║  make logs-prod   → Afficher les logs (prod)      ║"
 	@echo "║  make links       → Afficher tous les liens       ║"
 	@echo "║  make reset-db    → Supprimer la DB et relancer   ║"
 	@echo "╚═══════════════════════════════════════════════════╝"
@@ -24,7 +25,6 @@ dev-verbose: ## 🚀 Lance l'environnement de développement avec logs détaill�
 	@echo "🔧 Démarrage de l'environnement de développement (mode verbose)..."
 	@VERBOSE=1 docker-compose -f docker-compose.dev.yml up --build
 
-dev: ## 🚀 Lance l'environnement de développement avec monitoring
 dev: ## 🚀 Lance l'environnement de développement avec monitoring
 	@echo "🔧 Démarrage de l'environnement de développement..."
 	@sh -lc '\
@@ -51,33 +51,25 @@ wait $$DC_PID || true'
 # Mode production
 prod:
 	@echo "🚀 Démarrage en mode production..."
-	@sh -lc '\
-docker-compose -f docker-compose.dev.yml up -d --build > /dev/null 2>&1 &\
-DC_PID=$$!;\
-i=0;\
-echo "";\
-echo "⏳ Démarrage des services...";\
-while kill -0 $$DC_PID 2>/dev/null; do\
-  case $$((i % 3)) in\
-    0) c="|" ;;\
-    1) c="/" ;;\
-    2) c="-" ;;\
-  esac;\
-  printf "\\r  %s " "$$c" 2>/dev/null || true;\
-  i=$$((i+1));\
-  sleep 0.2;\
-done;\
-wait $$DC_PID || true'
-	@docker-compose -f docker-compose.prod.yml up -d --build > /dev/null 2>&1 || true
+	@docker-compose -f docker-compose.prod.yml up -d --build
 	@./scripts/prod-startup.sh
 
-# Arrêter les services
+# # Logs production
+# logs-prod:
+# 	docker-compose -f docker-compose.prod.yml logs -f
+
+# Build production
+build-prod:
+	@echo "🔨 Reconstruction des images (prod)..."
+	docker-compose -f docker-compose.prod.yml build --no-cache
+
+# Arrêter les services (dev et prod)
 stop:
 	@echo "🛑 Arrêt des services..."
 	-docker-compose -f docker-compose.dev.yml down 2>/dev/null
 	-docker-compose -f docker-compose.prod.yml down 2>/dev/null
 
-# Supprimer la base de données
+# Supprimer la base de données (dev)
 reset-db: ## 🗑️ Supprime la base de données et relance le dev
 	@echo "🗑️ Suppression de la base de données..."
 	@docker-compose -f docker-compose.dev.yml down -v
@@ -89,12 +81,12 @@ reset-db: ## 🗑️ Supprime la base de données et relance le dev
 	@echo "🔄 Relance du mode développement..."
 	@make dev
 
-# Rebuilder les images
+# Rebuilder les images (dev)
 build:
-	@echo "🔨 Reconstruction des images..."
+	@echo "🔨 Reconstruction des images (dev)..."
 	docker-compose -f docker-compose.dev.yml build --no-cache
 
-# Nettoyer tout
+# Nettoyer tout (dev et prod)
 clean:
 	@echo "🧹 Nettoyage complet..."
 	-docker-compose -f docker-compose.dev.yml down -v --remove-orphans 2>/dev/null
@@ -102,9 +94,13 @@ clean:
 	docker system prune -f
 	@echo "✨ Nettoyage terminé !"
 
-# Afficher les logs
+# Afficher les logs (dev)
 logs:
 	docker-compose -f docker-compose.dev.yml logs -f
+
+# # Afficher les logs (prod)
+# logs-prod:
+# 	docker-compose -f docker-compose.prod.yml logs -f
 
 # Afficher tous les liens disponibles
 links:

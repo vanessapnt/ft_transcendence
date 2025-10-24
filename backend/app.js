@@ -27,7 +27,8 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Set to true in production with HTTPS
+    sameSite: 'lax', // 'lax' si frontend et backend même domaine/port, sinon 'none'
+    secure: false,   // true si HTTPS
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
@@ -48,10 +49,10 @@ passport.deserializeUser((id, done) => {
 
 // GitHub OAuth Strategy
 passport.use(new GitHubStrategy({
-    clientID: process.env.GITHUB_CLIENT_ID,
-    clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost/api/oauth/callback/github"
-  },
+  clientID: process.env.GITHUB_CLIENT_ID,
+  clientSecret: process.env.GITHUB_CLIENT_SECRET,
+  callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost/api/oauth/callback/github"
+},
   (accessToken, refreshToken, profile, done) => {
     try {
       // Check if user already exists with this GitHub ID
@@ -74,7 +75,7 @@ passport.use(new GitHubStrategy({
       // Create new user
       const username = profile.username || profile.displayName || `github_${profile.id}`;
       const email = profile.emails && profile.emails.length > 0 ?
-                   profile.emails[0].value : `${profile.id}@github.local`;
+        profile.emails[0].value : `${profile.id}@github.local`;
 
       const result = statements.createUser.run(
         username,
@@ -103,7 +104,7 @@ app.get('/api/oauth/callback/github',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
     // Successful authentication
-    res.redirect('http://localhost'); // Redirect to frontend (port 80)
+    res.redirect('http://localhost:8080');
   }
 );
 

@@ -17,10 +17,10 @@ passport.deserializeUser((id, done) => {
 
 // GitHub OAuth Strategy
 passport.use(new GitHubStrategy({
-    clientID: process.env.GITHUB_CLIENT_ID,
-    clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost:8000/api/oauth/callback/github"
-  },
+  clientID: process.env.GITHUB_CLIENT_ID,
+  clientSecret: process.env.GITHUB_CLIENT_SECRET,
+  callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost:8000/api/oauth/callback/github"
+},
   (accessToken, refreshToken, profile, done) => {
     try {
       // Check if user already exists with this GitHub ID
@@ -43,8 +43,9 @@ passport.use(new GitHubStrategy({
 
       // Create new user
       const username = profile.username || profile.displayName || `github_${profile.id}`;
+      const displayName = profile.displayName || profile.username || `github_${profile.id}`;
       const email = profile.emails && profile.emails.length > 0 ?
-                   profile.emails[0].value : `${profile.id}@github.local`;
+        profile.emails[0].value : `${profile.id}@github.local`;
 
       const result = statements.createUser.run(
         username,
@@ -52,6 +53,15 @@ passport.use(new GitHubStrategy({
         null, // no password for OAuth users
         'github',
         profile.id
+      );
+
+      // Ajoute le display_name juste après la création
+      statements.updateUserWithDisplayName.run(
+        username,
+        email,
+        null, // avatar_path
+        displayName,
+        result.lastInsertRowid
       );
 
       user = statements.getUserById.get(result.lastInsertRowid);
@@ -73,7 +83,7 @@ router.get('/callback/github',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
     // Successful authentication
-    res.redirect('http://localhost:3000'); // Redirect to frontend
+    res.redirect('http://localhost:8080');
   }
 );
 

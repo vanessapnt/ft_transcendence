@@ -12,9 +12,6 @@ BOLD='\033[1m'
 # Correction automatique des permissions ELK
 ./scripts/fix-elk-perms.sh
 
-# Lancement de la stack Docker Compose (dev)
-docker-compose -f docker-compose.dev.yml up --build
-
 # Configuration (progression complète)
 SERVICES=(
     "backend" "frontend" "nginx" "elasticsearch" "logstash" "filebeat" "kibana" "prometheus" "grafana"

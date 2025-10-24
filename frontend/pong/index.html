@@ -138,9 +138,7 @@
         }
 
         function oauthLogin() {
-            const target = '/api/oauth/login/github';
-            const fullUrl = 'http://localhost:8080' + target;
-            window.location.assign(fullUrl);
+            window.location.assign('/api/oauth/login/github');
         }
 
         // Debug: Vérifier la visibilité du bouton OAuth au chargement

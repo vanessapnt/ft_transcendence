@@ -37,6 +37,14 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Synchronise la session pour les utilisateurs OAuth (GitHub)
+app.use((req, res, next) => {
+  if (req.user && !req.session.userId) {
+    req.session.userId = req.user.id;
+  }
+  next();
+});
+
 // Passport serialization
 passport.serializeUser((user, done) => {
   done(null, user.id);

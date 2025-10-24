@@ -43,9 +43,9 @@ passport.use(new GitHubStrategy({
 
       // Create new user
       const username = profile.username || profile.displayName || `github_${profile.id}`;
-      const displayName = profile.displayName || profile.username || `github_${profile.id}`;
       const email = profile.emails && profile.emails.length > 0 ?
         profile.emails[0].value : `${profile.id}@github.local`;
+      const avatarUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
 
       const result = statements.createUser.run(
         username,
@@ -55,12 +55,12 @@ passport.use(new GitHubStrategy({
         profile.id
       );
 
-      // Ajoute le display_name juste après la création
+      // Ajoute le display_name et l'avatar juste après la création
       statements.updateUserWithDisplayName.run(
         username,
         email,
-        null, // avatar_path
-        displayName,
+        avatarUrl, // avatar_path
+        profile.displayName || username,
         result.lastInsertRowid
       );
 

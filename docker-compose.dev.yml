@@ -115,10 +115,12 @@ services:
     image: docker.elastic.co/beats/filebeat:7.15.0
     container_name: filebeat
     user: root
+    entrypoint: [ "/usr/share/filebeat/filebeat-entrypoint.sh" ]
     volumes:
       # - /var/lib/docker/containers:/var/lib/docker/containers:ro  # Désactivé: rootless Docker
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./elk/filebeat/filebeat-entrypoint.sh:/usr/share/filebeat/filebeat-entrypoint.sh:ro
     networks:
       - transcendence-network
     depends_on:

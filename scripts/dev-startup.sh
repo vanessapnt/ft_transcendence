@@ -14,10 +14,10 @@ SERVICES=(
     "backend" "frontend" "nginx" "elasticsearch" "logstash" "filebeat" "kibana" "prometheus" "grafana"
 )
 SERVICE_PORTS=(
-    "8000" "3000" "80" "9200" "9600" "N/A" "5601" "9090" "3001"
+    "8000" "3000" "8080" "9200" "9600" "N/A" "5601" "9090" "3001"
 )
 SERVICE_URLS=(
-    "http://localhost:8000" "http://localhost:3000" "http://localhost" "http://localhost:9200" "http://localhost:9600" "N/A" "http://localhost:5601" "http://localhost:9090" "http://localhost:3001"
+    "http://localhost:8000" "http://localhost:3000" "http://localhost:8080" "http://localhost:9200" "http://localhost:9600" "N/A" "http://localhost:5601" "http://localhost:9090" "http://localhost:3001"
 )
 SERVICE_NAMES=(
     "Backend API" "Frontend App" "Nginx Proxy" "Elasticsearch" "Logstash" "Filebeat" "Kibana" "Prometheus" "Grafana"
@@ -100,9 +100,9 @@ check_service_health() {
         else
             return 1
         fi
-    # Nginx : vérifier port 80
+    # Nginx : vérifier port 8080
     elif [[ "$service_name" == "Nginx Proxy" ]]; then
-        if curl -s --max-time $timeout http://localhost >/dev/null 2>&1; then
+        if curl -s --max-time $timeout http://localhost:8080 >/dev/null 2>&1; then
             return 0
         else
             return 1
@@ -191,7 +191,7 @@ show_service_links() {
     echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
     
     local app_name="🌐 Transcendence Game (Complet)"
-    local app_url="http://localhost"
+    local app_url="http://localhost:8080"
     local app_desc="Jeu Pong + Authentification GitHub"
     local app_status_icon="🟢"
     local app_status_text="ONLINE"
@@ -278,7 +278,7 @@ show_service_links() {
     
     # Footer avec conseils
     echo -e "${BOLD}${GREEN}🎉 Prêt à jouer !${NC}"
-    echo -e "${GREEN}   → Ouvrez ${BOLD}http://localhost${NC}${GREEN} dans votre navigateur${NC}"
+    echo -e "${GREEN}   → Ouvrez ${BOLD}http://localhost:8080${NC}${GREEN} dans votre navigateur${NC}"
     echo -e "${GREEN}   → Cliquez sur ${BOLD}'Login with GitHub'${NC}${GREEN} pour commencer${NC}"
     echo ""
     echo -e "${BLUE}💡 Conseils:${NC}"

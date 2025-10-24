@@ -18,8 +18,8 @@ services:
   nginx:
     build: ./nginx
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     depends_on:
       - frontend
       - backend
@@ -44,10 +44,10 @@ services:
     container_name: elasticsearch-prod
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9200:9200"  
+      - "127.0.0.1:9200:9200"
     environment:
       - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g" 
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
       - xpack.security.enabled=false
       - cluster.name=transcendence-prod
       - node.name=transcendence-node-prod
@@ -57,7 +57,7 @@ services:
     networks:
       - transcendence-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -74,11 +74,11 @@ services:
     container_name: logstash-prod
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5044:5044"  # Beats input (localhost seulement)
-      - "127.0.0.1:5001:5000/tcp"  # TCP input (localhost seulement)
-      - "127.0.0.1:9600:9600"  # API Logstash (localhost seulement)
+      - "127.0.0.1:5044:5044" # Beats input (localhost seulement)
+      - "127.0.0.1:5001:5000/tcp" # TCP input (localhost seulement)
+      - "127.0.0.1:9600:9600" # API Logstash (localhost seulement)
     environment:
-      LS_JAVA_OPTS: "-Xmx512m -Xms512m"  # Plus de RAM en prod
+      LS_JAVA_OPTS: "-Xmx512m -Xms512m" # Plus de RAM en prod
       LOG_LEVEL: "warn"
     volumes:
       - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
@@ -89,7 +89,7 @@ services:
       elasticsearch:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9600 || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:9600 || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -102,33 +102,33 @@ services:
 
   # Kibana (interface de visualisation des logs)
   kibana:
-      image: docker.elastic.co/kibana/kibana:7.15.0
-      container_name: kibana-prod
-      restart: unless-stopped
-      ports:
-        - "127.0.0.1:5601:5601"
-      environment:
-        ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-        SERVER_NAME: "transcendence-kibana-prod"
-        LOGGING_QUIET: "true"
-        ELASTICSEARCH_USERNAME: ""
-        ELASTICSEARCH_PASSWORD: ""
-      networks:
-        - transcendence-network
-      depends_on:
-        elasticsearch:
-          condition: service_healthy
-      healthcheck:
-        test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
-        interval: 30s
-        timeout: 10s
-        retries: 3
-        start_period: 90s
-      logging:
-        driver: "json-file"
-        options:
-          max-size: "10m"
-          max-file: "3"
+    image: docker.elastic.co/kibana/kibana:7.15.0
+    container_name: kibana-prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      SERVER_NAME: "transcendence-kibana-prod"
+      LOGGING_QUIET: "true"
+      ELASTICSEARCH_USERNAME: ""
+      ELASTICSEARCH_PASSWORD: ""
+    networks:
+      - transcendence-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # === Monitoring (module minor)
   prometheus:
@@ -150,7 +150,7 @@ services:
     networks:
       - transcendence-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -180,7 +180,7 @@ services:
     depends_on:
       - prometheus
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -194,13 +194,13 @@ services:
     image: prom/node-exporter:latest
     container_name: node-exporter-prod
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:9100:9100"
+    # ports:
+    #   - "127.0.0.1:9100:9100"
     volumes:
       # ⚠️ Accès aux infos système du HOST
-      - /proc:/host/proc:ro          # ← Processus système
-      - /sys:/host/sys:ro            # ← Infos hardware
-      - /:/rootfs:ro                 # ← Filesystem complet
+      - /proc:/host/proc:ro # ← Processus système
+      - /sys:/host/sys:ro # ← Infos hardware
+      - /:/rootfs:ro # ← Filesystem complet
     command:
       # Configuration pour Docker
       - '--path.procfs=/host/proc'
@@ -211,7 +211,7 @@ services:
     networks:
       - transcendence-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -241,7 +241,7 @@ volumes:
     driver: local
   prometheus_data:
     driver: local
-  grafana_data: 
+  grafana_data:
     driver: local
 
 networks:

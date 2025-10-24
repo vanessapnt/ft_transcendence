@@ -24,6 +24,7 @@ const createTables = () => {
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT,
       avatar_path TEXT,
+      display_name TEXT,
       oauth_provider TEXT,
       oauth_id TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -46,6 +47,16 @@ const createTables = () => {
 // Initialize database
 createTables();
 
+// Add display_name column if missing (migration)
+try {
+  db.prepare('ALTER TABLE users ADD COLUMN display_name TEXT').run();
+  console.log('✅ Migrated: Added display_name column');
+} catch (e) {
+  if (!String(e).includes('duplicate column name')) {
+    console.error('Migration error:', e);
+  }
+}
+
 // Prepared statements for better performance
 const statements = {
   // User operations
@@ -62,6 +73,12 @@ const statements = {
   updateUser: db.prepare(`
     UPDATE users
     SET username = ?, email = ?, avatar_path = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `),
+
+  updateUserWithDisplayName: db.prepare(`
+    UPDATE users
+    SET username = ?, email = ?, avatar_path = ?, display_name = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `),
 

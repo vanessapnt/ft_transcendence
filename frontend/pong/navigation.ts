@@ -61,7 +61,8 @@ class Navigation
         // ajoute l'état mode à l'historique pour la flèche back + met à jour l'URL sans recharger la page
     }
 
-    showGame(): void {
+    showGame(): void
+    {
         this.showScreen('game-view');
         window.history.pushState({ page: 'game' }, '', '#game');
     }
@@ -137,6 +138,7 @@ class Navigation
     {
         //popstate : pop() sur la pile d'historique (back/forward)
         window.addEventListener('popstate', () => {
+            this.stopGames(); // Arrête les jeux en cours lors de la navigation (sinon vitesse de balle * 2 à chaque relance jeu car 2 boucles update actives)
             this.handleRouteChange();
         });
     }

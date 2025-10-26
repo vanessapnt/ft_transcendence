@@ -19,7 +19,7 @@ let player2Name: string = "PLAYER 2";
 
 const WINNING_SCORE: number = 5;
 
-let onGameEndCallback: ((winner: string) => void) | null = null;
+let GameEndCallback: ((winner: string) => void) | null = null; // par defaut null mais on peut lui assigner callback(Tournament.onMatchEnd)
 
 let isGameRunning: boolean = false;
 let isPaused: boolean = false;
@@ -27,13 +27,11 @@ let animationFrameId: number | null = null;
 
 // requestAnimationFrame(f) et cancelAnimationFrame(f) : méthodes de l’objet global window (Web API)
 // Implémentées par le moteur du navigateur (Chrome/Firefox/Safari…)
+// requestAnimationFrame(f) : demande au navigateur d’appeler la fonction f juste avant le prochain rafraîchissement d’écran (planifie une frame) et retourne l'identifiant de la requête.
+// cancelAnimationFrame(id) : annule la requête d’animation planifiée correspondant à cet identifiant pour arreter la boucle de jeu.
 
-
-// requestAnimationFrame(f) : demande au navigateur d’appeler la fonction f juste avant le prochain rafraîchissement d’écran (planifie une frame) et retourne un identifiant.
-// cancelAnimationFrame(id) : annule la requête d’animation planifiée correspondant à cet identifiant pour empêcher l’exécution du callback.
-
-
-interface Player {
+interface Player
+{
     x: number;
     y: number;
     width: number;
@@ -41,11 +39,8 @@ interface Player {
     velocityY: number;
 }
 
-let player1: Player;
-let player2: Player;
-let ball: Ball;
-
-interface Ball {
+interface Ball
+{
     x: number;
     y: number;
     width: number;
@@ -54,17 +49,22 @@ interface Ball {
     velocityY: number;
 }
 
-function initializeGameObjects(): void {
+let player1: Player;
+let player2: Player;
+let ball: Ball;
+
+function initializeGameObjects(): void
+{
     player1 = {
         x: 50,
         y: (boardHeight / 2) - (playerHeight / 2),
         width: playerWidth,
         height: playerHeight,
-        velocityY: 0
+        velocityY: 0 // uniquement changé par playerMoves()
     };
 
     player2 = {
-        x: boardWidth - playerWidth - 50,
+        x: boardWidth - 50 - playerWidth,
         y: (boardHeight / 2) - (playerHeight / 2),
         width: playerWidth,
         height: playerHeight,
@@ -81,26 +81,29 @@ function initializeGameObjects(): void {
     };
 }
 
-function togglePause(): void {
-    if (!isGameRunning) return;
+function switchPause(): void
+{
+    if (!isGameRunning)
+        return;
     
     isPaused = !isPaused;
     
-    if (isPaused) {
+    if (isPaused)
         showPauseMenu();
-    } else {
+    else
         hidePauseMenu();
-    }
 }
 
-function showPauseMenu(): void {
-    let pauseOverlay = document.getElementById('pause-overlay');
+function showPauseMenu(): void
+{
+    const pauseOverlay = document.getElementById('pause-overlay');
     if (pauseOverlay) {
         pauseOverlay.classList.add('active');
     }
 }
 
-function hidePauseMenu(): void {
+function hidePauseMenu(): void
+{
     const pauseOverlay = document.getElementById('pause-overlay');
     if (pauseOverlay) {
         pauseOverlay.classList.remove('active');
@@ -108,12 +111,13 @@ function hidePauseMenu(): void {
 }
 
 function setupEventListeners(): void {
-    document.addEventListener("keydown", PlayerMoves);
+    document.addEventListener("keydown", playerMoves);
     document.addEventListener("keyup", PlayerStops);
+    document.getElementById("resume-btn")?.addEventListener("click", switchPause);
 }
 
-function removeEventListeners(): void {
-    document.removeEventListener("keydown", PlayerMoves);
+function removeEventListeners(): void { // quand le jeu s’arrête
+    document.removeEventListener("keydown", playerMoves);
     document.removeEventListener("keyup", PlayerStops);
 }
 
@@ -126,11 +130,12 @@ function update(): void
         animationFrameId = requestAnimationFrame(update);
         return;
     }
-    
-    animationFrameId = requestAnimationFrame(update);
+
+    animationFrameId = requestAnimationFrame(update); //demande au navigateur d’appeler update() avant le prochain rafraîchissement d’écran pour créer une boucle de jeu
     context.clearRect(0, 0, board.width, board.height);
 
     context.fillStyle = "white";
+    // avant de dessiner les joueurs, on met à jour leur position (pas en dehors du terrain)
     let nextPlayer1Y: number = player1.y + player1.velocityY;
     if (!outOfBounds(nextPlayer1Y, playerHeight))
         player1.y = nextPlayer1Y;
@@ -144,6 +149,7 @@ function update(): void
     ball.x += ball.velocityX;
     ball.y += ball.velocityY;
 
+    // avant de dessiner la balle, on verifie collisions avec bords(sup/inf) et joueurs
     if (outOfBounds(ball.y, ballHeight)) {
         ball.velocityY *= -1;
         if (ball.y <= 0) ball.y = 0;
@@ -165,12 +171,12 @@ function update(): void
     if (ball.x < 0) {
         player2Score++;
         checkWinner();
-        resetGame(1);
+        serve(1);
     }
     else if (ball.x + ballWidth > boardWidth) {
         player1Score++;
         checkWinner();
-        resetGame(-1);
+        serve(-1);
     }
 
     context.font = "16px 'Press Start 2P', monospace";
@@ -184,15 +190,16 @@ function update(): void
         context.fillRect(board.width / 2 - 10, i, 5, 5);
 }
 
-function checkWinner(): void {
-    if (player1Score >= WINNING_SCORE) {
+function checkWinner(): void
+{
+    if (player1Score >= WINNING_SCORE)
         endGame(player1Name);
-    } else if (player2Score >= WINNING_SCORE) {
+    else if (player2Score >= WINNING_SCORE)
         endGame(player2Name);
-    }
 }
 
-function endGame(winner: string): void {
+function endGame(winner: string): void
+{
     isGameRunning = false;
     
     console.log(`Game Over! Winner: ${winner}`);
@@ -207,9 +214,10 @@ function endGame(winner: string): void {
     context.fillText(winner, boardWidth / 2, boardHeight / 2 + 30);
     context.textAlign = "left";
     
-    if (onGameEndCallback) {
+    if (GameEndCallback)
+    {
         setTimeout(() => {
-            onGameEndCallback(winner);
+            GameEndCallback!(winner); //TODO ! à verifier
         }, 2000);
     }
 }
@@ -218,18 +226,18 @@ function outOfBounds(yPosition: number, Height: number): boolean {
     return (yPosition <= 0 || yPosition + Height >= boardHeight);
 }
 
-function PlayerMoves(e: KeyboardEvent): void {
+function playerMoves(e: KeyboardEvent): void
+{
     if (e.code == "Space") {
-        e.preventDefault();
-        togglePause();
+        switchPause();
         return;
     }
-
+    // quand la touche est enfoncée, velocityY reste à 3 ou -3 alors que update() est appelé en boucle via requestAnimationFrame
     if (e.code == "KeyW") {
         player1.velocityY = -3;
     }
     else if (e.code == "KeyS") {
-        player1.velocityY = 3;
+        player1.velocityY = 3; 
     }
 
     if (e.code == "ArrowUp") {
@@ -249,22 +257,15 @@ function PlayerStops(e: KeyboardEvent): void {
     }
 }
 
-function detectCollision(a: Ball | Player, b: Ball | Player): boolean {
+function detectCollision(a: Ball | Player, b: Ball | Player): boolean { // TODO
     return a.x < b.x + b.width &&
            a.x + a.width > b.x &&
            a.y < b.y + b.height &&
            a.y + a.height > b.y;
 }
 
-function isCollidingHorizontally(ball: Ball, player: Player): boolean {
-    const ballCenterX = ball.x + ball.width / 2;
-    const ballCenterY = ball.y + ball.height / 2;
-    const playerCenterY = player.y + player.height / 2;
-    
-    return Math.abs(ballCenterY - playerCenterY) < player.height / 2 + ball.height / 2;
-}
-
-function resetGame(direction: number): void {
+function serve(direction: number): void 
+{
     ball = {
         x: boardWidth/2,
         y: boardHeight/2,
@@ -275,8 +276,10 @@ function resetGame(direction: number): void {
     };
 }
 
-class PongGame {
-    start(): void {
+class PongGame
+{
+    start(): void
+    {
         board = document.getElementById("board") as HTMLCanvasElement;
         if (!board) {
             console.error("Canvas not found");
@@ -308,8 +311,9 @@ class PongGame {
         player2Name = "PLAYER 2";
     }
 
-    onGameEnd(callback: (winner: string) => void): void {
-        onGameEndCallback = callback;
+    setCallback(callback: (winner: string) => void): void // callback = arrow function qui appelle this.onMatchEnd dans Tournament.ts avec le paramètre winner
+    {
+        GameEndCallback = callback;
     }
 
     stop(): void
@@ -318,7 +322,7 @@ class PongGame {
         isPaused = false;
         if (animationFrameId !== null)
         {
-            cancelAnimationFrame(animationFrameId); // prend l’identifiant et annule la requête côté navigateur
+            cancelAnimationFrame(animationFrameId); // annule la requête d’animation planifiée correspondant à cet identifiant pour empêcher l’exécution de la fonction update et donc stopper la boucle de jeu
             animationFrameId = null;
         }
         removeEventListeners();

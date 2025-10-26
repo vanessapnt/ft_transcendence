@@ -22,8 +22,8 @@
     <div id="home-view" class="screen active">
         <h1>PONG</h1>
         <div class="menu-buttons">
-            <button onclick="PONG.Nav.showModeSelection()">START GAME</button> <!--👍-->
-            <button onclick="PONG.Nav.showTournament()">TOURNAMENT</button> <!--👍-->
+            <button onclick="PONG.Nav.showModeSelection()">START GAME</button> 
+            <button onclick="PONG.Nav.showTournament()">TOURNAMENT</button> 
             <button class="signup-btn" onclick="showSignup()">SIGN UP</button>
         </div>
     </div>
@@ -31,16 +31,16 @@
     <div id="mode-selection" class="screen">
         <h1>SELECT MODE</h1>
         <div class="mode-buttons">
-            <button id="mode-local">LOCAL 2 PLAYERS</button> <!--👍-->
-            <button id="mode-ai">VS AI</button> <!--👍-->
-            <button class="back-btn" onclick="PONG.Nav.showHome()">BACK</button> <!--👍-->
+            <button id="mode-local">LOCAL 2 PLAYERS</button>  <!-- bindGameModeBtns() -> addEventListener('click', () => this.launchGame('local')); -->
+            <button id="mode-ai">VS AI</button>  <!-- bindGameModeBtns() -> addEventListener('click', () => this.launchGame('ai')); -->
+            <button class="back-btn" onclick="PONG.Nav.showHome()">BACK</button> 
         </div>
     </div>
 
     <div id="game-view" class="screen">
         <div class="pause-hint">Press SPACE to pause</div>
         <canvas id="board"></canvas>
-        <button class="menu-button" onclick="PONG.Nav.showHome()">MENU</button> <!--👍-->
+        <button class="menu-button" onclick="PONG.Nav.showHome()">MENU</button> 
     </div>
 
     <div id="tournament-view" class="screen">

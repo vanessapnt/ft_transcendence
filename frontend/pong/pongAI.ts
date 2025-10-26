@@ -19,7 +19,7 @@ let player2Name: string = "AI";
 
 const WINNING_SCORE: number = 5;
 
-let onGameEndCallback: ((winner: string) => void) | null = null;
+let GameEndCallback: ((winner: string) => void) | null = null;
 
 let isGameRunning: boolean = false;
 let isPaused: boolean = false;
@@ -68,7 +68,7 @@ let ball: Ball = {
     velocityY: 4
 };
 
-function togglePause(): void {
+function switchPause(): void {
     if (!isGameRunning) return;
     
     isPaused = !isPaused;
@@ -96,12 +96,13 @@ function hidePauseMenu(): void {
 }
 
 function setupEventListeners(): void {
-    document.addEventListener("keydown", PlayerMoves);
+    document.addEventListener("keydown", playerMoves);
     document.addEventListener("keyup", PlayerStops);
+    document.getElementById("resume-btn")?.addEventListener("click", switchPause);
 }
 
 function removeEventListeners(): void {
-    document.removeEventListener("keydown", PlayerMoves);
+    document.removeEventListener("keydown", playerMoves);
     document.removeEventListener("keyup", PlayerStops);
 }
 
@@ -182,12 +183,12 @@ function update(): void {
     if (ball.x < 0) {
         player2Score++;
         checkWinner();
-        resetGame(1);
+        serve(1);
     }
     else if (ball.x + ballWidth > boardWidth) {
         player1Score++;
         checkWinner();
-        resetGame(-1);
+        serve(-1);
     }
 
     context.font = "16px 'Press Start 2P', monospace";
@@ -224,9 +225,9 @@ function endGame(winner: string): void {
     context.fillText(winner, boardWidth / 2, boardHeight / 2 + 30);
     context.textAlign = "left";
     
-    if (onGameEndCallback) {
+    if (GameEndCallback) {
         setTimeout(() => {
-            onGameEndCallback(winner);
+            GameEndCallback(winner);
         }, 2000);
     }
 }
@@ -235,10 +236,10 @@ function outOfBounds(yPosition: number, Height: number): boolean {
     return (yPosition <= 0 || yPosition + Height >= boardHeight);
 }
 
-function PlayerMoves(e: KeyboardEvent): void {
+function playerMoves(e: KeyboardEvent): void {
     if (e.code == "Space") {
         e.preventDefault();
-        togglePause();
+        switchPause();
         return;
     }
 
@@ -263,7 +264,7 @@ function detectCollision(a: Ball | Player, b: Ball | Player): boolean {
         a.y + a.height > b.y;
 }
 
-function resetGame(direction: number): void {
+function serve(direction: number): void {
     ball = {
         x: boardWidth/2,
         y: boardHeight/2,
@@ -330,7 +331,7 @@ class PongGameAI {
         player1.velocityY = 0;
         player2.velocityY = 0;
         
-        resetGame(1);
+        serve(1);
 
         removeEventListeners();
         setupEventListeners();
@@ -338,12 +339,12 @@ class PongGameAI {
         update();
     }
 
-    setPlayerName(name: string): void {
+    setPlayerName(name: string): void { // TODO à utiliser après login
         player1Name = name;
     }
 
-    onGameEnd(callback: (winner: string) => void): void {
-        onGameEndCallback = callback;
+    setCallback(callback: (winner: string) => void): void {
+        GameEndCallback = callback;
     }
 
     stop(): void

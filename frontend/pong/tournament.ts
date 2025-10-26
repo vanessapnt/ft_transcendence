@@ -131,7 +131,7 @@
             const gm = (window as any).PONG;
             if (gm?.PongGame) {
                 gm.PongGame.setPlayerNames(match.player1, match.player2);
-                gm.PongGame.onGameEnd((winner: string) => this.onMatchEnd(match, winner));
+                gm.PongGame.setCallback((winner: string) => this.onMatchEnd(match, winner)); //arrow function = callback qui appelle this.onMatchEnd dans Tournament.ts avec le paramètre winner
                 gm.PongGame.start();
             } else console.error('PongGame not found');
         }

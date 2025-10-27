@@ -186,8 +186,16 @@
             window.currentUserId = userId;
             window.currentAvatarUrl = avatarUrl;
 
-            avatarImg.src = getAvatarUrl(avatarUrl);
-            avatarImg.style.display = 'inline-block';
+            // Pour forcer le rafraîchissement de l'avatar (évite le cache navigateur)
+            if (avatarImg && avatarUrl) {
+                let url = getAvatarUrl(avatarUrl);
+                if (url && !url.startsWith('http')) {
+                    url += '?t=' + Date.now(); // Buste le cache pour les avatars locaux
+                }
+                avatarImg.src = url;
+                avatarImg.style.display = 'inline-block';
+            }
+
             editProfileBtn.onclick = function () {
                 showEditProfile(username, displayName);
             };
@@ -437,7 +445,7 @@
                     console.log('[DEBUG] /api/user/profile: no JSON body');
                 }
                 if (res.ok && data && data.user && data.user.id) {
-                    setUser(data.user.username, data.user.display_name, data.user.id, data.user.avatar_path);
+                    setUser(data.user.username, data.user.display_name, data.user.id, data.user.avatar_url);
                 } else {
                     // Affiche un message si la session n'est pas reconnue
                     const homeView = document.getElementById('home-view');

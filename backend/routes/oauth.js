@@ -25,16 +25,16 @@ passport.use(new GitHubStrategy({
     try {
       // Check if user already exists with this GitHub ID
       let user = statements.getUserByOAuth.get('github', profile.id);
-
-      const avatarUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
+      const avatarUrl = (profile.photos && profile.photos.length > 0 && profile.photos[0].value) ? profile.photos[0].value : (user && user.avatar_path ? user.avatar_path : null);
+      const displayName = profile.displayName || (user && user.display_name) || (user && user.username) || null;
 
       if (user) {
-        // Update user info (display_name, avatar) at each login
+        // Update user info (display_name, avatar) at each login, sans jamais écraser username/email
         statements.updateUserWithDisplayName.run(
           user.username,
           user.email,
-          avatarUrl, // avatar_path
-          profile.displayName || user.username,
+          avatarUrl,
+          displayName,
           user.id
         );
         user = statements.getUserById.get(user.id);
@@ -45,12 +45,14 @@ passport.use(new GitHubStrategy({
       if (profile.emails && profile.emails.length > 0) {
         user = statements.getUserByEmail.get(profile.emails[0].value);
         if (user) {
+          const avatarUrl = (profile.photos && profile.photos.length > 0 && profile.photos[0].value) ? profile.photos[0].value : user.avatar_path;
+          const displayName = profile.displayName || user.display_name || user.username;
           // Link GitHub account to existing user (update avatar and display_name)
           statements.updateUserWithDisplayName.run(
             user.username,
             user.email,
             avatarUrl,
-            profile.displayName || user.username,
+            displayName,
             user.id
           );
           user = statements.getUserById.get(user.id);

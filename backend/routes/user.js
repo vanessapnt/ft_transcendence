@@ -49,6 +49,13 @@ const upload = multer({
   }
 });
 
+// Helper pour générer l'URL d'avatar (GitHub ou local)
+function getAvatarUrl(avatar_path) {
+  if (!avatar_path) return null;
+  if (avatar_path.startsWith('http://') || avatar_path.startsWith('https://')) return avatar_path;
+  return '/avatars/' + avatar_path;
+}
+
 // Get user profile
 router.get('/profile', requireAuth, (req, res) => {
   try {
@@ -58,7 +65,8 @@ router.get('/profile', requireAuth, (req, res) => {
     }
 
     const { password_hash, ...userData } = user;
-    res.json({ user: userData });
+    // Ajoute avatar_url pour compatibilité frontend (toujours présent)
+    res.json({ user: { ...userData, avatar_url: getAvatarUrl(user.avatar_path) } });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -110,9 +118,10 @@ router.put('/profile', requireAuth, (req, res) => {
     // Return updated user
     const updatedUser = statements.getUserById.get(userId);
     const { password_hash, ...userData } = updatedUser;
+    // Ajoute avatar_url pour compatibilité frontend (toujours présent)
     res.json({
       message: 'Profile updated successfully',
-      user: userData
+      user: { ...userData, avatar_url: getAvatarUrl(updatedUser.avatar_path) }
     });
 
   } catch (error) {
@@ -146,9 +155,10 @@ router.post('/avatar', requireAuth, upload.single('avatar'), (req, res) => {
     // Return updated user
     const updatedUser = statements.getUserById.get(userId);
     const { password_hash, ...userData } = updatedUser;
+    // Ajoute avatar_url pour compatibilité frontend (toujours présent)
     res.json({
       message: 'Avatar uploaded successfully',
-      user: userData
+      user: { ...userData, avatar_url: getAvatarUrl(updatedUser.avatar_path) }
     });
 
   } catch (error) {
@@ -179,9 +189,10 @@ router.delete('/avatar', requireAuth, (req, res) => {
     // Return updated user
     const updatedUser = statements.getUserById.get(userId);
     const { password_hash, ...userData } = updatedUser;
+    // Ajoute avatar_url pour compatibilité frontend (toujours présent)
     res.json({
       message: 'Avatar deleted successfully',
-      user: userData
+      user: { ...userData, avatar_url: getAvatarUrl(updatedUser.avatar_path) }
     });
 
   } catch (error) {

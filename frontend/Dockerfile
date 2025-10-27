@@ -9,11 +9,11 @@ COPY package*.json tsconfig.json ./
 # Installer les dépendances (seulement si package.json existe)
 RUN if [ -f package.json ]; then npm install; fi
 
-# Copier le code source TypeScript (seulement si src/ existe)
-COPY src/ ./src/
+# Copier le code source TypeScript (remplacé par pong/)
+COPY pong/ ./pong/
 
-# Compiler TypeScript (seulement si src/ contient des fichiers)
-RUN if [ -d src ] && [ "$(ls -A src)" ]; then npm run build; fi
+# Compiler TypeScript (si présent)
+RUN if [ -d pong ] && [ "$(ls -A pong)" ]; then npm run build || true; fi
 
 # Stage final avec nginx
 FROM nginx:alpine
@@ -24,9 +24,6 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copier les fichiers du jeu Pong (toujours présents)
 COPY pong/* /usr/share/nginx/html/
 
-# Copier les fichiers TypeScript compilés (si ils existent)
-COPY --from=builder /app/dist/* /usr/share/nginx/html/
-
 # Créer une configuration nginx simple
 RUN echo 'server { \
     listen 3000; \
@@ -34,9 +31,9 @@ RUN echo 'server { \
     root /usr/share/nginx/html; \
     index index.html; \
     location / { \
-        try_files $uri $uri/ /index.html; \
+    try_files $uri $uri/ /index.html; \
     } \
-}' > /etc/nginx/conf.d/default.conf
+    }' > /etc/nginx/conf.d/default.conf
 
 # Exposer le port 3000
 EXPOSE 3000

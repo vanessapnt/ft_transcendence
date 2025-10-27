@@ -88,7 +88,7 @@ services:
   logstash:
     image: docker.elastic.co/logstash/logstash:7.15.0
     container_name: logstash
-    #restart: always
+    entrypoint: [ "/usr/share/logstash/logstash-entrypoint.sh" ]
     ports:
       - "5044:5044"
       - "5001:5000/tcp"
@@ -97,8 +97,9 @@ services:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
       LOG_LEVEL: "error"
     volumes:
-      - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:rw
       - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./elk/logstash/config/logstash.yml:/tmp/host-logstash.yml:ro
+      - ./elk/logstash/logstash-entrypoint.sh:/usr/share/logstash/logstash-entrypoint.sh:ro
     networks:
       - transcendence-network
     depends_on:

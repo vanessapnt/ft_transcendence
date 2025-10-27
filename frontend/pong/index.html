@@ -138,9 +138,7 @@
         }
 
         function oauthLogin() {
-            const target = '/api/oauth/login/github';
-            const fullUrl = 'http://localhost:8080' + target;
-            window.location.assign(fullUrl);
+            window.location.assign('/api/oauth/login/github');
         }
 
         // Debug: Vérifier la visibilité du bouton OAuth au chargement
@@ -209,6 +207,9 @@
                 form.style.marginTop = '30px';
                 form.innerHTML = `
                         <h2>Sign Up</h2>
+                        <div style="color:#888;font-size:0.9em;margin-bottom:10px;">
+                            Le mot de passe doit contenir au moins 6 caractères.
+                        </div>
                         <input type="text" id="signup-username" placeholder="Username" required style="margin:10px;padding:10px;font-size:1em;">
                         <input type="email" id="signup-email" placeholder="Email" required style="margin:10px;padding:10px;font-size:1em;">
                         <input type="password" id="signup-password" placeholder="Password" required style="margin:10px;padding:10px;font-size:1em;">

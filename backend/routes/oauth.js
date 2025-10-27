@@ -26,8 +26,18 @@ passport.use(new GitHubStrategy({
       // Check if user already exists with this GitHub ID
       let user = statements.getUserByOAuth.get('github', profile.id);
 
+      const avatarUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
+
       if (user) {
-        // Update user info if needed
+        // Update user info (display_name, avatar) at each login
+        statements.updateUserWithDisplayName.run(
+          user.username,
+          user.email,
+          avatarUrl, // avatar_path
+          profile.displayName || user.username,
+          user.id
+        );
+        user = statements.getUserById.get(user.id);
         return done(null, user);
       }
 
@@ -35,15 +45,21 @@ passport.use(new GitHubStrategy({
       if (profile.emails && profile.emails.length > 0) {
         user = statements.getUserByEmail.get(profile.emails[0].value);
         if (user) {
-          // Link GitHub account to existing user
-          // Note: In a real app, you might want to ask for confirmation
+          // Link GitHub account to existing user (update avatar and display_name)
+          statements.updateUserWithDisplayName.run(
+            user.username,
+            user.email,
+            avatarUrl,
+            profile.displayName || user.username,
+            user.id
+          );
+          user = statements.getUserById.get(user.id);
           return done(null, user);
         }
       }
 
       // Create new user
       const username = profile.username || profile.displayName || `github_${profile.id}`;
-      const displayName = profile.displayName || profile.username || `github_${profile.id}`;
       const email = profile.emails && profile.emails.length > 0 ?
         profile.emails[0].value : `${profile.id}@github.local`;
 
@@ -55,12 +71,12 @@ passport.use(new GitHubStrategy({
         profile.id
       );
 
-      // Ajoute le display_name juste après la création
+      // Ajoute le display_name et l'avatar juste après la création
       statements.updateUserWithDisplayName.run(
         username,
         email,
-        null, // avatar_path
-        displayName,
+        avatarUrl, // avatar_path
+        profile.displayName || username,
         result.lastInsertRowid
       );
 

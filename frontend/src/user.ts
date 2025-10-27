@@ -48,6 +48,7 @@ function setUser(username: string, displayName: string, userId: number, avatarUr
     const logoutBtn = document.getElementById('logout-btn');
     const editProfileBtn = document.getElementById('edit-profile-btn');
     const signupBtn = document.querySelector('.signup-btn') as HTMLButtonElement;
+    const oauthBtn = document.getElementById('oauth-github') as HTMLButtonElement;
     const avatarImg = document.getElementById('avatar-img') as HTMLImageElement;
 
     if (!userInfo || !usernameLabel || !logoutBtn || !editProfileBtn || !avatarImg) {
@@ -61,6 +62,7 @@ function setUser(username: string, displayName: string, userId: number, avatarUr
     editProfileBtn.style.display = 'inline-block';
 
     if (signupBtn) signupBtn.style.display = 'none';
+    if (oauthBtn) oauthBtn.style.display = 'none';
 
     (window as any).currentUserId = userId;
     (window as any).currentAvatarUrl = avatarUrl;
@@ -77,10 +79,12 @@ function setUser(username: string, displayName: string, userId: number, avatarUr
 function logout(): void {
     const userInfo = document.getElementById('user-info');
     const signupBtn = document.querySelector('.signup-btn') as HTMLButtonElement;
+    const oauthBtn = document.getElementById('oauth-github') as HTMLButtonElement;
     const avatarImg = document.getElementById('avatar-img');
 
     if (userInfo) userInfo.style.display = 'none';
     if (signupBtn) signupBtn.style.display = 'inline-block';
+    if (oauthBtn) oauthBtn.style.display = 'inline-block';
     if (avatarImg) avatarImg.style.display = 'none';
 
     (window as any).currentUserId = null;
@@ -89,6 +93,10 @@ function logout(): void {
     (window as any).currentDisplayName = null;
 
     console.log('✅ User logged out');
+}
+
+function oauthLogin(): void {
+    window.location.assign('/api/oauth/login/github');
 }
 
 function showSignup(): void {
@@ -102,12 +110,16 @@ function showSignup(): void {
     form.className = 'auth-form';
     form.innerHTML = `
         <h2>Sign Up</h2>
+        <div style="color:#888;font-size:0.9em;margin-bottom:10px;">
+            Le mot de passe doit contenir au moins 6 caractères.
+        </div>
         <input type="text" id="signup-username" placeholder="Username" required>
+        <input type="email" id="signup-email" placeholder="Email" required>
         <input type="password" id="signup-password" placeholder="Password" required>
         <input type="text" id="signup-displayname" placeholder="Display Name" required>
         <button type="submit" class="auth-submit-btn">Register</button>
         <button type="button" id="cancel-signup" class="auth-cancel-btn">Cancel</button>
-        <button type="button" id="show-login" class="auth-switch-btn">Login Instead</button>
+        <button type="button" id="show-login" class="auth-switch-btn">Login</button>
         <div id="signup-message" class="auth-message"></div>
     `;
     homeView.appendChild(form);
@@ -115,29 +127,31 @@ function showSignup(): void {
     form.onsubmit = async (e: Event) => {
         e.preventDefault();
         const username = (document.getElementById('signup-username') as HTMLInputElement).value.trim();
+        const email = (document.getElementById('signup-email') as HTMLInputElement).value.trim();
         const password = (document.getElementById('signup-password') as HTMLInputElement).value;
         const display_name = (document.getElementById('signup-displayname') as HTMLInputElement).value.trim();
         const messageDiv = document.getElementById('signup-message')!;
         messageDiv.textContent = '';
 
-        if (!username || !password || !display_name) {
+        if (!username || !email || !password || !display_name) {
             messageDiv.className = 'auth-message error';
             messageDiv.textContent = 'All fields are required';
             return;
         }
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/register`, {
+            const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, display_name })
+                body: JSON.stringify({ username, email, password, display_name })
             });
             const data: ApiResponse = await res.json();
 
-            if (res.ok && data.username && data.display_name && data.id && data.avatar_url) {
+            if (res.ok && data.username && data.display_name && data.id) {
                 messageDiv.className = 'auth-message success';
                 messageDiv.textContent = 'Registration successful!';
-                setUser(data.username, data.display_name, data.id, data.avatar_url);
+                const avatarUrl = data.avatar_url || '/avatars/default_avatar.png';
+                setUser(data.username, data.display_name, data.id, avatarUrl);
                 setTimeout(() => form.remove(), 1500);
             } else {
                 messageDiv.className = 'auth-message error';
@@ -150,8 +164,11 @@ function showSignup(): void {
         }
     };
 
-    document.getElementById('cancel-signup')!.onclick = () => form.remove();
-    document.getElementById('show-login')!.onclick = () => {
+    const cancelBtn = document.getElementById('cancel-signup');
+    const showLoginBtn = document.getElementById('show-login');
+    
+    if (cancelBtn) cancelBtn.onclick = () => form.remove();
+    if (showLoginBtn) showLoginBtn.onclick = () => {
         form.remove();
         showLogin();
     };
@@ -172,7 +189,6 @@ function showLogin(): void {
         <input type="password" id="login-password" placeholder="Password" required>
         <button type="submit" class="auth-submit-btn">Login</button>
         <button type="button" id="cancel-login" class="auth-cancel-btn">Cancel</button>
-        <button type="button" id="show-signup-from-login" class="auth-switch-btn">Sign Up Instead</button>
         <div id="login-message" class="auth-message"></div>
     `;
     homeView.appendChild(form);
@@ -191,17 +207,17 @@ function showLogin(): void {
         }
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/login`, {
+            const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
             const data: ApiResponse = await res.json();
 
-            if (res.ok && data.username && data.display_name && data.id && data.avatar_url) {
+            if (res.ok && data.username && data.display_name && data.id) {
                 messageDiv.className = 'auth-message success';
                 messageDiv.textContent = 'Login successful!';
-                setUser(data.username, data.display_name, data.id, data.avatar_url);
+                setUser(data.username, data.display_name, data.id, data.avatar_url || '/avatars/default_avatar.png');
                 setTimeout(() => form.remove(), 1500);
             } else {
                 messageDiv.className = 'auth-message error';
@@ -214,11 +230,8 @@ function showLogin(): void {
         }
     };
 
-    document.getElementById('cancel-login')!.onclick = () => form.remove();
-    document.getElementById('show-signup-from-login')!.onclick = () => {
-        form.remove();
-        showSignup();
-    };
+    const cancelBtn = document.getElementById('cancel-login');
+    if (cancelBtn) cancelBtn.onclick = () => form.remove();
 }
 
 function showEditProfile(currentUsername: string, currentDisplayName: string): void {
@@ -265,10 +278,10 @@ function showEditProfile(currentUsername: string, currentDisplayName: string): v
             const userId = (window as any).currentUserId;
 
             if (display_name) {
-                const res = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+                const res = await fetch('/api/user/profile', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ display_name })
+                    body: JSON.stringify({ username: display_name })
                 });
                 const data: ApiResponse = await res.json();
 
@@ -282,7 +295,7 @@ function showEditProfile(currentUsername: string, currentDisplayName: string): v
             if (avatarFile && updateOk) {
                 const formData = new FormData();
                 formData.append('avatar', avatarFile);
-                const resAvatar = await fetch(`${API_BASE_URL}/api/users/${userId}/avatar`, {
+                const resAvatar = await fetch('/api/user/avatar', {
                     method: 'POST',
                     body: formData
                 });
@@ -317,9 +330,54 @@ function showEditProfile(currentUsername: string, currentDisplayName: string): v
         }
     };
 
-    document.getElementById('cancel-edit-profile')!.onclick = () => form.remove();
+    const cancelBtn = document.getElementById('cancel-edit-profile');
+    if (cancelBtn) cancelBtn.onclick = () => form.remove();
 }
 
+// Check user session on load
+async function checkUserSession(): Promise<void> {
+    try {
+        const res = await fetch('/api/user/profile', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        console.log('[DEBUG] /api/user/profile status:', res.status);
+        let data = null;
+        try {
+            data = await res.json();
+            console.log('[DEBUG] /api/user/profile data:', data);
+        } catch (e) {
+            console.log('[DEBUG] /api/user/profile: no JSON body');
+        }
+        if (res.ok && data && data.user && data.user.id) {
+            setUser(data.user.username, data.user.display_name, data.user.id, data.user.avatar_url);
+        }
+    } catch (err) {
+        console.log('[DEBUG] /api/user/profile fetch error:', err);
+    }
+}
+
+// Handle OAuth callback
+window.addEventListener('load', function() {
+    checkUserSession();
+    if (window.location.hash.startsWith('#oauth_success')) {
+        const hash = window.location.hash;
+        const query = hash.split('?')[1];
+        if (query) {
+            const params = new URLSearchParams(query);
+            const id = params.get('id');
+            const username = params.get('username');
+            const display_name = params.get('display_name');
+            const avatar_url = params.get('avatar_url');
+            if (id && username && display_name) {
+                setUser(username, display_name, parseInt(id), avatar_url || '/avatars/default_avatar.png');
+            }
+        }
+        window.location.hash = '#home';
+    }
+});
+
+// Expose functions to global PONG namespace
 if (!(window as any).PONG) {
     (window as any).PONG = {};
 }
@@ -329,9 +387,7 @@ if (!(window as any).PONG) {
 (window as any).PONG.showEditProfile = showEditProfile;
 (window as any).PONG.setUser = setUser;
 (window as any).PONG.logout = logout;
-
-(window as any).showSignup = showSignup;
-(window as any).showLogin = showLogin;
+(window as any).PONG.oauthLogin = oauthLogin;
 
 console.log('✅ User module loaded');
 

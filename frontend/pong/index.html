@@ -11,14 +11,13 @@
 
 <body>
     <div id="user-info">
-        <!-- span : vide au départ et affiche dynamiquement le nom d'utilisateur -->
         <span id="username-label"></span>
-        <button id="edit-profile-btn">Edit Profile</button>
-        <button id="logout-btn">Logout</button>
+        <button id="edit-profile-btn" style="display:none;">Edit Profile</button>
+        <button id="logout-btn" style="display:none;">Logout</button>
     </div>
 
     <div id="avatar-container">
-        <img id="avatar-img" src="default_avatar.png" alt="Avatar">
+        <img id="avatar-img" src="default_avatar.png" alt="Avatar" style="display:none;">
     </div>
 
     <div id="home-view" class="screen active">
@@ -26,7 +25,10 @@
         <div class="menu-buttons">
             <button onclick="PONG.Nav.showModeSelection()">START GAME</button>
             <button onclick="PONG.Nav.showTournament()">TOURNAMENT</button>
-            <button class="signup-btn" onclick="showSignup()">SIGN UP</button>
+            <button class="signup-btn" onclick="PONG.showSignup()">SIGN UP</button>
+            <button id="oauth-github" onclick="PONG.oauthLogin()" class="github-btn">
+                Login with GitHub
+            </button>
         </div>
     </div>
 
@@ -34,9 +36,7 @@
         <h1>SELECT MODE</h1>
         <div class="mode-buttons">
             <button id="mode-local">LOCAL 2 PLAYERS</button>
-            <!-- bindGameModeBtns() -> addEventListener('click', () => this.launchGame('local')); -->
             <button id="mode-ai">VS AI</button>
-            <!-- bindGameModeBtns() -> addEventListener('click', () => this.launchGame('ai')); -->
             <button class="back-btn" onclick="PONG.Nav.showHome()">BACK</button>
         </div>
     </div>
@@ -48,7 +48,7 @@
     </div>
 
     <div id="tournament-view" class="screen">
-        <div id="tournament-selection" class="tournament-section active">
+        <div id="tournament-selMection" class="tournament-section active">
             <h2>Select Number of Players</h2>
             <div class="player-count-buttons">
                 <button onclick="PONG.Tournament.createTournament(2)">2 Players</button>
@@ -122,7 +122,6 @@
         </div>
     </div>
 
-    <!-- defer : script chargé en arrière-plan mais exécuté après le HTML -->
     <script src="pong.js" defer></script>
     <script src="pongAI.js" defer></script>
     <script src="tournament.js" defer></script>

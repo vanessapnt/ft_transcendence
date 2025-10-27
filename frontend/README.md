@@ -1,20 +1,5 @@
 # Frontend Transcendence - TypeScript
 
-## Structure du projet
-
-```
-frontend/
-├── src/                 # Code TypeScript
-│   ├── game/           # Logique de jeu TypeScript
-│   └── ...
-├── pong/               # Jeu Pong existant (JS/CSS/HTML)
-├── dist/               # Code TypeScript compilé
-├── Dockerfile          # Production build
-├── Dockerfile.dev      # Development build
-├── package.json        # Dependencies
-└── tsconfig.json       # Configuration TypeScript
-```
-
 ## Commandes de développement
 
 ```bash

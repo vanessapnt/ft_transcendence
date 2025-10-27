@@ -227,7 +227,7 @@ function endGame(winner: string): void {
     
     if (GameEndCallback) {
         setTimeout(() => {
-            GameEndCallback(winner);
+            GameEndCallback?.(winner);
         }, 2000);
     }
 }

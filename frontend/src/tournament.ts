@@ -85,7 +85,9 @@ class Tournament
         this.matches = [];
         for (let i = 0; i < this.players.length; i++) {
             for (let j = i + 1; j < this.players.length; j++) {
-                this.matches.push({ player1: this.players[i].name, player2: this.players[j].name });
+                if (this.players[i]?.name && this.players[j]?.name) {
+                    this.matches.push({ player1: this.players[i]!.name, player2: this.players[j]!.name });
+                }
             }
         }
     }
@@ -103,8 +105,8 @@ class Tournament
         const nextMatchVersus = document.getElementById('next-match-versus');
         const nextMatchControls = document.getElementById('next-match-controls');
         if (nextMatchTitle) nextMatchTitle.textContent = `NEXT MATCH (${this.currentMatchIndex + 1}/${this.matches.length})`;
-        if (nextMatchVersus) nextMatchVersus.innerHTML = `${this.escapeHtml(nextMatch.player1)} <span class="vs-text">VS</span> ${this.escapeHtml(nextMatch.player2)}`;
-        if (nextMatchControls) nextMatchControls.textContent = `${nextMatch.player1}: W/S keys | ${nextMatch.player2}: ↑/↓ keys`;
+        if (nextMatch && nextMatchVersus) nextMatchVersus.innerHTML = `${this.escapeHtml(nextMatch.player1)} <span class="vs-text">VS</span> ${this.escapeHtml(nextMatch.player2)}`;
+        if (nextMatch && nextMatchControls) nextMatchControls.textContent = `${nextMatch.player1}: W/S keys | ${nextMatch.player2}: / keys`;
 
         const standingsContainer = document.getElementById('standings-container');
         if (standingsContainer) {
@@ -125,7 +127,7 @@ class Tournament
 
         const startBtn = document.getElementById('start-next-match-btn');
         const quitBtn = document.getElementById('quit-tournament-btn');
-        if (startBtn) startBtn.onclick = () => this.launchPongGame(nextMatch);
+        if (startBtn && nextMatch) startBtn.onclick = () => this.launchPongGame(nextMatch);
         if (quitBtn) quitBtn.onclick = () => { if (confirm('Are you sure you want to quit the tournament?')) { const gm = (window as any).PONG; if (gm?.Nav) gm.Nav.showHome(); } };
 
         this.showSection('tournament-status');
@@ -160,12 +162,12 @@ class Tournament
     private showWinner(): void {
         if (this.players.length === 0) return;
         let winner = this.players[0];
-        for (const p of this.players) if (p.wins > winner.wins) winner = p;
+        for (const p of this.players) if (winner && p.wins > winner.wins) winner = p;
         const winnerName = document.getElementById('winner-name');
         const winnerScore = document.getElementById('winner-score');
         const finalStandings = document.getElementById('final-standings-container');
-        if (winnerName) winnerName.textContent = winner.name;
-        if (winnerScore) winnerScore.textContent = `${winner.wins} victories`;
+        if (winnerName && winner) winnerName.textContent = winner.name;
+        if (winnerScore && winner) winnerScore.textContent = `${winner.wins} victories`;
         if (finalStandings) finalStandings.innerHTML = this.players.sort((a,b) => b.wins - a.wins).map((p,i) => `<div class="final-standings-row"><span>${i+1}. ${this.escapeHtml(p.name)}</span><span>${p.wins} wins</span></div>`).join('');
         const backBtn = document.getElementById('back-to-menu-btn');
         if (backBtn) backBtn.onclick = () => { const gm = (window as any).PONG; if (gm?.Nav) gm.Nav.showHome(); };

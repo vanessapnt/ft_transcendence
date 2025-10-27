@@ -38,7 +38,8 @@ function escapeHtml(text: string): string {
         '"': '&quot;',
         "'": '&#039;'
     };
-    return text.replace(/[&<>"']/g, char => map[char]);
+    if (!text) return '';
+    return text.replace(/[&<>"']/g, char => map[char] ?? char);
 }
 
 function setUser(username: string, displayName: string, userId: number, avatarUrl: string): void {

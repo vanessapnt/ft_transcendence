@@ -101,9 +101,8 @@ serve-pong: ## 🕹️ Serve `frontend/pong` on port 3000 (open http://localhost
 	@echo "🟢 Serving frontend/pong at http://localhost:3000 (Ctrl+C to stop)"
 	@cd frontend/pong && python3 -m http.server 3000
 
-# Dev: watch TypeScript and serve with live reload (requires Node/npm)
 .PHONY: serve-pong-dev
-serve-pong-dev: ## 🔁 Watch .ts and serve `frontend/pong` with live-reload on port 3000
+serve-pong-dev:
 	@echo "🟢 Starting TypeScript watcher and live-reload server on http://localhost:3000"
 	@sh -c '\
 	cd frontend; \
@@ -112,8 +111,10 @@ serve-pong-dev: ## 🔁 Watch .ts and serve `frontend/pong` with live-reload on 
 		echo "⬇️  node_modules not found — running npm install in frontend..."; \
 		npm install; \
 	fi; \
+	npx tsc > /dev/null 2>&1; \
 	# start tsc in background, then start live-server in foreground; when live-server exits we kill tsc\
 	npx tsc -w > /dev/null 2>&1 & TSC_PID=$$!; \
+	sleep 1; \
 	npx live-server pong --port=3000 --quiet || true; \
 	kill $$TSC_PID 2>/dev/null || true'
 

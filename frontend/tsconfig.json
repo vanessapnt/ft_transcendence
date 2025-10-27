@@ -5,9 +5,9 @@
     "target": "ES6",
     "lib": ["DOM", "ES6"],
     
-    // File Layout - Compile les .ts du dossier pong/ vers le même dossier
+    // File Layout - Sources .ts dans src/, fichiers compilés dans pong/
     "outDir": "./pong",
-    "rootDir": "./pong",
+    "rootDir": "./src",
 
     // Other Outputs
     "sourceMap": true,
@@ -25,6 +25,6 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node"
   },
-  "include": ["pong/**/*.ts"],
-  "exclude": ["node_modules", "pong/**/*.js"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "pong"]
 }

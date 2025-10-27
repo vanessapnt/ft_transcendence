@@ -26,7 +26,7 @@ const validateUserInput = (username, email, password) => {
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, display_name } = req.body;
 
     // Validate input
     const errors = validateUserInput(username, email, password);
@@ -36,12 +36,12 @@ router.post('/register', async (req, res) => {
 
     // Check if user already exists
     const existingUser = statements.getUserByUsername.get(username) ||
-                        statements.getUserByEmail.get(email);
+      statements.getUserByEmail.get(email);
 
     if (existingUser) {
       return res.status(409).json({
         error: existingUser.username === username ?
-               'Username already taken' : 'Email already registered'
+          'Username already taken' : 'Email already registered'
       });
     }
 
@@ -49,8 +49,12 @@ router.post('/register', async (req, res) => {
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Create user
-    const result = statements.createUser.run(username, email, passwordHash, null, null);
+    // Create user with display_name
+    const stmt = require('../database').db.prepare(`
+      INSERT INTO users (username, email, password_hash, display_name)
+      VALUES (?, ?, ?, ?)
+    `);
+    const result = stmt.run(username, email, passwordHash, display_name);
     const user = statements.getUserById.get(result.lastInsertRowid);
 
     // Set session

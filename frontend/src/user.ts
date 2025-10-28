@@ -4,16 +4,16 @@
         username: string;
         display_name: string;
         id: number;
-        avatar_url: string;
+        avatar_url: string | null;
         email?: string;
-        avatar_path?: string;
+        avatar_path?: string | null;
     }
 
     interface ApiResponse {
         username?: string;
         display_name?: string;
         id?: number;
-        avatar_url?: string;
+        avatar_url?: string | null;
         error?: string;
         user?: UserData;
         message?: string;
@@ -46,7 +46,20 @@
         return text.replace(/[&<>"']/g, char => map[char] ?? char);
     }
 
-    function setUser(username: string, displayName: string, userId: number, avatarUrl: string): void {
+    // Fonction utilitaire pour cacher le bouton GitHub login si connecté
+    function hideGithubLoginIfConnected() {
+        const githubBtn = document.getElementById('github-login-btn');
+        const userInfo = document.getElementById('user-info');
+        if (githubBtn) {
+            if (userInfo && userInfo.style.display === 'block') {
+                githubBtn.style.display = 'none';
+            } else {
+                githubBtn.style.display = 'inline-block';
+            }
+        }
+    }
+
+    function setUser(username: string, displayName: string | null, userId: number, avatarUrl: string | null): void {
         const userInfo = document.getElementById('user-info');
         const usernameLabel = document.getElementById('username-label');
         const logoutBtn = document.getElementById('logout-btn');
@@ -59,7 +72,11 @@
             return;
         }
 
-        usernameLabel.textContent = displayName ? `${escapeHtml(displayName)} (${escapeHtml(username)})` : escapeHtml(username);
+        // Correction : fallback si displayName ou avatarUrl est null/undefined
+        const safeDisplayName = displayName || username;
+        const safeAvatarUrl = avatarUrl || '/avatars/default_avatar.png';
+
+        usernameLabel.textContent = safeDisplayName ? `${escapeHtml(safeDisplayName)} (${escapeHtml(username)})` : escapeHtml(username);
         userInfo.style.display = 'block';
         logoutBtn.style.display = 'inline-block';
         editProfileBtn.style.display = 'inline-block';
@@ -230,12 +247,12 @@
                 const data: ApiResponse = await res.json();
 
                 // Correction : extraire les infos depuis data.user si présent
-                const user = data.user || data;
-                const avatarUrl = ((user as any).avatar_path || (user as any).avatar_url || '/avatars/default_avatar.png') as string;
+                const user = data.user as UserData;
+                console.log('User data received after login:', user); // Ajout debug
                 if (res.ok && user.username && user.display_name && user.id) {
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = 'Login successful!';
-                    setUser(user.username, user.display_name, user.id, avatarUrl);
+                    setUser(user.username, user.display_name, user.id, user.avatar_path || user.avatar_url || '/avatars/default_avatar.png');
                     form.style.display = 'none'; // Masquer le formulaire immédiatement
                     // Afficher le profil utilisateur
                     const userInfo = document.getElementById('user-info');
@@ -368,6 +385,34 @@
 
         document.getElementById('cancel-edit-profile')!.onclick = () => form.remove();
     }
+
+    // Au chargement de la page, déconnexion automatique PUIS récupération du profil (dev only)
+    window.addEventListener('DOMContentLoaded', async () => {
+        try {
+            // Déconnexion automatique (dev only)
+            await fetch(`${API_BASE_URL}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (err) {
+            // ignore
+        }
+        try {
+            // Récupération du profil (sera vide après logout)
+            const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
+                credentials: 'include'
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const user = data.user;
+                if (user && user.username && user.display_name && user.id) {
+                    setUser(user.username, user.display_name, user.id, user.avatar_path || user.avatar_url || '/avatars/default_avatar.png');
+                }
+            }
+        } catch (err) {
+            // ignore
+        }
+    });
 
     if (!(window as any).PONG) {
         (window as any).PONG = {};

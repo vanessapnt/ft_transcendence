@@ -5,3 +5,22 @@ body {
 #board {
     background-color: black;
 }
+
+/* Auth action button for consistency (edit/logout) */
+.auth-action-btn {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.2rem;
+    padding: 1rem 2rem;
+    background: #24292e;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 10px 5px;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.auth-action-btn:hover {
+    background: #444c56;
+    color: #00ff00;
+}

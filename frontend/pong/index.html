@@ -77,18 +77,36 @@
         .menu-button:hover {
             background: #cc0000;
         }
+
+        .auth-action-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8em;
+            background: #0080ff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 15px;
+            cursor: pointer;
+            margin-left: 10px;
+            display: none;
+        }
+
+        .auth-action-btn#logout-btn {
+            background: #ff4444;
+        }
+
+        .auth-action-btn:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 
 <body>
     <div id="user-info"
-        style="position: absolute; top: 20px; right: 30px; color: #00ff00; font-family: 'Press Start 2P', cursive; font-size: 1em; display: none;">
+        style="position: absolute; top: 20px; right: 30px; color: #00ff00; font-family: 'Press Start 2P', cursive; font-size: 1em;">
         <span id="username-label"></span>
-        <button id="edit-profile-btn"
-            style="margin-left:20px; font-size:0.8em; background:#0080ff; color:white; border:none; border-radius:5px; padding:5px 15px; cursor:pointer; display:none;">Edit
-            Profile</button>
-        <button id="logout-btn"
-            style="margin-left:10px; font-size:0.8em; background:#ff4444; color:white; border:none; border-radius:5px; padding:5px 15px; cursor:pointer; display:none;">Logout</button>
+        <button id="edit-profile-btn" class="auth-action-btn" style="display:none;">Edit Profile</button>
+        <button id="logout-btn" class="auth-action-btn" style="display:none;">Logout</button>
     </div>
 
     <div id="avatar-container" style="position:absolute;top:20px;left:30px;">

@@ -49,11 +49,11 @@ const upload = multer({
   }
 });
 
-// Helper pour générer l'URL d'avatar (GitHub ou local)
-function getAvatarUrl(avatar_path) {
-  if (!avatar_path) return null;
-  if (avatar_path.startsWith('http://') || avatar_path.startsWith('https://')) return avatar_path;
-  return '/avatars/' + avatar_path;
+// Helper pour générer l'URL d'avatar
+function getAvatarUrl(user) {
+  if (!user.avatar_path) return '/avatars/default_avatar.png';
+  if (user.avatar_path.startsWith('http')) return user.avatar_path;
+  return '/avatars/' + user.avatar_path;
 }
 
 // Get user profile
@@ -63,10 +63,9 @@ router.get('/profile', requireAuth, (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
     const { password_hash, ...userData } = user;
-    // Ajoute avatar_url pour compatibilité frontend (toujours présent)
-    res.json({ user: { ...userData, avatar_url: getAvatarUrl(user.avatar_path) } });
+    userData.avatar_url = getAvatarUrl(user);
+    res.json(userData);
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -76,7 +75,7 @@ router.get('/profile', requireAuth, (req, res) => {
 // Update user profile
 router.put('/profile', requireAuth, (req, res) => {
   try {
-    const { username, email } = req.body;
+    const { username, email, display_name } = req.body;
     const userId = req.session.userId;
 
     // Validate input
@@ -111,17 +110,18 @@ router.put('/profile', requireAuth, (req, res) => {
     const currentUser = statements.getUserById.get(userId);
     const newUsername = username || currentUser.username;
     const newEmail = email || currentUser.email;
+    const newDisplayName = display_name || currentUser.display_name;
 
     // Update user
-    statements.updateUser.run(newUsername, newEmail, currentUser.avatar_path, userId);
+    statements.updateUserWithDisplayName.run(newUsername, newEmail, currentUser.avatar_path, newDisplayName, userId);
 
     // Return updated user
     const updatedUser = statements.getUserById.get(userId);
     const { password_hash, ...userData } = updatedUser;
-    // Ajoute avatar_url pour compatibilité frontend (toujours présent)
+    userData.avatar_url = getAvatarUrl(updatedUser);
     res.json({
       message: 'Profile updated successfully',
-      user: { ...userData, avatar_url: getAvatarUrl(updatedUser.avatar_path) }
+      ...userData
     });
 
   } catch (error) {
@@ -155,10 +155,10 @@ router.post('/avatar', requireAuth, upload.single('avatar'), (req, res) => {
     // Return updated user
     const updatedUser = statements.getUserById.get(userId);
     const { password_hash, ...userData } = updatedUser;
-    // Ajoute avatar_url pour compatibilité frontend (toujours présent)
+    userData.avatar_url = getAvatarUrl(updatedUser);
     res.json({
       message: 'Avatar uploaded successfully',
-      user: { ...userData, avatar_url: getAvatarUrl(updatedUser.avatar_path) }
+      ...userData
     });
 
   } catch (error) {
@@ -189,10 +189,10 @@ router.delete('/avatar', requireAuth, (req, res) => {
     // Return updated user
     const updatedUser = statements.getUserById.get(userId);
     const { password_hash, ...userData } = updatedUser;
-    // Ajoute avatar_url pour compatibilité frontend (toujours présent)
+    userData.avatar_url = getAvatarUrl(updatedUser);
     res.json({
       message: 'Avatar deleted successfully',
-      user: { ...userData, avatar_url: getAvatarUrl(updatedUser.avatar_path) }
+      ...userData
     });
 
   } catch (error) {

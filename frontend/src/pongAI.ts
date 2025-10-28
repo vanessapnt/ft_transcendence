@@ -1,4 +1,4 @@
-(function() {
+(function () {
 
     let board: HTMLCanvasElement;
     let boardWidth: number = 800;
@@ -14,7 +14,17 @@
     let player1Score: number = 0;
     let player2Score: number = 0;
 
+    let player1Name: string = "PLAYER 1";
+    let player2Name: string = "AI";
+
+    const WINNING_SCORE: number = 5;
+
+    let GameEndCallback: ((winner: string) => void) | null = null;
+
+    let isGameRunning: boolean = false;
+    let isPaused: boolean = false;
     let predictedImpactY: number | null = null;
+    let animationFrameId: number | null = null;
 
     interface Player {
         x: number;
@@ -58,43 +68,64 @@
         velocityY: 4
     };
 
-    window.onload = function() {
-        board = document.getElementById("board") as HTMLCanvasElement;
-        board.height = boardHeight;
-        board.width = boardWidth;
-        context = board.getContext("2d")!;
+    function switchPause(): void {
+        if (!isGameRunning) return;
 
-        context.fillStyle = "white";
-        context.fillRect(player1.x, player1.y, playerWidth, playerHeight);
-        context.fillRect(player2.x, player2.y, playerWidth, playerHeight);
-        context.fillRect(ball.x, ball.y, ballWidth, ballHeight);
+        isPaused = !isPaused;
 
-        requestAnimationFrame(update);
-        document.addEventListener("keydown", PlayerMoves);
+        if (isPaused) {
+            showPauseMenu();
+        } else {
+            hidePauseMenu();
+            update();
+        }
+    }
+
+    function showPauseMenu(): void {
+        let pauseOverlay = document.getElementById('pause-overlay');
+        if (pauseOverlay) {
+            pauseOverlay.classList.add('active');
+        }
+    }
+
+    function hidePauseMenu(): void {
+        const pauseOverlay = document.getElementById('pause-overlay');
+        if (pauseOverlay) {
+            pauseOverlay.classList.remove('active');
+        }
+    }
+
+    function setupEventListeners(): void {
+        document.addEventListener("keydown", playerMoves);
         document.addEventListener("keyup", PlayerStops);
-    };
+        document.getElementById("resume-btn")?.addEventListener("click", switchPause);
+    }
+
+    function removeEventListeners(): void {
+        document.removeEventListener("keydown", playerMoves);
+        document.removeEventListener("keyup", PlayerStops);
+    }
 
     function update(): void {
-        requestAnimationFrame(update);
+        if (!isGameRunning || isPaused)
+            return;
+
+        animationFrameId = requestAnimationFrame(update);
         context.clearRect(0, 0, board.width, board.height);
 
-        // Player 1
         context.fillStyle = "white";
         let nextPlayer1Y: number = player1.y + player1.velocityY;
         if (!outOfBounds(nextPlayer1Y, playerHeight))
             player1.y = nextPlayer1Y;
         context.fillRect(player1.x, player1.y, playerWidth, playerHeight);
 
-        // Player 2 (IA)
         if (ball.velocityX > 0) {
-            if (ball.x > boardWidth / 3)
-            {
+            if (ball.x > boardWidth / 3) {
                 if (predictedImpactY === null)
                     predictedImpactY = findImpact(ball, player2, board);
-                
+
                 let centerPlayer2 = player2.y + player2.height / 2;
-                if (Math.abs(predictedImpactY - centerPlayer2) > 3)
-                {
+                if (Math.abs(predictedImpactY - centerPlayer2) > 3) {
                     if (predictedImpactY > centerPlayer2) {
                         player2.y += 3;
                     } else {
@@ -106,8 +137,7 @@
             predictedImpactY = null;
 
             let centerY = (boardHeight / 2) - (playerHeight / 2);
-            let centerPlayer2 = player2.y + player2.height / 2;
-            
+
             if (Math.abs(centerY - player2.y) > 3) {
                 if (centerY > player2.y) {
                     player2.y += 2;
@@ -116,19 +146,18 @@
                 }
             }
         }
-        
+
         if (player2.y < 0) player2.y = 0;
-        if (player2.y + player2.height > boardHeight) 
+        if (player2.y + player2.height > boardHeight)
             player2.y = boardHeight - player2.height;
-        
+
         context.fillRect(player2.x, player2.y, playerWidth, playerHeight);
 
         ball.x += ball.velocityX;
         ball.y += ball.velocityY;
         context.fillRect(ball.x, ball.y, ballWidth, ballHeight);
 
-        if (outOfBounds(ball.y, ballHeight))
-        {
+        if (outOfBounds(ball.y, ballHeight)) {
             ball.velocityY *= -1;
             predictedImpactY = null;
         }
@@ -153,29 +182,67 @@
 
         if (ball.x < 0) {
             player2Score++;
-            resetGame(1);
+            checkWinner();
+            serve(1);
         }
         else if (ball.x + ballWidth > boardWidth) {
             player1Score++;
-            resetGame(-1);
+            checkWinner();
+            serve(-1);
         }
 
         context.font = "16px 'Press Start 2P', monospace";
-        context.fillText("PLAYER 1", boardWidth/5 - 30, 35);
-        context.fillText("AI", boardWidth*4/5 - 20, 35);
+        context.fillText(player1Name, boardWidth / 5 - 30, 35);
+        context.fillText("AI", boardWidth * 4 / 5 - 20, 35);
         context.font = "32px 'Press Start 2P', monospace";
-        context.fillText(player1Score.toString(), boardWidth/5, 75);
-        context.fillText(player2Score.toString(), boardWidth*4/5 - 45, 75);
+        context.fillText(player1Score.toString(), boardWidth / 5, 75);
+        context.fillText(player2Score.toString(), boardWidth * 4 / 5 - 45, 75);
 
         for (let i = 10; i < board.height; i += 25)
             context.fillRect(board.width / 2 - 10, i, 5, 5);
+    }
+
+    function checkWinner(): void {
+        if (player1Score >= WINNING_SCORE) {
+            endGame(player1Name);
+        } else if (player2Score >= WINNING_SCORE) {
+            endGame("AI");
+        }
+    }
+
+    function endGame(winner: string): void {
+        isGameRunning = false;
+
+        console.log(`Game Over! Winner: ${winner}`);
+
+        context.fillStyle = "rgba(0, 0, 0, 0.8)";
+        context.fillRect(0, 0, boardWidth, boardHeight);
+
+        context.fillStyle = "#00ff00";
+        context.font = "48px 'Press Start 2P', monospace";
+        context.textAlign = "center";
+        context.fillText("WINNER!", boardWidth / 2, boardHeight / 2 - 30);
+        context.fillText(winner, boardWidth / 2, boardHeight / 2 + 30);
+        context.textAlign = "left";
+
+        if (GameEndCallback) {
+            setTimeout(() => {
+                GameEndCallback?.(winner);
+            }, 2000);
+        }
     }
 
     function outOfBounds(yPosition: number, Height: number): boolean {
         return (yPosition <= 0 || yPosition + Height >= boardHeight);
     }
 
-    function PlayerMoves(e: KeyboardEvent): void {
+    function playerMoves(e: KeyboardEvent): void {
+        if (e.code == "Space") {
+            e.preventDefault();
+            switchPause();
+            return;
+        }
+
         if (e.code == "KeyW") {
             player1.velocityY = -3;
         }
@@ -197,10 +264,10 @@
             a.y + a.height > b.y;
     }
 
-    function resetGame(direction: number): void {
+    function serve(direction: number): void {
         ball = {
-            x: boardWidth/2,
-            y: boardHeight/2,
+            x: boardWidth / 2,
+            y: boardHeight / 2,
             width: ballWidth,
             height: ballHeight,
             velocityX: direction * 2,
@@ -209,17 +276,15 @@
         predictedImpactY = null;
     }
 
-    // on simule le mouvement de la balle jusqu'à ce qu'elle atteigne le joueur 2
     function findImpact(ball: Ball, player2: Player, board: HTMLCanvasElement): number {
         let ballX = ball.x;
         let ballY = ball.y;
         let ballVelocityX = ball.velocityX;
         let ballVelocityY = ball.velocityY;
-        
+
         const initialDistance = player2.x - ball.x;
-        
-        while(ballX < player2.x)
-        {
+
+        while (ballX < player2.x) {
             ballX += ballVelocityX;
             ballY += ballVelocityY;
             if (ballY <= 0) {
@@ -234,31 +299,68 @@
 
         const currentDistance = player2.x - ball.x;
         const proximityFactor = Math.max(0, currentDistance / initialDistance);
-        
+
         const maxError = 110 * proximityFactor;
         let error = (Math.random() - 0.5) * maxError;
-        
+
         let predictedY = ballY + ballHeight / 2 + error;
-        
+
         return predictedY;
     }
 
-    function newGame(): void {
-        player1Score = 0;
-        player2Score = 0;
-        player1.y = (boardHeight / 2) - (playerHeight / 2);
-        player2.y = (boardHeight / 2) - (playerHeight / 2);
-        resetGame(1);
+    class PongGameAI {
+        start(): void {
+            board = document.getElementById("board") as HTMLCanvasElement;
+            if (!board) {
+                console.error("Canvas not found");
+                return;
+            }
+
+            board.height = boardHeight;
+            board.width = boardWidth;
+            context = board.getContext("2d")!;
+
+            player1Score = 0;
+            player2Score = 0;
+            isGameRunning = true;
+            isPaused = false;
+            predictedImpactY = null;
+
+            player1.y = (boardHeight / 2) - (playerHeight / 2);
+            player2.y = (boardHeight / 2) - (playerHeight / 2);
+            player1.velocityY = 0;
+            player2.velocityY = 0;
+
+            serve(1);
+
+            removeEventListeners();
+            setupEventListeners();
+
+            update();
+        }
+
+        setPlayerName(name: string): void { // TODO à utiliser après login
+            player1Name = name;
+        }
+
+        setCallback(callback: (winner: string) => void): void {
+            GameEndCallback = callback;
+        }
+
+        stop(): void {
+            isGameRunning = false;
+            isPaused = false;
+            if (animationFrameId !== null) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            removeEventListeners();
+        }
     }
 
-    class PongGame {
-        start() {
-            console.log('Game started!');
-            newGame();
-        }
-        stop() { console.log('Game stopped!'); }
+    if (!(window as any).PONG) {
+        (window as any).PONG = {};
     }
-    
-    (window as any).PongGame = new PongGame();
+    (window as any).PONG.PongGameAI = new PongGameAI();
 
 })();

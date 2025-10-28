@@ -84,17 +84,15 @@
         if (signupBtn) signupBtn.style.display = 'none';
 
         (window as any).currentUserId = userId;
-        (window as any).currentAvatarUrl = safeAvatarUrl;
+        (window as any).currentAvatarUrl = avatarUrl;
         (window as any).currentUsername = username;
-        (window as any).currentDisplayName = safeDisplayName;
+        (window as any).currentDisplayName = displayName;
 
-        avatarImg.src = getAvatarUrl(safeAvatarUrl);
+        avatarImg.src = getAvatarUrl(avatarUrl);
         avatarImg.style.display = 'inline-block';
 
-        editProfileBtn.onclick = () => showEditProfile(username, safeDisplayName);
+        editProfileBtn.onclick = () => showEditProfile(username, displayName);
         logoutBtn.onclick = () => logout();
-
-        hideGithubLoginIfConnected();
     }
 
     function logout(): void {
@@ -259,10 +257,6 @@
                     // Afficher le profil utilisateur
                     const userInfo = document.getElementById('user-info');
                     if (userInfo) userInfo.style.display = 'block';
-                } else if (!user.username) {
-                    messageDiv.className = 'auth-message error';
-                    messageDiv.textContent = 'Erreur: le backend ne fournit pas de username.';
-                    console.error('Login error: missing username in user object', user);
                 } else {
                     messageDiv.className = 'auth-message error';
                     let reason = data.error || data.message || '';

@@ -5,20 +5,21 @@
 
 # Commandes par défaut
 help:
-	@echo "╔═══════════════════════════════════════════════════╗"
-	@echo "║     🎮 Transcendence - Commandes disponibles 🎮  ║"
-	@echo "╠═══════════════════════════════════════════════════╣"
-	@echo "║  make dev         → Mode développement            ║"
-	@echo "║  make dev-verbose → Mode dev avec logs détaillés  ║"
-	@echo "║  make prod        → Lancer en mode production     ║"
-	@echo "║  make stop        → Arrêter les services          ║"
-	@echo "║  make build       → Rebuilder les images          ║"
-	@echo "║  make clean       → Nettoyer tout (volumes inclus)║"
-	@echo "║  make logs        → Afficher les logs (dev)       ║"
-	@echo "║  make logs-prod   → Afficher les logs (prod)      ║"
-	@echo "║  make links       → Afficher tous les liens       ║"
-	@echo "║  make reset-db    → Supprimer la DB et relancer   ║"
-	@echo "╚═══════════════════════════════════════════════════╝"
+	@echo "╔════════════════════════════════════════════════════════╗"
+	@echo "║     🎮 Transcendence - Commandes disponibles 🎮         ║"
+	@echo "╠════════════════════════════════════════════════════════╣"
+	@echo "║  make dev              → Mode développement            ║"
+	@echo "║  make dev-verbose      → Mode dev avec logs détaillés  ║"
+	@echo "║  make prod             → Lancer en mode production     ║"
+	@echo "║  make stop             → Arrêter les services          ║"
+	@echo "║  make build            → Rebuilder les images          ║"
+	@echo "║  make clean            → Nettoyer tout (volumes inclus)║"
+	@echo "║  make logs             → Afficher les logs             ║"
+	@echo "║  make links            → Afficher tous les liens       ║"
+	@echo "║  make serve-pong       → Servir frontend/pong (jeu)    ║"
+	@echo "║  make serve-pong-dev   → Watch .ts + live-reload (dev) ║"
+	@echo "║  make reset-db    → Supprimer la DB et relancer        ║"
+	@echo "╚════════════════════════════════════════════════════════╝"
 
 # Mode développement
 dev-verbose: ## 🚀 Lance l'environnement de développement avec logs détaillés
@@ -98,22 +99,41 @@ clean:
 logs:
 	docker-compose -f docker-compose.dev.yml logs -f
 
-# # Afficher les logs (prod)
-# logs-prod:
-# 	docker-compose -f docker-compose.prod.yml logs -f
+# Serve the `frontend/pong` folder directly so index is available at /
+.PHONY: serve-pong
+serve-pong: ## 🕹️ Serve `frontend/pong` on port 3000 (open http://localhost:3000/)
+	@echo "🟢 Serving frontend/pong at http://localhost:3000 (Ctrl+C to stop)"
+	@cd frontend/pong && python3 -m http.server 3000
+
+.PHONY: serve-pong-dev
+serve-pong-dev:
+	@echo "🟢 Starting TypeScript watcher and live-reload server on http://localhost:3000"
+	@sh -c '\
+	cd frontend; \
+	# install dependencies if missing (first run)\
+	if [ ! -d node_modules ]; then \
+		echo "⬇️  node_modules not found — running npm install in frontend..."; \
+		npm install; \
+	fi; \
+	npx tsc > /dev/null 2>&1; \
+	# start tsc in background, then start live-server in foreground; when live-server exits we kill tsc\
+	npx tsc -w > /dev/null 2>&1 & TSC_PID=$$!; \
+	sleep 1; \
+	npx live-server pong --port=3000 --quiet || true; \
+	kill $$TSC_PID 2>/dev/null || true'
 
 # Afficher tous les liens disponibles
 links:
 	@echo "╔═══════════════════════════════════════════════════════════╗"
 	@echo "║                   📊 SERVICES DISPONIBLES                ║"
 	@echo "╠═══════════════════════════════════════════════════════════╣"
-	@echo "║  🎮 Jeu Pong:      http://localhost:3000                 ║"
+	@echo "║  🎮 Jeu Pong:      http://localhost:8080                 ║"
 	@echo "║  📊 Dashboard:     http://localhost:3000/dashboard.html  ║"
 	@echo "║  📈 Kibana (ELK):  http://localhost:5601                 ║"
 	@echo "║  📈 Grafana:       http://localhost:3001                 ║"
 	@echo "║  🔌 API Backend:   http://localhost:8000/api/health      ║"
 	@echo "║  🔍 Elasticsearch: http://localhost:9200/_cat/health?v   ║"
-	@echo "╚═══════════════════════════════════════════════════════════╝"
+	@echo "╚═════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "💡 Tip: Cmd+Clic (macOS) ou Ctrl+Clic (Linux/Windows) pour ouvrir"
 

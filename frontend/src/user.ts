@@ -91,7 +91,7 @@
         avatarImg.src = getAvatarUrl(avatarUrl);
         avatarImg.style.display = 'inline-block';
 
-        editProfileBtn.onclick = () => showEditProfile(username, displayName);
+        editProfileBtn.onclick = () => showEditProfile(username, displayName || username);
         logoutBtn.onclick = () => logout();
     }
 

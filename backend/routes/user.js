@@ -57,7 +57,20 @@ function getAvatarUrl(user) {
 }
 
 // Get user profile
-router.get('/profile', requireAuth, (req, res) => {
+// DEBUG: log session and cookies before auth middleware
+router.get('/profile', (req, res, next) => {
+  console.log('DEBUG PRE-AUTH /api/user/profile:', {
+    session: req.session,
+    user: req.user,
+    cookies: req.cookies
+  });
+  next();
+}, requireAuth, (req, res) => {
+  console.log('SESSION DEBUG /api/user/profile:', {
+    session: req.session,
+    user: req.user,
+    cookies: req.cookies
+  });
   try {
     const user = statements.getUserById.get(req.session.userId);
     if (!user) {
@@ -70,6 +83,16 @@ router.get('/profile', requireAuth, (req, res) => {
     console.error('Get profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// Debug route to check session state
+router.get('/debug-session', (req, res) => {
+  res.json({
+    session: req.session,
+    passportUser: req.user,
+    cookies: req.cookies,
+    headers: req.headers
+  });
 });
 
 // Update user profile

@@ -52,7 +52,7 @@ wait $$DC_PID || true'
 # Mode production
 prod:
 	@echo "🚀 Démarrage en mode production..."
-	@docker-compose -f docker-compose.prod.yml up -d --build
+	@docker-compose -f docker-compose.prod.yml up -d --build --remove-orphans
 	@./scripts/prod-startup.sh
 
 # # Logs production

@@ -3,14 +3,26 @@ services:
     build: ./frontend
     environment:
       - NODE_ENV=production
+    ports:
+      - "3000:3000"
     networks:
       - transcendence-network
     restart: unless-stopped
 
   backend:
     build: ./backend
+    ports:
+      - "8000:8000"
     environment:
       - NODE_ENV=production
+      - GITHUB_CLIENT_ID=Ov23liMyoGPzLgzpVjQt
+      - GITHUB_CLIENT_SECRET=8deed7b039363328750614a3c42945da6f92d0d3
+      - GITHUB_CALLBACK_URL=https://localhost:8443/api/oauth/callback/github
+      - SECRET_KEY=change_me_for_prod
+      - FRONTEND_URL=https://localhost:8443/
+    volumes:
+      - ./backend/avatars:/app/avatars
+      - sqlite_data:/app/data
     networks:
       - transcendence-network
     restart: unless-stopped
@@ -44,7 +56,7 @@ services:
     container_name: elasticsearch-prod
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9200:9200"
+      - "9200:9200"
     environment:
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
@@ -74,14 +86,15 @@ services:
     container_name: logstash-prod
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5044:5044" # Beats input (localhost seulement)
-      - "127.0.0.1:5001:5000/tcp" # TCP input (localhost seulement)
-      - "127.0.0.1:9600:9600" # API Logstash (localhost seulement)
+      - "5044:5044"
+      - "5001:5000/tcp"
+      - "9600:9600"
     environment:
       LS_JAVA_OPTS: "-Xmx512m -Xms512m" # Plus de RAM en prod
       LOG_LEVEL: "warn"
+      LOGSTASH_CONFIG_PATH: /tmp/host-logstash.yml
     volumes:
-      - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./elk/logstash/config/logstash.yml:/tmp/host-logstash.yml:ro
       - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
     networks:
       - transcendence-network
@@ -106,7 +119,7 @@ services:
     container_name: kibana-prod
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5601:5601"
+      - "5601:5601"
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
       SERVER_NAME: "transcendence-kibana-prod"
@@ -136,7 +149,7 @@ services:
     container_name: prometheus-prod
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9090:9090"
+      - "9090:9090"
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -165,7 +178,7 @@ services:
     container_name: grafana-prod
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3001:3000"
+      - "3001:3000"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
@@ -242,6 +255,8 @@ volumes:
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  sqlite_data:
     driver: local
 
 networks:

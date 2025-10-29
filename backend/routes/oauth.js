@@ -4,16 +4,7 @@ const GitHubStrategy = require('passport-github2').Strategy;
 const { statements } = require('../database');
 
 const router = express.Router();
-
-// Passport serialization
-passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
-
-passport.deserializeUser((id, done) => {
-  const user = statements.getUserById.get(id);
-  done(null, user);
-});
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://localhost:8443/';
 
 // GitHub OAuth Strategy
 passport.use(new GitHubStrategy({
@@ -110,8 +101,33 @@ router.get('/login/github',
 router.get('/callback/github',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
-    // Successful authentication
-    res.redirect('http://localhost:8080');
+    // Force la session à être liée à l'utilisateur après login
+    if (req.user && req.session) {
+      req.login(req.user, (err) => {
+        if (err) {
+          console.error('Passport login error:', err);
+          return res.redirect(FRONTEND_URL);
+        }
+
+        // S'assurer que userId est dans la session
+        req.session.userId = req.user.id;
+        req.session._force = Date.now(); // Mark session as modified
+
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+          } else {
+            console.log('Session saved successfully after OAuth login');
+          }
+
+          // Rediriger vers une page de confirmation ou la homepage
+          console.log('OAuth login successful, redirecting to:', FRONTEND_URL);
+          res.redirect(FRONTEND_URL);
+        });
+      });
+    } else {
+      res.redirect(FRONTEND_URL);
+    }
   }
 );
 

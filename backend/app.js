@@ -7,28 +7,41 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+console.log('==> [APP.JS] FRONTEND_URL (startup):', process.env.FRONTEND_URL);
+
 const { statements } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
+console.log('==> [APP.JS] Backend app.js loaded and running');
+
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:3000', 'http://localhost'],
-  credentials: true
+  origin: ['https://localhost:8443'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Set-Cookie']
 }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Debug middleware: log cookies on every request
+app.use((req, res, next) => {
+  console.log('==> [COOKIE DEBUG] Incoming cookies:', req.headers.cookie);
+  next();
+});
+
 // Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'transcendence-secret-key',
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true, // Temporarily force session cookie to be set
   cookie: {
-    sameSite: 'lax', // 'lax' si frontend et backend même domaine/port, sinon 'none'
-    secure: false,   // true si HTTPS
+    sameSite: 'None', // Capital N for compatibility
+    secure: true,     // IMPORTANT: true en prod HTTPS
+    path: '/',        // Explicitly set path
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
@@ -37,21 +50,17 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Synchronise la session pour les utilisateurs OAuth (GitHub)
-app.use((req, res, next) => {
-  if (req.user && !req.session.userId) {
-    req.session.userId = req.user.id;
-  }
-  next();
-});
 
 // Passport serialization
 passport.serializeUser((user, done) => {
+  console.log('PASSPORT serializeUser [app.js]:', user);
   done(null, user.id);
 });
 
 passport.deserializeUser((id, done) => {
   const user = statements.getUserById.get(id);
+  console.log('PASSPORT deserializeUser [app.js]: id', id, 'user', user);
+  console.log('PASSPORT deserializeUser [app.js]:', user);
   done(null, user);
 });
 
@@ -112,7 +121,7 @@ app.get('/api/oauth/callback/github',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
     // Successful authentication
-    res.redirect('http://localhost:8080');
+    res.redirect(process.env.FRONTEND_URL || 'https://localhost:8443/');
   }
 );
 
@@ -155,10 +164,33 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+// Synchronise la session pour les utilisateurs OAuth (GitHub)
+app.use((req, res, next) => {
+  console.log('SESSION SYNC MIDDLEWARE:', {
+    sessionUserId: req.session.userId,
+    passportUser: req.user ? req.user.id : 'none'
+  });
+
+  // Si Passport a un user mais pas la session
+  if (req.user && !req.session.userId) {
+    req.session.userId = req.user.id;
+    console.log('SYNC: Added userId to session:', req.user.id);
+  }
+
+  // Si la session a un userId mais Passport n'a pas de user
+  if (req.session.userId && !req.user) {
+    const user = statements.getUserById.get(req.session.userId);
+    if (user) {
+      req.login(user, (err) => {
+        if (err) console.error('Auto-login error:', err);
+        else console.log('SYNC: Auto-logged in user from session:', user.id);
+        next();
+      });
+      return;
+    }
+  }
+
+  next();
 });
 
 app.listen(PORT, () => {

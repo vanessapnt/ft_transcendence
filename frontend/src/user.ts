@@ -91,7 +91,7 @@
         avatarImg.src = getAvatarUrl(avatarUrl);
         avatarImg.style.display = 'inline-block';
 
-        editProfileBtn.onclick = () => showEditProfile(username, displayName);
+        editProfileBtn.onclick = () => showEditProfile(username, displayName || username);
         logoutBtn.onclick = () => logout();
     }
 
@@ -115,27 +115,30 @@
     function showSignup(): void {
         if (document.getElementById('signup-form')) return;
 
-        const homeView = document.getElementById('home-view');
-        if (!homeView) return;
+        const menu = document.querySelector('.menu-buttons') as HTMLElement;
+        if (!menu) return;
 
+        // Masquer le menu
+        menu.style.display = 'none';
+
+        // Créer le formulaire
         const form = document.createElement('form');
         form.id = 'signup-form';
         form.className = 'auth-form';
         form.innerHTML = `
         <h2>Sign Up</h2>
-        <div style="color:#888;font-size:0.9em;margin-bottom:10px;">
-            Le mot de passe doit contenir au moins 6 caractères.
-        </div>
         <input type="text" id="signup-username" placeholder="Username" required>
         <input type="email" id="signup-email" placeholder="Email" required>
         <input type="password" id="signup-password" placeholder="Password" required>
         <input type="text" id="signup-displayname" placeholder="Display Name" required>
-        <button type="submit" class="auth-submit-btn">Register</button>
+        <div class="auth-btn-row">
+            <button type="submit" class="auth-submit-btn">Register</button>
+            <button type="button" id="show-login" class="auth-switch-btn">Login</button>
+        </div>
         <button type="button" id="cancel-signup" class="auth-cancel-btn">Cancel</button>
-        <button type="button" id="show-login" class="auth-switch-btn">Login</button>
         <div id="signup-message" class="auth-message"></div>
     `;
-        homeView.appendChild(form);
+        menu.parentElement?.appendChild(form);
 
         form.onsubmit = async (e: Event) => {
             e.preventDefault();
@@ -145,9 +148,6 @@
             const display_name = (document.getElementById('signup-displayname') as HTMLInputElement).value.trim();
             const messageDiv = document.getElementById('signup-message')!;
             messageDiv.textContent = '';
-
-            // Log the request body for debugging
-            console.log('Signup request body:', { username, email, password, display_name });
 
             if (!username || !email || !password || !display_name) {
                 messageDiv.className = 'auth-message error';
@@ -159,26 +159,23 @@
                 const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ username, email, password, display_name })
                 });
-                // Log the raw response for debugging
                 const text = await res.text();
-                console.log('Signup raw response:', text);
                 let data: ApiResponse;
                 try {
                     data = JSON.parse(text);
                 } catch (err) {
                     data = { error: 'Invalid JSON from backend' };
                 }
-
-                // Correction : extraire les infos depuis data.user si présent
                 const user = data.user;
                 if (res.ok && user && user.username && user.display_name && user.id) {
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = 'Registration successful!';
-                    // Adapter avatar_path (backend) en avatar_url (frontend)
                     setUser(user.username, user.display_name, user.id, user.avatar_path || '/avatars/default_avatar.png');
-                    setTimeout(() => form.remove(), 1500);
+                    form.remove();
+                    menu.style.display = '';
                 } else {
                     messageDiv.className = 'auth-message error';
                     messageDiv.textContent = data.error || data.message || 'Registration failed';
@@ -190,9 +187,13 @@
             }
         };
 
-        document.getElementById('cancel-signup')!.onclick = () => form.remove();
+        document.getElementById('cancel-signup')!.onclick = () => {
+            form.remove();
+            menu.style.display = '';
+        };
         document.getElementById('show-login')!.onclick = () => {
             form.remove();
+            menu.style.display = '';
             showLogin();
         };
     }
@@ -200,9 +201,13 @@
     function showLogin(): void {
         if (document.getElementById('login-form')) return;
 
-        const homeView = document.getElementById('home-view');
-        if (!homeView) return;
+        const menu = document.querySelector('.menu-buttons') as HTMLElement;
+        if (!menu) return;
 
+        // Masquer le menu
+        menu.style.display = 'none';
+
+        // Créer le formulaire
         const form = document.createElement('form');
         form.id = 'login-form';
         form.className = 'auth-form';
@@ -210,12 +215,14 @@
         <h2>Login</h2>
         <input type="text" id="login-username" placeholder="Username" required>
         <input type="password" id="login-password" placeholder="Password" required>
-        <button type="submit" class="auth-submit-btn">Login</button>
+        <div class="auth-btn-row">
+            <button type="submit" class="auth-submit-btn">Login</button>
+            <button type="button" id="show-signup-from-login" class="auth-switch-btn">Sign Up</button>
+        </div>
         <button type="button" id="cancel-login" class="auth-cancel-btn">Cancel</button>
-        <button type="button" id="show-signup-from-login" class="auth-switch-btn">Sign Up</button>
         <div id="login-message" class="auth-message"></div>
     `;
-        homeView.appendChild(form);
+        menu.parentElement?.appendChild(form);
 
         form.onsubmit = async (e: Event) => {
             e.preventDefault();
@@ -237,24 +244,19 @@
             }
 
             try {
-                // Correction : utiliser la bonne route backend
                 const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include', // Ajouté pour envoyer les cookies de session
+                    credentials: 'include',
                     body: JSON.stringify({ username, password })
                 });
                 const data: ApiResponse = await res.json();
-
-                // Correction : extraire les infos depuis data.user si présent
                 const user = data.user as UserData;
-                console.log('User data received after login:', user); // Ajout debug
                 if (res.ok && user.username && user.display_name && user.id) {
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = 'Login successful!';
                     setUser(user.username, user.display_name, user.id, user.avatar_path || user.avatar_url || '/avatars/default_avatar.png');
-                    form.style.display = 'none'; // Masquer le formulaire immédiatement
-                    // Afficher le profil utilisateur
+                    form.style.display = 'none';
                     const userInfo = document.getElementById('user-info');
                     if (userInfo) userInfo.style.display = 'block';
                 } else {
@@ -278,9 +280,13 @@
             }
         };
 
-        document.getElementById('cancel-login')!.onclick = () => form.remove();
+        document.getElementById('cancel-login')!.onclick = () => {
+            form.remove();
+            menu.style.display = '';
+        };
         document.getElementById('show-signup-from-login')!.onclick = () => {
             form.remove();
+            menu.style.display = '';
             showSignup();
         };
     }
@@ -423,6 +429,9 @@
     (window as any).PONG.showEditProfile = showEditProfile;
     (window as any).PONG.setUser = setUser;
     (window as any).PONG.logout = logout;
+    (window as any).PONG.oauthLogin = function () {
+        window.location.href = '/api/oauth/login/github';
+    };
 
     (window as any).showSignup = showSignup;
     (window as any).showLogin = showLogin;

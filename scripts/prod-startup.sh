@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Couleurs pour l'affichage
@@ -6,21 +5,22 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration (progression complète)
 SERVICES=(
-	"backend" "frontend" "nginx" "elasticsearch" "logstash" "kibana" "kibana-init" "prometheus" "grafana" "node-exporter"
+	"backend" "frontend" "nginx" "elasticsearch" "logstash" "kibana" "prometheus" "grafana" "node-exporter"
 )
 SERVICE_PORTS=(
-	"8000" "3000" "80" "9200" "5044" "5601" "" "9090" "3001" "9100"
+	"8000" "3000" "80" "9200" "5044" "5601" "9090" "3001" "9100"
 )
 SERVICE_URLS=(
-	"http://localhost:8000" "http://localhost:3000" "http://localhost" "http://localhost:9200" "http://localhost:5044" "http://localhost:5601" "" "http://localhost:9090" "http://localhost:3001" "http://localhost:9100"
+	"http://localhost:8000" "http://localhost:3000" "http://localhost" "http://localhost:9200" "http://localhost:5044" "http://localhost:5601" "http://localhost:9090" "http://localhost:3001" "http://localhost:9100"
 )
 SERVICE_NAMES=(
-	"Backend API" "Frontend App" "Nginx Proxy" "Elasticsearch" "Logstash (Beats input)" "Kibana Dashboard" "Kibana Init" "Prometheus" "Grafana Monitoring" "Node Exporter"
+	"Backend API" "Frontend App" "Nginx Proxy" "Elasticsearch" "Logstash (Beats input)" "Kibana Dashboard" "Prometheus" "Grafana Monitoring" "Node Exporter"
 )
 
 print_header() {
@@ -39,40 +39,38 @@ show_progress_bar() {
 	local percentage=$((current * 100 / total))
 	local filled=$((current * width / total))
 	local empty=$((width - filled))
-    
 	printf "\r${YELLOW}[${NC}"
-	printf "%*s" $filled | tr ' ' '█'
-	printf "%*s" $empty | tr ' ' '░'
+	printf "%*s" $filled | tr ' ' '#'
+	printf "%*s" $empty | tr ' ' '-'
 	printf "${YELLOW}] %d%% (%d/%d services)${NC}" $percentage $current $total
 }
 
 show_individual_progress() {
 	local service_states=("$@")
-    
 	echo ""
 	echo -e "${BLUE}📋 État des services :${NC}"
 	echo ""
-    
 	for i in "${!SERVICES[@]}"; do
 		local service_name="${SERVICE_NAMES[$i]}"
 		local status="${service_states[$i]}"
 		local bar_width=30
 		tput el
+		local filled_bar=$(printf "%*s" $bar_width | tr ' ' '#')
+		local empty_bar=$(printf "%*s" $bar_width | tr ' ' '-')
 		if [ "$status" = "ready" ]; then
-			local filled_bar=$(printf "%*s" $bar_width | tr ' ' '█')
-			printf "  %-25s ${GREEN}[%s] ✅ READY${NC}\n" "$service_name" "$filled_bar"
+			printf "  %-25s ${GREEN}[%s] READY${NC}\n" "$service_name" "$filled_bar"
 		elif [ "$status" = "starting" ]; then
 			local filled=$((bar_width * 3 / 4))
 			local empty=$((bar_width - filled))
-			local filled_bar=$(printf "%*s" $filled | tr ' ' '█')
-			local empty_bar=$(printf "%*s" $empty | tr ' ' '░')
-			printf "  %-25s ${YELLOW}[%s%s] 🔄 STARTING${NC}\n" "$service_name" "$filled_bar" "$empty_bar"
+			local filled_bar=$(printf "%*s" $filled | tr ' ' '#')
+			local empty_bar=$(printf "%*s" $empty | tr ' ' '-')
+			printf "  %-25s ${YELLOW}[%s%s] STARTING${NC}\n" "$service_name" "$filled_bar" "$empty_bar"
 		else
 			local filled=$((bar_width / 4))
 			local empty=$((bar_width - filled))
-			local filled_bar=$(printf "%*s" $filled | tr ' ' '█')
-			local empty_bar=$(printf "%*s" $empty | tr ' ' '░')
-			printf "  %-25s ${RED}[%s%s] ⏳ WAITING${NC}\n" "$service_name" "$filled_bar" "$empty_bar"
+			local filled_bar=$(printf "%*s" $filled | tr ' ' '#')
+			local empty_bar=$(printf "%*s" $empty | tr ' ' '-')
+			printf "  %-25s ${RED}[%s%s] WAITING${NC}\n" "$service_name" "$filled_bar" "$empty_bar"
 		fi
 	done
 }
@@ -89,9 +87,9 @@ check_service_health() {
 		else
 			return 1
 		fi
-	# Nginx : vérifier port 80
+	# Nginx : vérifier port 80 (utilise /health pour un check fiable)
 	elif [[ "$service_name" == "Nginx Proxy" ]]; then
-		if curl -s --max-time $timeout http://localhost >/dev/null 2>&1; then
+		if curl -s --max-time $timeout http://localhost:8080/health >/dev/null 2>&1; then
 			return 0
 		else
 			return 1
@@ -169,22 +167,33 @@ show_service_links() {
 	echo -e "${BOLD}${GREEN}║                    🌐 SERVICES DISPONIBLES                   ║${NC}"
 	echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
 	echo ""
-    
-	local frontend_name="Frontend App (Jeu)"
-	local frontend_url="http://localhost:3000"
-	local status_icon="�"
-	local status_text="OFFLINE"
-	if curl -s --max-time 2 "$frontend_url" >/dev/null 2>&1; then
-		status_icon="🟢"
-		status_text="ONLINE "
+
+	# Section APPLICATION PRINCIPALE
+	echo -e "${BOLD}${BLUE}🎯 APPLICATION PRINCIPALE${NC}"
+	echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
+	local app_name="🌐 Transcendence Game (Prod)"
+	local app_url="http://localhost"
+	local app_desc="Jeu Pong + Authentification GitHub (prod)"
+	local app_status_icon="🟢"
+	local app_status_text="ONLINE"
+	if ! curl -s --max-time 2 "$app_url" >/dev/null 2>&1; then
+		app_status_icon="🔴"
+		app_status_text="OFFLINE"
 	fi
-	printf "  %s %s %-24s %s\n" "$status_icon" "$status_text" "$frontend_name" "$frontend_url"
+	printf "${NC}│ ${app_status_icon} %-15s │ ${BOLD}%-30s${NC} │\n" "$app_status_text" "$app_name"
+	printf "${NC}│ ${YELLOW}📝 Description${NC}    │ %-30s │\n" "$app_desc"
+	printf "${NC}│ ${GREEN}🔗 URL${NC}            │ ${BOLD}${GREEN}%-30s${NC} │\n" "$app_url"
+	echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
 	echo ""
-	echo -e "${BOLD}${BLUE}📊 Dashboards :${NC}"
+
+	# Section MONITORING
+	echo -e "${BOLD}${PURPLE}📊 MONITORING & LOGS${NC}"
+	echo -e "${PURPLE}┌─────────────────────────────────────────────────────────────┐${NC}"
 	local dash_names=("Kibana Dashboard" "Grafana Monitoring")
 	local dash_urls=("http://localhost:5601/app/dashboards#/view/transcendence-dashboard" "http://localhost:3001/d/$(echo transcendence-system-monitoring)/")
+	local dash_icons=("📈" "📊")
 	for i in "${!dash_names[@]}"; do
-		local d_icon="�"
+		local d_icon="🔴"
 		local d_text="OFFLINE"
 		local health_url="${dash_urls[$i]}"
 		if [ $i -eq 0 ]; then health_url="http://localhost:5601"; fi
@@ -193,11 +202,19 @@ show_service_links() {
 			d_icon="🟢"
 			d_text="ONLINE "
 		fi
-		printf "    %s %s %-22s %s\n" "$d_icon" "$d_text" "${dash_names[$i]}" "${dash_urls[$i]}"
+		printf "${NC}│ ${dash_icons[$i]} %-15s │ ${BOLD}%-30s${NC} │\n" "$d_text" "${dash_names[$i]}"
 	done
+	echo -e "${PURPLE}└─────────────────────────────────────────────────────────────┘${NC}"
 	echo ""
-	echo -e "${YELLOW}💡 Tip: Utilisez ${BOLD}'make logs'${NC}${YELLOW} pour voir les logs en temps réel${NC}"
-	echo -e "${YELLOW}💡 Tip: Utilisez ${BOLD}'make links'${NC}${YELLOW} pour réafficher ces liens${NC}"
+
+	# Footer avec conseils
+	echo -e "${BOLD}${GREEN}🎉 Prêt à jouer en PROD !${NC}"
+	echo -e "${GREEN}   → Ouvrez ${BOLD}http://localhost${NC}${GREEN} dans votre navigateur${NC}"
+	echo -e "${GREEN}   → Cliquez sur ${BOLD}'Login with GitHub'${NC}${GREEN} pour commencer${NC}"
+	echo ""
+	echo -e "${BLUE}💡 Conseils:${NC}"
+	echo -e "${BLUE}   • Utilisez ${BOLD}'make logs'${NC}${BLUE} pour voir les logs en temps réel${NC}"
+	echo -e "${BLUE}   • Utilisez ${BOLD}'make stop'${NC}${BLUE} pour arrêter tous les services${NC}"
 	echo ""
 }
 

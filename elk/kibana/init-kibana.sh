@@ -2,6 +2,8 @@
 # Script d'initialisation Kibana avancé pour ft_transcendence
 # Crée une interface complète et optimisée pour l'analyse des logs Elasticsearch
 
+echo "Kibana init script started"
+
 # Mode silencieux par défaut, verbose si VERBOSE=1
 VERBOSE=${VERBOSE:-0}
 
@@ -431,3 +433,5 @@ if [ "$VERBOSE" = "1" ]; then
     echo "   • Couleurs codées par sévérité"
     echo "   • Tables triables et filtrables"
 fi
+
+exit 0

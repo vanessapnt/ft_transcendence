@@ -14,7 +14,12 @@ const PORT = process.env.PORT || 8000;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost'],
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:8080',
+    'http://localhost',
+    'https://localhost:8443'
+  ],
   credentials: true
 }));
 
@@ -92,6 +97,7 @@ passport.use(new GitHubStrategy({
         'github',
         profile.id
       );
+      
 
       user = statements.getUserById.get(result.lastInsertRowid);
       return done(null, user);

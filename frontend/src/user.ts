@@ -14,6 +14,7 @@
         display_name?: string;
         id?: number;
         avatar_url?: string | null;
+        avatar_path?: string | null;
         error?: string;
         user?: UserData;
         message?: string;
@@ -85,11 +86,8 @@
         const defaultUrl = '/avatars/default_avatar.png';
         if (!url) return defaultUrl;
         if (url.startsWith('http://') || url.startsWith('https://')) return url;
-
-        if (url.startsWith('/')) {
-            return `${API_BASE_URL}${url}`;
-        }
-        return url;
+        if (url.startsWith('/avatars/')) return url;
+        return `/avatars/${url}`;
     }
 
     function escapeHtml(text: string): string {
@@ -231,6 +229,7 @@
 
         form.onsubmit = async (e: Event) => {
             e.preventDefault();
+            console.log('submit edit-profile-form');
             const usernameInput = document.getElementById('login-username') as HTMLInputElement | null;
             const passwordInput = document.getElementById('login-password') as HTMLInputElement | null;
             const messageDiv = document.getElementById('login-message');
@@ -321,13 +320,17 @@
         <div id="edit-profile-message" class="auth-message"></div>
     `;
         homeView.appendChild(form);
-
+        form.querySelector('.auth-submit-btn')?.addEventListener('click', () => {
+            console.log('Save button clicked');
+        });
         form.onsubmit = async (e: Event) => {
             e.preventDefault();
+            console.log('onsubmit called');
             const display_name = (document.getElementById('edit-displayname') as HTMLInputElement).value.trim();
             const messageDiv = document.getElementById('edit-profile-message')!;
             const avatarFile = (document.getElementById('edit-avatar') as HTMLInputElement).files?.[0];
             let updateOk = true;
+            let dataAvatar: ApiResponse | undefined = undefined;
             messageDiv.textContent = '';
 
             if (!display_name) {
@@ -349,12 +352,14 @@
 
                     if (!res.ok) {
                         updateOk = false;
+                        console.log('PUT /api/user/profile failed', data);
                         messageDiv.className = 'auth-message error';
                         messageDiv.textContent = data.error || 'Update failed';
                     }
                 }
 
                 if (avatarFile && updateOk) {
+                    console.log('Sending POST /api/user/avatar');
                     const formData = new FormData();
                     formData.append('avatar', avatarFile);
                     // Correction : route avatar
@@ -363,29 +368,50 @@
                         body: formData,
                         credentials: 'include' // Ajouté pour envoyer les cookies de session
                     });
-                    const dataAvatar: ApiResponse = await resAvatar.json();
+                    dataAvatar = await resAvatar.json();
 
-                    if (resAvatar.ok && dataAvatar.avatar_url) {
+                    if (
+                        resAvatar.ok &&
+                        (
+                            (dataAvatar.avatar_url) ||
+                            (dataAvatar.avatar_path) ||
+                            (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path))
+                        )
+                    ) {
                         const avatarImg = document.getElementById('avatar-img') as HTMLImageElement;
                         const editAvatarImg = document.getElementById('edit-avatar-img') as HTMLImageElement;
-                        const newAvatarUrl = getAvatarUrl(dataAvatar.avatar_url);
+                        const newAvatarUrl = getAvatarUrl(
+                            dataAvatar.avatar_url ||
+                            dataAvatar.avatar_path ||
+                            (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path))
+                        );
                         avatarImg.src = newAvatarUrl;
                         editAvatarImg.src = newAvatarUrl;
-                        (window as any).currentAvatarUrl = dataAvatar.avatar_url;
+                        (window as any).currentAvatarUrl = dataAvatar.avatar_url || dataAvatar.avatar_path || (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path));
                     } else {
                         updateOk = false;
+                        console.log('POST /api/user/avatar failed', dataAvatar);
                         messageDiv.className = 'auth-message error';
-                        messageDiv.textContent = dataAvatar.error || 'Avatar upload failed';
+                        messageDiv.textContent = dataAvatar && dataAvatar.error || 'Avatar upload failed';
                     }
                 }
 
                 if (updateOk) {
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = 'Profile updated!';
-                    setTimeout(() => {
-                        form.remove();
-                        setUser(currentUsername, display_name, (window as any).currentUserId, (window as any).currentAvatarUrl);
-                    }, 1000);
+                    form.remove();
+                    // Correction : toujours utiliser la valeur la plus fraîche de l'avatar
+                    const finalAvatar =
+                        (dataAvatar && dataAvatar.user && (dataAvatar.user.avatar_path || dataAvatar.user.avatar_url))
+                        || (dataAvatar && (dataAvatar.avatar_path || dataAvatar.avatar_url))
+                        || (window as any).currentAvatarUrl;
+
+                    setUser(
+                        currentUsername,
+                        display_name,
+                        (window as any).currentUserId,
+                        finalAvatar
+                    );
                 }
             } catch (err) {
                 messageDiv.className = 'auth-message error';

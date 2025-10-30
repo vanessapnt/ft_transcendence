@@ -26,7 +26,10 @@
         <div class="menu-buttons">
             <button onclick="PONG.Nav.showModeSelection()">START GAME</button>
             <button onclick="PONG.Nav.showTournament()">TOURNAMENT</button>
-            <button class="signup-btn" onclick="showSignup()">SIGN UP</button>
+            <div class="auth-buttons-row">
+                <button class="signup-btn" onclick="showSignup()">SIGN UP</button>
+                <button class="login-btn" onclick="showLogin()">LOGIN</button>
+            </div>
             <button id="github-login-btn" onclick="PONG.oauthLogin()" class="github-btn">
                 Login with GitHub
             </button>

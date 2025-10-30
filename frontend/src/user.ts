@@ -32,6 +32,7 @@
         const editProfileBtn = document.getElementById('edit-profile-btn');
         const signupBtn = document.querySelector('.signup-btn') as HTMLButtonElement;
         const avatarImg = document.getElementById('avatar-img') as HTMLImageElement;
+        const loginBtn = document.querySelector('.login-btn') as HTMLButtonElement;
 
         if (!userInfo || !usernameLabel || !logoutBtn || !editProfileBtn || !avatarImg) {
             console.error('UI elements not found');
@@ -47,6 +48,7 @@
         logoutBtn.style.display = 'inline-block';
         editProfileBtn.style.display = 'inline-block';
 
+        if (loginBtn) loginBtn.style.display = 'none';
         if (signupBtn) signupBtn.style.display = 'none';
         const menu = document.querySelector('.menu-buttons') as HTMLElement;
         if (menu) menu.style.display = '';
@@ -68,8 +70,10 @@
         const userInfo = document.getElementById('user-info');
         const signupBtn = document.querySelector('.signup-btn') as HTMLButtonElement;
         const avatarImg = document.getElementById('avatar-img');
+        const loginBtn = document.querySelector('.login-btn') as HTMLButtonElement;
 
         if (userInfo) userInfo.style.display = 'none';
+        if (loginBtn) loginBtn.style.display = 'inline-block';
         if (signupBtn) signupBtn.style.display = 'inline-block';
         if (avatarImg) avatarImg.style.display = 'none';
 

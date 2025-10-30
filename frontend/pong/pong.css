@@ -92,6 +92,26 @@ body {
     gap: 20px;
 }
 
+.auth-buttons-row {
+    display: flex;
+    width: 100%;
+    gap: 0;
+    margin-bottom: 10px;
+}
+
+.signup-btn,
+.login-btn {
+    flex: 1 1 50%;
+    width: 50%;
+    margin: 0;
+    border-radius: 10px 0 0 10px;
+}
+
+.login-btn {
+    border-radius: 0 10px 10px 0;
+    margin-left: 2px;
+}
+
 .auth-form {
     background: rgba(0, 0, 0, 0.8);
     border: 2px solid #00ff00;

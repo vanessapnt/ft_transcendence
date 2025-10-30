@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,25 +8,29 @@
     <link rel="stylesheet" href="pong.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <div id="user-info">
         <!-- span : vide au départ et affiche dynamiquement le nom d'utilisateur -->
-        <span id="username-label"></span> 
+        <span id="username-label"></span>
         <button id="edit-profile-btn">Edit Profile</button>
         <button id="logout-btn">Logout</button>
     </div>
 
     <div id="avatar-container">
-        <img id="avatar-img" src="default_avatar.png" alt="Avatar">
+        <img id="avatar-img" src="/avatars/default_avatar.png" alt="Avatar">
     </div>
 
     <div id="home-view" class="screen active">
         <h1>PONG</h1>
         <div class="menu-buttons">
-            <button onclick="PONG.Nav.showModeSelection()">START GAME</button> 
-            <button onclick="PONG.Nav.showTournament()">TOURNAMENT</button> 
-            <button class="signup-btn" onclick="showSignup()">SIGN UP</button>
-            <button id="oauth-github" onclick="PONG.oauthLogin()" class="github-btn">
+            <button onclick="PONG.Nav.showModeSelection()">START GAME</button>
+            <button onclick="PONG.Nav.showTournament()">TOURNAMENT</button>
+            <div class="auth-buttons-row">
+                <button class="signup-btn" onclick="showSignup()">SIGN UP</button>
+                <button class="login-btn" onclick="showLogin()">LOGIN</button>
+            </div>
+            <button id="github-login-btn" onclick="PONG.oauthLogin()" class="github-btn">
                 Login with GitHub
             </button>
         </div>
@@ -34,16 +39,18 @@
     <div id="mode-selection" class="screen">
         <h1>SELECT MODE</h1>
         <div class="mode-buttons">
-            <button id="mode-local">LOCAL 2 PLAYERS</button>  <!-- bindGameModeBtns() -> addEventListener('click', () => this.launchGame('local')); -->
-            <button id="mode-ai">VS AI</button>  <!-- bindGameModeBtns() -> addEventListener('click', () => this.launchGame('ai')); -->
-            <button class="back-btn" onclick="PONG.Nav.showHome()">BACK</button> 
+            <button id="mode-local">LOCAL 2 PLAYERS</button>
+            <!-- bindGameModeBtns() -> addEventListener('click', () => this.launchGame('local')); -->
+            <button id="mode-ai">VS AI</button>
+            <!-- bindGameModeBtns() -> addEventListener('click', () => this.launchGame('ai')); -->
+            <button class="back-btn" onclick="PONG.Nav.showHome()">BACK</button>
         </div>
     </div>
 
     <div id="game-view" class="screen">
         <div class="pause-hint">Press SPACE to pause</div>
         <canvas id="board"></canvas>
-        <button class="menu-button" onclick="PONG.Nav.showHome()">MENU</button> 
+        <button class="menu-button" onclick="PONG.Nav.showHome()">MENU</button>
     </div>
 
     <div id="tournament-view" class="screen">
@@ -66,7 +73,7 @@
         <div id="tournament-status" class="tournament-section">
             <div class="tournament-container">
                 <h1>TOURNAMENT STATUS</h1>
-                
+
                 <div class="tournament-next-match">
                     <h2 id="next-match-title">NEXT MATCH</h2>
                     <p class="match-versus" id="next-match-versus">
@@ -76,7 +83,7 @@
                         Controls info
                     </p>
                 </div>
-                
+
                 <div class="tournament-buttons">
                     <button id="start-next-match-btn" class="tournament-btn-start">
                         START MATCH
@@ -86,29 +93,31 @@
                     </button>
                 </div>
 
-                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;">Current Standings:</h3>
+                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;">Current
+                    Standings:</h3>
                 <div class="tournament-standings" id="standings-container"></div>
-                
-                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;">Match Results:</h3>
+
+                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;">Match
+                    Results:</h3>
                 <div class="tournament-results" id="matches-container"></div>
             </div>
         </div>
     </div>
 
-        <div id="tournament-winner" class="tournament-section">
-            <div class="tournament-winner">
-                <h1>🏆 TOURNAMENT COMPLETE 🏆</h1>
-                <h2>WINNER: <span id="winner-name"></span></h2>
-                <p class="winner-score" id="winner-score">0 victories</p>
-                
-                <h3>Final Standings:</h3>
-                <div class="final-standings" id="final-standings-container"></div>
+    <div id="tournament-winner" class="tournament-section">
+        <div class="tournament-winner">
+            <h1>🏆 TOURNAMENT COMPLETE 🏆</h1>
+            <h2>WINNER: <span id="winner-name"></span></h2>
+            <p class="winner-score" id="winner-score">0 victories</p>
 
-                <button id="back-to-menu-btn" class="tournament-back-btn">
-                    BACK TO MENU
-                </button>
-            </div>
+            <h3>Final Standings:</h3>
+            <div class="final-standings" id="final-standings-container"></div>
+
+            <button id="back-to-menu-btn" class="tournament-back-btn">
+                BACK TO MENU
+            </button>
         </div>
+    </div>
     </div>
 
     <div id="pause-overlay" class="overlay">
@@ -126,4 +135,5 @@
     <script src="navigation.js" defer></script>
     <script src="user.js" defer></script>
 </body>
+
 </html>

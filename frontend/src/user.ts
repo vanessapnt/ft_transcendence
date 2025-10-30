@@ -423,19 +423,36 @@
         document.getElementById('cancel-edit-profile')!.onclick = () => form.remove();
     }
 
-    // Au chargement de la page, déconnexion automatique PUIS récupération du profil (dev only)
+    // // Au chargement de la page, déconnexion automatique PUIS récupération du profil (dev only)
+    // window.addEventListener('DOMContentLoaded', async () => {
+    //     try {
+    //         // Déconnexion automatique (dev only)
+    //         await fetch(`${API_BASE_URL}/api/auth/logout`, {
+    //             method: 'POST',
+    //             credentials: 'include'
+    //         });
+    //     } catch (err) {
+    //         // ignore
+    //     }
+    //     try {
+    //         // Récupération du profil (sera vide après logout)
+    //         const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
+    //             credentials: 'include'
+    //         });
+    //         if (res.ok) {
+    //             const data = await res.json();
+    //             const user = data.user;
+    //             if (user && user.username && user.display_name && user.id) {
+    //                 setUser(user.username, user.display_name, user.id, user.avatar_path || user.avatar_url || '/avatars/default_avatar.png');
+    //             }
+    //         }
+    //     } catch (err) {
+    //         // ignore
+    //     }
+    // });
+
     window.addEventListener('DOMContentLoaded', async () => {
         try {
-            // Déconnexion automatique (dev only)
-            await fetch(`${API_BASE_URL}/api/auth/logout`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-        } catch (err) {
-            // ignore
-        }
-        try {
-            // Récupération du profil (sera vide après logout)
             const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
                 credentials: 'include'
             });

@@ -471,7 +471,15 @@
             // ignore
         }
     });
-
+    // Si pas connecté, cacher les éléments utilisateur
+    const userInfo = document.getElementById('user-info');
+    const avatarImg = document.getElementById('avatar-img');
+    const loginBtn = document.querySelector('.login-btn') as HTMLButtonElement;
+    const signupBtn = document.querySelector('.signup-btn') as HTMLButtonElement;
+    if (userInfo) userInfo.style.display = 'none';
+    if (avatarImg) avatarImg.style.display = 'none';
+    if (loginBtn) loginBtn.style.display = 'inline-block';
+    if (signupBtn) signupBtn.style.display = 'inline-block';
     if (!(window as any).PONG) {
         (window as any).PONG = {};
     }

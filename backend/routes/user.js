@@ -8,7 +8,16 @@ const router = express.Router();
 
 // Middleware to check authentication
 const requireAuth = (req, res, next) => {
-  if (!req.session.userId) {
+  console.log('🔒 requireAuth:', {
+    session: req.session,
+    isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : undefined,
+    user: req.user
+  });
+  // Correction : synchronise userId si Passport a authentifié
+  if (req.user && req.user.id && !req.session.userId) {
+    req.session.userId = req.user.id;
+  }
+  if (!req.session.userId && !(req.isAuthenticated && req.isAuthenticated())) {
     return res.status(401).json({ error: 'Authentication required' });
   }
   next();
@@ -51,6 +60,8 @@ const upload = multer({
 
 // Get user profile
 router.get('/profile', requireAuth, (req, res) => {
+  console.log('Session at /profile:', req.session);
+  console.log('User at /profile:', req.user);
   try {
     const user = statements.getUserById.get(req.session.userId);
     if (!user) {

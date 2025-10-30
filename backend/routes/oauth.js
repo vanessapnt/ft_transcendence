@@ -14,14 +14,14 @@ passport.deserializeUser((id, done) => {
   const user = statements.getUserById.get(id);
   done(null, user);
 });
-
+console.log("GitHub OAuth callbackURL:", process.env.GITHUB_CALLBACK_URL || "http://localhost:8080/api/oauth/callback/github");
 // GitHub OAuth Strategy
 passport.use(new GitHubStrategy({
   clientID: process.env.GITHUB_CLIENT_ID,
   clientSecret: process.env.GITHUB_CLIENT_SECRET,
-  callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost:8000/api/oauth/callback/github"
+  callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost:8080/api/oauth/callback/github"
 },
-  (accessToken, refreshToken, profile, done) => {
+  async (accessToken, refreshToken, profile, done) => {
     try {
       // Check if user already exists with this GitHub ID
       let user = statements.getUserByOAuth.get('github', profile.id);
@@ -98,6 +98,7 @@ router.get('/login/github',
 router.get('/callback/github',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
+    console.log('✅ Authenticated user:', req.user);
     // Successful authentication
     res.redirect('http://localhost:8080');
   }

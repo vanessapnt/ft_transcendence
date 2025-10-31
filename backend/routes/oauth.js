@@ -99,8 +99,9 @@ router.get('/callback/github',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
     console.log('✅ Authenticated user:', req.user);
-    // Successful authentication
-    res.redirect('http://localhost:8080');
+    // Redirection dynamique selon l'environnement
+    const frontendUrl = process.env.FRONTEND_URL || 'https://localhost:8443';
+    res.redirect(frontendUrl);
   }
 );
 

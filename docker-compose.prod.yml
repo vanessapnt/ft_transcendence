@@ -14,6 +14,7 @@ services:
       - GITHUB_CLIENT_ID=Ov23liUd21Xhy6FfNJMc
       - GITHUB_CLIENT_SECRET=706df4744bbd7ffbd5fdbd61407fa52b5d615f70
       - GITHUB_CALLBACK_URL=https://localhost:8443/api/oauth/callback/github
+      - FRONTEND_URL=https://localhost:8443
     networks:
       - transcendence-network
     restart: unless-stopped

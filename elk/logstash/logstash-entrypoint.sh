@@ -1,9 +1,8 @@
 #!/bin/sh
 set -e
 
-# Copy the config file from the mounted location to the real config path (writable)
+# Copie la config logstash du host dans le dossier interne (droits logstash)
 cp /tmp/host-logstash.yml /usr/share/logstash/config/logstash.yml
 chown logstash:logstash /usr/share/logstash/config/logstash.yml
 
-# Start Logstash (default CMD)
-exec /usr/local/bin/docker-entrypoint "${@}"
+exec /usr/local/bin/docker-entrypoint "$@"

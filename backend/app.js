@@ -10,6 +10,7 @@ require('dotenv').config();
 const { statements } = require('./database');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 8000;
 
 // Middleware
@@ -32,8 +33,8 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    sameSite: 'lax', // 'lax' si frontend et backend même domaine/port, sinon 'none'
-    secure: false,   // true si HTTPS
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production',
   }
 }));
 

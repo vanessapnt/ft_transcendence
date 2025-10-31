@@ -20,9 +20,10 @@
         message?: string;
     }
 
-    const API_BASE_URL = typeof window !== 'undefined' && (window as any).API_BASE_URL
-        ? (window as any).API_BASE_URL
-        : 'http://localhost:8000';
+    const API_BASE_URL =
+        window.location.hostname === 'localhost' && window.location.port === '3000'
+            ? 'http://localhost:8000'
+            : '';
 
 
     function setUser(username: string, displayName: string | null, userId: number, avatarUrl: string | null): void {
@@ -302,6 +303,9 @@
     function showEditProfile(currentUsername: string, currentDisplayName: string): void {
         if (document.getElementById('edit-profile-form')) return;
 
+        const menu = document.querySelector('.menu-buttons') as HTMLElement;
+        if (menu) menu.style.display = 'none';
+
         const homeView = document.getElementById('home-view');
         if (!homeView) return;
 
@@ -327,6 +331,12 @@
         form.querySelector('.auth-submit-btn')?.addEventListener('click', () => {
             console.log('Save button clicked');
         });
+
+        document.getElementById('cancel-edit-profile')!.onclick = () => {
+            form.remove();
+            if (menu) menu.style.display = '';
+        };
+
         form.onsubmit = async (e: Event) => {
             e.preventDefault();
             console.log('onsubmit called');
@@ -404,7 +414,7 @@
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = 'Profile updated!';
                     form.remove();
-                    // Correction : toujours utiliser la valeur la plus fraîche de l'avatar
+                    if (menu) menu.style.display = '';
                     const finalAvatar =
                         (dataAvatar && dataAvatar.user && (dataAvatar.user.avatar_path || dataAvatar.user.avatar_url))
                         || (dataAvatar && (dataAvatar.avatar_path || dataAvatar.avatar_url))
@@ -424,7 +434,6 @@
             }
         };
 
-        document.getElementById('cancel-edit-profile')!.onclick = () => form.remove();
     }
 
     // // Au chargement de la page, déconnexion automatique PUIS récupération du profil (dev only)

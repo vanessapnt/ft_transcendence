@@ -1,49 +1,31 @@
-#!/bin/bash
+#!/bin/sh
+set -x
 # Script d'initialisation Kibana avancé pour ft_transcendence
 # Crée une interface complète et optimisée pour l'analyse des logs Elasticsearch
 
 # Mode silencieux par défaut, verbose si VERBOSE=1
 VERBOSE=${VERBOSE:-0}
 
-log_info() {
-    if [ "$VERBOSE" = "1" ]; then
-        echo "$1"
-    fi
-}
+# Déterminer l'URL de Kibana (configurable par l'environnement)
+KIBANA_URL="${KIBANA_URL:-kibana}"
+echo "KIBANA_URL=$KIBANA_URL"
 
-log_error() {
-    echo "❌ ERROR: $1" >&2
-}
-
-log_success() {
-    echo "✅ $1"
-}
-
-log_info "🚀 Initialisation avancée des dashboards Kibana..."
-
-# Déterminer l'URL de Kibana (localhost si exécuté depuis l'extérieur, kibana si dans le conteneur)
-if [ -n "$KIBANA_HOST" ]; then
-    KIBANA_URL="$KIBANA_HOST"
-elif curl -s --connect-timeout 2 http://$KIBANA_URL:5601/api/status >/dev/null 2>&1; then
-    KIBANA_URL="kibana"
-else
-    KIBANA_URL="localhost"
-fi
-
-log_info "🔗 Connexion à Kibana via: $KIBANA_URL:5601"
+# Test de connexion explicite
+curl -v http://$KIBANA_URL:5601/api/status
 
 # Attendre que Kibana soit disponible
-until curl -s http://$KIBANA_URL:5601/api/status 2>/dev/null | grep -q '"state":"green"'; do
-  log_info "⏳ Attente de Kibana..."
+until curl -s http://$KIBANA_URL:5601/api/status | grep -q '"state":"green"'; do
+  echo "⏳ Attente de Kibana..."
   sleep 5
 done
+echo "Kibana prêt !"
 
-log_success "Kibana disponible, création des composants avancés..."
+echo "[OK] Kibana disponible, création des composants avancés..."
 
 # ==========================================
 # 1. CRÉATION DE L'INDEX PATTERN PRINCIPAL
 # ==========================================
-log_info "📊 Création de l'index pattern principal..."
+echo "[INFO] 📊 Création de l'index pattern principal..."
 
 RESPONSE=$(curl -s -X POST "$KIBANA_URL:5601/api/saved_objects/index-pattern/transcendence-logs-*" \
   -H "Content-Type: application/json" \
@@ -61,14 +43,14 @@ RESPONSE=$(curl -s -X POST "$KIBANA_URL:5601/api/saved_objects/index-pattern/tra
   }' 2>/dev/null)
 
 if [ $? -ne 0 ]; then
-    log_error "Échec création index pattern"
+  echo "[ERREUR] Échec création index pattern"
     exit 1
 fi
 
 # ==========================================
 # 2. CRÉATION DES RECHERCHES SAUVEGARDÉES
 # ==========================================
-log_info "� Création des recherches sauvegardées..."
+echo "[INFO] Création des recherches sauvegardées..."
 
 # Recherche pour les erreurs
 curl -s -X POST "$KIBANA_URL:5601/api/saved_objects/search/error-logs" \
@@ -124,7 +106,7 @@ curl -s -X POST "$KIBANA_URL:5601/api/saved_objects/search/user-activity" \
 # ==========================================
 # 3. CRÉATION DES VISUALISATIONS AVANCÉES
 # ==========================================
-log_info "📈 Création des visualisations avancées..."
+echo "[INFO] 📈 Création des visualisations avancées..."
 
 # 1. Distribution des niveaux de log (avec couleurs)
 curl -s -X POST "$KIBANA_URL:5601/api/saved_objects/visualization/log-levels-pie" \
@@ -305,7 +287,7 @@ curl -s -X POST "$KIBANA_URL:5601/api/saved_objects/visualization/auth-activity"
 # ==========================================
 # 4. CRÉATION DU DASHBOARD PRINCIPAL
 # ==========================================
-log_info "📊 Création du dashboard principal avancé..."
+echo "[INFO] 📊 Création du dashboard principal avancé..."
 
 # Nettoyer les anciens dashboards
 DASHBOARD_TITLE="Transcendence Monitoring Dashboard"
@@ -345,7 +327,7 @@ curl -s -X POST "$KIBANA_URL:5601/api/saved_objects/dashboard/transcendence-main
 # ==========================================
 # 5. CRÉATION DU DASHBOARD ERREURS
 # ==========================================
-log_info "🚨 Création du dashboard d'\''analyse d'\''erreurs..."
+echo "[INFO] 🚨 Création du dashboard d'analyse d'erreurs..."
 
 curl -s -X POST "$KIBANA_URL:5601/api/saved_objects/dashboard/transcendence-errors-dashboard" \
   -H "Content-Type: application/json" \
@@ -378,7 +360,7 @@ curl -s -X POST "$KIBANA_URL:5601/api/saved_objects/dashboard/transcendence-erro
 # ==========================================
 # 6. CRÉATION DU DASHBOARD PERFORMANCE
 # ==========================================
-log_info "⚡ Création du dashboard de performance..."
+echo "[INFO] ⚡ Création du dashboard de performance..."
 
 curl -s -X POST "$KIBANA_URL:5601/api/saved_objects/dashboard/transcendence-performance-dashboard" \
   -H "Content-Type: application/json" \
@@ -408,7 +390,7 @@ curl -s -X POST "$KIBANA_URL:5601/api/saved_objects/dashboard/transcendence-perf
     ]
   }' >/dev/null
 
-log_success "Configuration Kibana avancée terminée !"
+echo "[OK] Configuration Kibana avancée terminée !"
 
 # Afficher les liens d'accès
 if [ "$VERBOSE" = "1" ]; then
@@ -431,3 +413,5 @@ if [ "$VERBOSE" = "1" ]; then
     echo "   • Couleurs codées par sévérité"
     echo "   • Tables triables et filtrables"
 fi
+
+exit 0

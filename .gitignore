@@ -17,6 +17,7 @@ yarn-error.log*
 *.env
 *.local
 .env*
+!.env.example
 docker-compose.override.yml
 
 # OS files

@@ -29,6 +29,9 @@ services:
       - GITHUB_CLIENT_ID=Ov23liMyoGPzLgzpVjQt
       - GITHUB_CLIENT_SECRET=8deed7b039363328750614a3c42945da6f92d0d3
       - GITHUB_CALLBACK_URL=http://localhost:8080/api/oauth/callback/github
+      - GOOGLE_CLIENT_ID=REDACTED_GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET=REDACTED_GOOGLE_CLIENT_SECRET
+      - GOOGLE_CALLBACK_URL=http://localhost:8080/api/oauth/callback/google
       - FRONTEND_URL=http://localhost:8080
       - SECRET_KEY=change_me_for_dev
 

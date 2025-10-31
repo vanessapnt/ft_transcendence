@@ -501,7 +501,9 @@
     (window as any).PONG.oauthLogin = function () {
         window.location.href = '/api/oauth/login/github';
     };
-
+    (window as any).PONG.oauthGoogleLogin = function () {
+        window.location.href = '/api/oauth/login/google';
+    };
     (window as any).showSignup = showSignup;
     (window as any).showLogin = showLogin;
 

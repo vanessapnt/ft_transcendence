@@ -33,7 +33,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     sameSite: 'lax', // 'lax' si frontend et backend même domaine/port, sinon 'none'
-    secure: false,   // true si HTTPS
+    secure: process.env.NODE_ENV === 'production', // true en prod, false en dev
   }
 }));
 

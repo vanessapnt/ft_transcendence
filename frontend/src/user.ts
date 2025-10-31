@@ -20,9 +20,10 @@
         message?: string;
     }
 
-    const API_BASE_URL = typeof window !== 'undefined' && (window as any).API_BASE_URL
-        ? (window as any).API_BASE_URL
-        : 'http://localhost:8000';
+    const API_BASE_URL =
+        window.location.hostname === 'localhost' && window.location.port === '3000'
+            ? 'http://localhost:8000'
+            : '';
 
 
     function setUser(username: string, displayName: string | null, userId: number, avatarUrl: string | null): void {

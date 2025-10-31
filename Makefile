@@ -52,8 +52,10 @@ wait $$DC_PID || true'
 # Mode production
 prod:
 	@echo "🚀 Démarrage en mode production..."
+	@bash ./scripts/fix-elk-perms.sh
+	@bash ./scripts/ensure-ssl.sh
 	@docker-compose -f docker-compose.prod.yml up -d --build
-	@./scripts/prod-startup.sh
+	@bash ./scripts/prod-startup.sh
 
 # # Logs production
 # logs-prod:

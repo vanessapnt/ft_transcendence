@@ -17,7 +17,16 @@ SERVICE_PORTS=(
 	"8000" "3000" "80" "9200" "5044" "5601" "" "9090" "3001" "9100"
 )
 SERVICE_URLS=(
-	"http://localhost:8000" "http://localhost:3000" "http://localhost" "http://localhost:9200" "http://localhost:5044" "http://localhost:5601" "" "http://localhost:9090" "http://localhost:3001" "http://localhost:9100"
+    "http://localhost:8080/api/health" \
+    "http://localhost:8080" \
+    "http://localhost:8080" \
+    "http://localhost:9200" \
+    "http://localhost:5044" \
+    "http://localhost:5601" \
+    "" \
+    "http://localhost:9090" \
+    "http://localhost:3001" \
+    "http://localhost:9100"
 )
 SERVICE_NAMES=(
 	"Backend API" "Frontend App" "Nginx Proxy" "Elasticsearch" "Logstash (Beats input)" "Kibana Dashboard" "Kibana Init" "Prometheus" "Grafana Monitoring" "Node Exporter"
@@ -90,12 +99,13 @@ check_service_health() {
 			return 1
 		fi
 	# Nginx : vérifier port 80
-	elif [[ "$service_name" == "Nginx Proxy" ]]; then
-		if curl -s --max-time $timeout http://localhost >/dev/null 2>&1; then
-			return 0
-		else
-			return 1
-		fi
+    elif [[ "$service_name" == "Nginx Proxy" ]]; then
+        if curl -s --max-time $timeout http://localhost:8080 >/dev/null 2>&1; then
+            return 0
+        else
+            return 1
+        fi
+		docker logs kibana-init-prod
 	# Kibana Init : prêt si le conteneur n'existe plus ou est exited
 	elif [[ "$service_name" == "Kibana Init" ]]; then
 		status=$(docker ps -a --filter "name=kibana-init-prod" --format '{{.Status}}')

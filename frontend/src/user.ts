@@ -110,12 +110,20 @@
     // Fonction utilitaire pour cacher le bouton GitHub login si connecté
     function hideGithubLoginIfConnected() {
         const githubBtn = document.getElementById('github-login-btn');
-        console.log('hideGithubLoginIfConnected:', { githubBtn, currentUserId: (window as any).currentUserId });
+        const googleBtn = document.getElementById('google-login-btn');
+        console.log('hideGithubLoginIfConnected:', { githubBtn, googleBtn, currentUserId: (window as any).currentUserId });
         if (githubBtn) {
             if ((window as any).currentUserId) {
                 githubBtn.style.display = 'none';
             } else {
                 githubBtn.style.display = 'inline-block';
+            }
+        }
+        if (googleBtn) {
+            if ((window as any).currentUserId) {
+                googleBtn.style.display = 'none';
+            } else {
+                googleBtn.style.display = 'inline-block';
             }
         }
     }

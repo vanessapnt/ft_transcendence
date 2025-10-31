@@ -99,6 +99,13 @@ body {
     margin-bottom: 10px;
 }
 
+.oauth-buttons-row {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    justify-content: center;
+}
+
 .signup-btn,
 .login-btn {
     flex: 1 1 50%;

@@ -3,8 +3,80 @@ const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { statements } = require('../database');
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 const router = express.Router();
+
+// Function to download and save OAuth avatar locally
+async function downloadAvatar(url, userId, provider, currentUser = null) {
+  if (!url) return null;
+
+  try {
+    // For Google, increase image size from s96-c to s400-c for better quality
+    if (provider === 'google' && url.includes('googleusercontent.com')) {
+      url = url.replace(/=s\d+-c/, '=s400-c');
+    }
+
+    const avatarsDir = path.join(__dirname, '../avatars');
+    if (!fs.existsSync(avatarsDir)) {
+      fs.mkdirSync(avatarsDir, { recursive: true });
+    }
+
+    // Delete old OAuth avatar if it exists (only if it's a local file, not a URL)
+    if (currentUser && currentUser.avatar_path &&
+      !currentUser.avatar_path.startsWith('http') &&
+      currentUser.avatar_path.includes(`avatar_${provider}_`)) {
+      const oldAvatarPath = path.join(avatarsDir, currentUser.avatar_path);
+      if (fs.existsSync(oldAvatarPath)) {
+        try {
+          fs.unlinkSync(oldAvatarPath);
+          console.log(`🗑️ Deleted old avatar: ${currentUser.avatar_path}`);
+        } catch (err) {
+          console.error('Error deleting old avatar:', err);
+        }
+      }
+    }
+
+    const filename = `avatar_${provider}_${userId}_${Date.now()}.jpg`;
+    const filepath = path.join(avatarsDir, filename);
+
+    return new Promise((resolve, reject) => {
+      const protocol = url.startsWith('https') ? https : http;
+
+      protocol.get(url, (response) => {
+        if (response.statusCode !== 200) {
+          console.error(`Failed to download avatar: ${response.statusCode}`);
+          resolve(null);
+          return;
+        }
+
+        const fileStream = fs.createWriteStream(filepath);
+        response.pipe(fileStream);
+
+        fileStream.on('finish', () => {
+          fileStream.close();
+          console.log(`✅ Avatar downloaded: ${filename}`);
+          resolve(filename);
+        });
+
+        fileStream.on('error', (err) => {
+          console.error('Error saving avatar:', err);
+          fs.unlink(filepath, () => { });
+          resolve(null);
+        });
+      }).on('error', (err) => {
+        console.error('Error downloading avatar:', err);
+        resolve(null);
+      });
+    });
+  } catch (error) {
+    console.error('Avatar download error:', error);
+    return null;
+  }
+}
 
 // Passport serialization
 passport.serializeUser((user, done) => {
@@ -31,11 +103,14 @@ passport.use(new GitHubStrategy({
       const avatarUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
 
       if (user) {
+        // Download and save avatar locally
+        const localAvatarPath = await downloadAvatar(avatarUrl, user.id, 'github', user);
+
         // Update user info (display_name, avatar) at each login
         statements.updateUserWithDisplayName.run(
           user.username,
           user.email,
-          avatarUrl, // avatar_path
+          localAvatarPath || avatarUrl, // Use local path if download succeeded
           profile.displayName || user.username,
           user.id
         );
@@ -47,11 +122,14 @@ passport.use(new GitHubStrategy({
       if (profile.emails && profile.emails.length > 0) {
         user = statements.getUserByEmail.get(profile.emails[0].value);
         if (user) {
+          // Download and save avatar locally
+          const localAvatarPath = await downloadAvatar(avatarUrl, user.id, 'github', user);
+
           // Link GitHub account to existing user (update avatar and display_name)
           statements.updateUserWithDisplayName.run(
             user.username,
             user.email,
-            avatarUrl,
+            localAvatarPath || avatarUrl,
             profile.displayName || user.username,
             user.id
           );
@@ -73,11 +151,14 @@ passport.use(new GitHubStrategy({
         profile.id
       );
 
+      // Download and save avatar locally for new user
+      const localAvatarPath = await downloadAvatar(avatarUrl, result.lastInsertRowid, 'github');
+
       // Ajoute le display_name et l'avatar juste après la création
       statements.updateUserWithDisplayName.run(
         username,
         email,
-        avatarUrl, // avatar_path
+        localAvatarPath || avatarUrl, // Use local path if download succeeded
         profile.displayName || username,
         result.lastInsertRowid
       );
@@ -106,11 +187,14 @@ passport.use(new GoogleStrategy({
       const avatarUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
 
       if (user) {
+        // Download and save avatar locally
+        const localAvatarPath = await downloadAvatar(avatarUrl, user.id, 'google', user);
+
         // Update user info (display_name, avatar) at each login
         statements.updateUserWithDisplayName.run(
           user.username,
           user.email,
-          avatarUrl,
+          localAvatarPath || avatarUrl, // Use local path if download succeeded, otherwise fallback to URL
           profile.displayName || user.username,
           user.id
         );
@@ -122,11 +206,14 @@ passport.use(new GoogleStrategy({
       if (profile.emails && profile.emails.length > 0) {
         user = statements.getUserByEmail.get(profile.emails[0].value);
         if (user) {
+          // Download and save avatar locally
+          const localAvatarPath = await downloadAvatar(avatarUrl, user.id, 'google', user);
+
           // Link Google account to existing user (update avatar and display_name)
           statements.updateUserWithDisplayName.run(
             user.username,
             user.email,
-            avatarUrl,
+            localAvatarPath || avatarUrl,
             profile.displayName || user.username,
             user.id
           );
@@ -148,11 +235,14 @@ passport.use(new GoogleStrategy({
         profile.id
       );
 
+      // Download and save avatar locally for new user
+      const localAvatarPath = await downloadAvatar(avatarUrl, result.lastInsertRowid, 'google');
+
       // Ajoute le display_name et l'avatar juste après la création
       statements.updateUserWithDisplayName.run(
         username,
         email,
-        avatarUrl,
+        localAvatarPath || avatarUrl, // Use local path if download succeeded
         profile.displayName || username,
         result.lastInsertRowid
       );

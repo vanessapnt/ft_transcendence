@@ -18,6 +18,9 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET_PROD}
       - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL_PROD}
       - FRONTEND_URL=${FRONTEND_URL_PROD}
+    volumes:
+      - sqlite_data_prod:/app/instance
+      - avatars_prod:/app/avatars
     networks:
       - transcendence-network
     restart: unless-stopped
@@ -252,6 +255,10 @@ volumes:
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  sqlite_data_prod:
+    driver: local
+  avatars_prod:
     driver: local
 
 networks:

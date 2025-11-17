@@ -1,5 +1,8 @@
-# Image de base Node.js pour API backend
-FROM node:18-alpine
+# Image de base Node.js pour API backend (Debian au lieu d'Alpine pour better-sqlite3)
+FROM node:18-slim
+
+# Installer les outils de build pour les modules natifs
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 # Définir le répertoire de travail
 WORKDIR /app
@@ -7,8 +10,8 @@ WORKDIR /app
 # Copier package.json et package-lock.json
 COPY package*.json ./
 
-# Installer les dépendances Node.js
-RUN npm ci
+# Installer les dépendances Node.js (sans lock pour forcer recompilation)
+RUN npm install
 
 # Copier le code source
 COPY . .

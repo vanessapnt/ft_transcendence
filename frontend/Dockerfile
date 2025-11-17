@@ -9,11 +9,12 @@ COPY package*.json tsconfig.json ./
 # Installer les dépendances (seulement si package.json existe)
 RUN if [ -f package.json ]; then npm install; fi
 
-# Copier le code source TypeScript (remplacé par pong/)
-COPY pong/ ./pong/
+# Copier le code source TypeScript
+COPY src/ ./src/
+COPY pong/index.html pong/pong.css ./pong/
 
-# Compiler TypeScript (si présent)
-RUN if [ -d pong ] && [ "$(ls -A pong)" ]; then npm run build || true; fi
+# Compiler TypeScript
+RUN npm run build
 
 # Stage final avec nginx
 FROM nginx:alpine
@@ -21,8 +22,8 @@ FROM nginx:alpine
 # Supprimer les fichiers par défaut de nginx
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copier les fichiers du jeu Pong (toujours présents)
-COPY pong/* /usr/share/nginx/html/
+# Copier les fichiers compilés du jeu Pong
+COPY --from=builder /app/pong/* /usr/share/nginx/html/
 
 # Créer une configuration nginx simple
 RUN echo 'server { \

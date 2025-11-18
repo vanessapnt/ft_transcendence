@@ -1,3 +1,4 @@
+import { i18n } from './i18n';
 (function() {
 
 type ScreenId = 'home-view' | 'mode-selection' | 'game-view' | 'tournament-view';
@@ -15,6 +16,8 @@ class Navigation
 
     private init(): void
     {
+           // initialize translations early
+        i18n.init();
         // DOMContentLoaded : les fonctions sont appelées une fois que le DOM est entièrement chargé
         // DOM : représentation en arbre du document HTML  accessible via l'objet global document
         document.addEventListener('DOMContentLoaded', () => {

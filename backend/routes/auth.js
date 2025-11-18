@@ -23,10 +23,12 @@ const validateUserInput = (username, email, password) => {
   return errors;
 };
 
+// ...existing code...
+
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, display_name } = req.body;
+    const { username, email, password, display_name, language } = req.body;
 
     // Validate input
     const errors = validateUserInput(username, email, password);
@@ -51,6 +53,8 @@ router.post('/register', async (req, res) => {
 
     // Create user
     const result = statements.createUser.run(username, email, passwordHash, null, null);
+
+    // Optionally set display name
     if (display_name) {
       statements.updateUserWithDisplayName.run(
         username,
@@ -60,10 +64,16 @@ router.post('/register', async (req, res) => {
         result.lastInsertRowid
       );
     }
-    const user = statements.getUserById.get(result.lastInsertRowid);
 
-    // Set session
+    // Optionally set preferred language
+    if (language) {
+      statements.updateUserLanguage.run(language, result.lastInsertRowid);
+    }
+
+    // Retrieve created user and set session
+    const user = statements.getUserById.get(result.lastInsertRowid);
     req.session.userId = user.id;
+    req.session.lang = user.preferred_language || language || 'en';
 
     // Return user data (without password)
     const { password_hash, ...userData } = user;
@@ -77,6 +87,8 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// ...existing code...
 
 // Login
 router.post('/login', async (req, res) => {
@@ -102,6 +114,7 @@ router.post('/login', async (req, res) => {
 
     // Set session
     req.session.userId = user.id;
+    req.session.lang = user.preferred_language || 'en';
 
     // Return user data
     const { password_hash, ...userData } = user;

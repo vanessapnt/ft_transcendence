@@ -79,7 +79,7 @@ router.get('/profile', requireAuth, (req, res) => {
 // Update user profile
 router.put('/profile', requireAuth, (req, res) => {
   try {
-    const { username, email } = req.body;
+    const { username, email, language } = req.body;
     const userId = req.session.userId;
 
     // Validate input
@@ -108,6 +108,10 @@ router.put('/profile', requireAuth, (req, res) => {
       if (existingUser && existingUser.id !== userId) {
         return res.status(409).json({ error: 'Email already registered' });
       }
+    }
+        if (language) {
+      statements.updateUserLanguage.run(language, userId);
+      req.session.lang = language;  // Met à jour la session aussi
     }
 
     // Get current user data

@@ -8,6 +8,7 @@ services:
     volumes:
       # Hot reload : les changements TypeScript sont compilés automatiquement
       - ./frontend/pong:/app/pong:delegated
+      - ./frontend/locales:/app/locales:delegated
       - ./frontend/tsconfig.json:/app/tsconfig.json:ro
       - ./frontend/package.json:/app/package.json:ro
       # Exclure node_modules pour éviter les conflits

@@ -52,6 +52,7 @@ app.use('/avatars', express.static(avatarsDir));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/oauth', require('./routes/oauth'));
+app.use('/api/i18n', require('./routes/change_lang'));
 
 // Health check
 app.get('/health', (req, res) => {

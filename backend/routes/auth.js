@@ -64,6 +64,7 @@ router.post('/register', async (req, res) => {
 
     // Set session
     req.session.userId = user.id;
+    req.session.lang = user.preferred_language || 'en';
 
     // Return user data (without password)
     const { password_hash, ...userData } = user;
@@ -102,12 +103,14 @@ router.post('/login', async (req, res) => {
 
     // Set session
     req.session.userId = user.id;
+    req.session.lang = user.preferred_language || 'en';
 
     // Return user data
     const { password_hash, ...userData } = user;
     res.json({
       message: 'Login successful',
-      user: userData
+      user: userData,
+      language: user.preferred_language || 'en'
     });
 
   } catch (error) {

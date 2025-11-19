@@ -21,47 +21,47 @@ EXPOSE 3000
 
 # Créer le script de démarrage
 RUN printf '#!/bin/sh\n\
-set -e\n\
-\n\
-# Fonction pour arrêter proprement les processus\n\
-cleanup() {\n\
+    set -e\n\
+    \n\
+    # Fonction pour arrêter proprement les processus\n\
+    cleanup() {\n\
     echo ""\n\
     echo "🛑 Shutting down development server..."\n\
     kill $TSC_PID $LIVE_PID 2>/dev/null || true\n\
     exit 0\n\
-}\n\
-\n\
-# Capturer SIGTERM et SIGINT pour arrêt propre\n\
-trap cleanup SIGTERM SIGINT\n\
-\n\
-echo "🎮 Starting Transcendence Development Server..."\n\
-echo "📦 Installing/updating dependencies..."\n\
-npm install\n\
-echo "🔨 Compiling TypeScript files (initial build)..."\n\
-tsc\n\
-if [ $? -eq 0 ]; then\n\
+    }\n\
+    \n\
+    # Capturer SIGTERM et SIGINT pour arrêt propre\n\
+    trap cleanup SIGTERM SIGINT\n\
+    \n\
+    echo "🎮 Starting Transcendence Development Server..."\n\
+    echo "📦 Installing/updating dependencies..."\n\
+    npm install\n\
+    echo "🔨 Compiling TypeScript files (initial build)..."\n\
+    tsc\n\
+    if [ $? -eq 0 ]; then\n\
     echo "✅ TypeScript compilation successful!"\n\
-else\n\
+    else\n\
     echo "⚠️  TypeScript compilation had errors"\n\
-fi\n\
-echo "👀 Starting TypeScript compiler in watch mode..."\n\
-tsc --watch &\n\
-TSC_PID=$!\n\
-echo "⏳ Waiting 2 seconds for initial compilation..."\n\
-sleep 2\n\
-echo "🌐 Starting live server on port 3000..."\n\
-cd pong\n\
-live-server --port=3000 --host=0.0.0.0 --no-browser --watch=. --wait=1000 &\n\
-LIVE_PID=$!\n\
-echo ""\n\
-echo "╔═══════════════════════════════════════════════════════════╗"\n\
-echo "║  ✅ Development server ready!                            ║"\n\
-echo "║  🌐 URL: http://localhost:3000                           ║"\n\
-echo "║  📝 TypeScript auto-compile: ENABLED                     ║"\n\
-echo "║  🔄 Live reload: ENABLED                                 ║"\n\
-echo "╚═══════════════════════════════════════════════════════════╝"\n\
-echo ""\n\
-wait $TSC_PID $LIVE_PID\n\
-' > /start-dev.sh && chmod +x /start-dev.sh
+    fi\n\
+    echo "👀 Starting TypeScript compiler in watch mode..."\n\
+    tsc --watch --preserveWatchOutput &\n\
+    TSC_PID=$!\n\
+    echo "⏳ Waiting 2 seconds for initial compilation..."\n\
+    sleep 2\n\
+    echo "🌐 Starting live server on port 3000..."\n\
+    cd pong\n\
+    live-server --port=3000 --host=0.0.0.0 --no-browser --watch=. --wait=200 --ignore=node_modules --cors --verbose &\n\
+    LIVE_PID=$!\n\
+    echo ""\n\
+    echo "╔═══════════════════════════════════════════════════════════╗"\n\
+    echo "║  ✅ Development server ready!                            ║"\n\
+    echo "║  🌐 URL: http://localhost:3000                           ║"\n\
+    echo "║  📝 TypeScript auto-compile: ENABLED                     ║"\n\
+    echo "║  🔄 Live reload: ENABLED                                 ║"\n\
+    echo "╚═══════════════════════════════════════════════════════════╝"\n\
+    echo ""\n\
+    wait $TSC_PID $LIVE_PID\n\
+    ' > /start-dev.sh && chmod +x /start-dev.sh
 
 CMD ["/start-dev.sh"]

@@ -9,8 +9,8 @@
     let ballHeight = 10;
     let player1Score = 0;
     let player2Score = 0;
-    let player1Name = "PLAYER 1";
-    let player2Name = "PLAYER 2";
+    let player1Name = "PLEYER 1";
+    let player2Name = "PLEYER 2";
     const WINNING_SCORE = 5;
     let GameEndCallback = null; // par defaut null mais on peut lui assigner callback(Tournament.onMatchEnd)
     let isGameRunning = false;

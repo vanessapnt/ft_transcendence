@@ -48,7 +48,18 @@ if (!fs.existsSync(avatarsDir)) {
 }
 app.use('/avatars', express.static(avatarsDir));
 
+// Static files for public folder (lang.js, etc)
+const publicDir = path.join(__dirname, 'public');
+if (!fs.existsSync(publicDir)) {
+  fs.mkdirSync(publicDir, { recursive: true });
+}
+app.use(express.static(publicDir));
+
 // Routes
+const i18nRouter = require('./routes/change_lang');
+app.use('/api/change_lang', i18nRouter);
+const i18nRoute = require('./routes/i18n');
+app.use('/api/i18n', i18nRoute);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/oauth', require('./routes/oauth'));

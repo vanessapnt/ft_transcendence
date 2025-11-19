@@ -1,0 +1,18 @@
+{
+  "title_pong": "PONG",
+  "start_game": "START GAME",
+  "tournament": "TOURNAMENT",
+  "signup": "SIGN UP",
+  "login": "LOGIN",
+  "login_github": "Login with GitHub",
+  "login_google": "Login with Google",
+  "edit_profile": "Edit Profile",
+  "logout": "Logout",
+  "select_mode": "SELECT MODE",
+  "local_2_players": "LOCAL 2 PLAYERS",
+  "vs_ai": "VS AI",
+  "back": "BACK",
+  "pause_hint": "Press SPACE to pause",
+  "menu": "MENU",
+  "2_players": "2 Players"
+}

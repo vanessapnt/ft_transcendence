@@ -1,31 +1,58 @@
-export const i18n = {
-  current: 'en',
-  dict: {} as Record<string,string>,
-  async load(lang: string) {
-    if (this.current === lang && Object.keys(this.dict).length) return;
-    try {
-      const res = await fetch(`/locales/${lang}.json`);
-      if (!res.ok) throw new Error('Locale not found');
-      this.dict = await res.json();
-      this.current = lang;
-      document.documentElement.lang = lang;
-      localStorage.setItem('preferred_language', lang);
-      // Inform backend
-      fetch('/api/i18n/set-language', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ language: lang })
-      }).catch(()=>{});
-    } catch (e) {
-      console.error('Failed to load locale', e);
-    }
+// i18next wrapper for translation management
+// Uses i18next library loaded from CDN in index.html
+
+declare const i18next: any;
+
+const i18nWrapper = {
+  async init() {
+    const savedLang = localStorage.getItem('preferred_language') 
+      || navigator.language?.split('-')[0] 
+      || 'en';
+
+    // Fetch all translations
+    const [enData, frData, esData] = await Promise.all([
+      fetch('/locales/en.json').then(r => r.json()),
+      fetch('/locales/fr.json').then(r => r.json()),
+      fetch('/locales/es.json').then(r => r.json())
+    ]);
+
+    // Initialize i18next with all resources
+    await i18next.init({
+      lng: savedLang,
+      fallbackLng: 'en',
+      debug: false,
+      resources: {
+        en: { translation: enData },
+        fr: { translation: frData },
+        es: { translation: esData }
+      }
+    });
+
+    console.log('✅ i18next initialized with language:', savedLang);
   },
-  t(key: string) {
-    return this.dict[key] || key;
+
+  async changeLanguage(lang: string) {
+    await i18next.changeLanguage(lang);
+    document.documentElement.lang = lang;
+    localStorage.setItem('preferred_language', lang);
+    
+    // Inform backend
+    fetch('/api/i18n/set-language', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ language: lang })
+    }).catch(() => {});
   },
-  init() {
-    const saved = localStorage.getItem('preferred_language') || (navigator.language?.split('-')[0]) || 'en';
-    this.load(saved);
+
+  t(key: string): string {
+    return i18next.t(key);
+  },
+
+  getCurrentLanguage(): string {
+    return i18next.language || 'en';
   }
 };
+
+// Expose globally for lang.js and other scripts
+(window as any).i18n = i18nWrapper;

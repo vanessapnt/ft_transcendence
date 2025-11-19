@@ -9,6 +9,12 @@
             // DOMContentLoaded : les fonctions sont appelées une fois que le DOM est entièrement chargé
             // DOM : représentation en arbre du document HTML  accessible via l'objet global document
             document.addEventListener('DOMContentLoaded', () => {
+                // Initialize i18n
+                const i18nModule = window.i18n;
+                if (i18nModule && i18nModule.init) {
+                    i18nModule.init();
+                    console.log('✅ i18n initialized');
+                }
                 this.bindGameModeBtns();
                 this.setupBrowserNavigation();
                 this.handleRouteChange();

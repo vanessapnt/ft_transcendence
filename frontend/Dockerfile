@@ -11,7 +11,7 @@ RUN if [ -f package.json ]; then npm install; fi
 
 # Copier le code source TypeScript
 COPY src/ ./src/
-COPY pong/index.html pong/pong.css ./pong/
+COPY pong/ ./pong/
 
 # Compiler TypeScript
 RUN npm run build
@@ -24,6 +24,10 @@ RUN rm -rf /usr/share/nginx/html/*
 
 # Copier les fichiers compilés du jeu Pong
 COPY --from=builder /app/pong/* /usr/share/nginx/html/
+
+# Créer le dossier locales et copier les fichiers de traduction
+RUN mkdir -p /usr/share/nginx/html/locales
+COPY --from=builder /app/pong/locales/* /usr/share/nginx/html/locales/
 
 # Créer une configuration nginx simple
 RUN echo 'server { \

@@ -1,0 +1,18 @@
+{
+  "title_pong": "PONG",
+  "start_game": "DÉMARRER LE JEU",
+  "tournament": "TOURNOI",
+  "signup": "S'INSCRIRE",
+  "login": "SE CONNECTER",
+  "login_github": "Se connecter avec GitHub",
+  "login_google": "Se connecter avec Google",
+  "edit_profile": "Modifier le profil",
+  "logout": "Se déconnecter",
+  "select_mode": "SÉLECTIONNER LE MODE",
+  "local_2_players": "LOCAL 2 JOUEURS",
+  "vs_ai": "VS IA",
+  "back": "RETOUR",
+  "pause_hint": "Appuyez sur ESPACE pour mettre en pause",
+  "menu": "MENU",
+  "2_players": "2 Joueurs"
+}

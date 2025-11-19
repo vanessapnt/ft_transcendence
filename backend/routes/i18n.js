@@ -7,26 +7,26 @@ router.post('/set-language', (req, res) => {
   const { language } = req.body;
   if (!language) return res.status(400).json({ error: 'language required' });
 
-  // Save in session
+  // set in session
   req.session.lang = language;
 
-  // If user logged in, persist to DB
+  // if logged in, try persist in DB
   if (req.session.userId) {
     try {
-      // Exemple de noms courants ; adapte si tes statements ont un autre nom
+      // Try to find the appropriate update statement
       if (statements.updatePreferredLanguage) {
         statements.updatePreferredLanguage.run(language, req.session.userId);
       } else if (statements.updateUserPreferredLanguage) {
         statements.updateUserPreferredLanguage.run(language, req.session.userId);
-      } else if (statements.updateUser) {
-        // si updateUser existe, adapte les params : statements.updateUser.run(...).
       }
+      // If neither exists, just skip DB update (session is enough for now)
     } catch (err) {
-      console.error('Failed to save preferred language:', err);
+      console.error('Failed to persist preferred language', err);
+      // don't block the response if DB update fails
     }
   }
 
-  res.json({ message: 'Language set', language });
+  res.json({ message: 'language set', language });
 });
 
 module.exports = router;

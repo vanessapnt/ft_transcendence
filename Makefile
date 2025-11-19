@@ -29,7 +29,7 @@ dev-verbose: ## 🚀 Lance l'environnement de développement avec logs détaill�
 dev: ## 🚀 Lance l'environnement de développement avec monitoring
 	@echo "🔧 Démarrage de l'environnement de développement..."
 	@sh -lc '\
-docker-compose -f docker-compose.dev.yml up -d --build > /dev/null 2>&1 &\
+docker-compose -f docker-compose.dev.yml up -d --build &\
 DC_PID=$$!;\
 i=0;\
 echo "";\

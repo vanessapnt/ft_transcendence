@@ -23,4 +23,4 @@ RUN mkdir -p avatars
 EXPOSE 8000
 
 # Commande de démarrage
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]

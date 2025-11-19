@@ -7,6 +7,8 @@
     <title>PONG</title>
     <link rel="stylesheet" href="pong.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- i18next library from CDN - loaded first -->
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.7.6/i18next.min.js"></script>
 </head>
 
 <body>
@@ -15,8 +17,6 @@
         <button id="lang-btn-fr" onclick="changeLang('fr')">FR</button>
         <button id="lang-btn-es" onclick="changeLang('es')">ES</button>
     </div>
-    <script src="i18n.js"></script>
-    <script src="lang.js"></script>
     <div id="user-info">
         <!-- span : vide au départ et affiche dynamiquement le nom d'utilisateur -->
         <span id="username-label"></span>
@@ -163,13 +163,14 @@
     </div>
 
     <!-- defer : script chargé en arrière-plan mais exécuté après le HTML -->
+    <script src="i18n.js" defer></script>
+    <script src="lang.js" defer></script>
     <script src="pong.js" defer></script>
     <script src="pongAI.js" defer></script>
     <script src="tournament.js" defer></script>
     <script src="navigation.js" defer></script>
     <script src="user.js" defer></script>
     <script src="chat.js" defer></script>
-    <script src="lang.js" defer></script>
 </body>
 
 </html>

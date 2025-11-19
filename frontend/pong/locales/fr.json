@@ -14,5 +14,6 @@
   "back": "RETOUR",
   "pause_hint": "Appuyez sur ESPACE pour mettre en pause",
   "menu": "MENU",
-  "2_players": "2 Joueurs"
+  "2_players": "2 Joueurs",
+  "title_paused": "EN PAUSE"
 }

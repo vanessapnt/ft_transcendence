@@ -4,7 +4,7 @@ echo "🧪 Envoi de 40 logs de test vers votre stack ELK..."
 # Vérifier que Logstash est accessible
 if ! nc -z localhost 5001; then
     echo "❌ Logstash n'est pas accessible sur le port 5001"
-    echo "Démarrez votre stack : docker-compose -f docker-compose.dev.yml up -d"
+    echo "Démarrez votre stack : docker compose -f docker-compose.dev.yml up -d"
     exit 1
 fi
 

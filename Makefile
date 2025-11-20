@@ -24,12 +24,12 @@ help:
 # Mode développement
 dev-verbose: ## 🚀 Lance l'environnement de développement avec logs détaillés
 	@echo "🔧 Démarrage de l'environnement de développement (mode verbose)..."
-	@VERBOSE=1 docker-compose -f docker-compose.dev.yml up --build
+	@VERBOSE=1 docker compose -f docker-compose.dev.yml up --build
 
 dev: ## 🚀 Lance l'environnement de développement avec monitoring
 	@echo "🔧 Démarrage de l'environnement de développement..."
 	@sh -lc '\
-docker-compose -f docker-compose.dev.yml up -d --build > /dev/null 2>&1 &\
+docker compose -f docker-compose.dev.yml up -d --build > /dev/null 2>&1 &\
 DC_PID=$$!;\
 i=0;\
 echo "";\
@@ -54,7 +54,7 @@ prod:
 	@echo "🚀 Démarrage en mode production..."
 	@bash ./scripts/fix-elk-perms.sh
 	@bash ./scripts/ensure-ssl.sh
-	@docker-compose -f docker-compose.prod.yml up -d --build
+	@docker compose -f docker-compose.prod.yml up -d --build
 	@bash ./scripts/prod-startup.sh
 
 # # Logs production
@@ -64,18 +64,18 @@ prod:
 # Build production
 build-prod:
 	@echo "🔨 Reconstruction des images (prod)..."
-	docker-compose -f docker-compose.prod.yml build --no-cache
+	docker compose -f docker-compose.prod.yml build --no-cache
 
 # Arrêter les services (dev et prod)
 stop:
 	@echo "🛑 Arrêt des services..."
-	-docker-compose -f docker-compose.dev.yml down 2>/dev/null
-	-docker-compose -f docker-compose.prod.yml down 2>/dev/null
+	-docker compose -f docker-compose.dev.yml down 2>/dev/null
+	-docker compose -f docker-compose.prod.yml down 2>/dev/null
 
 # Supprimer la base de données (dev)
 reset-db: ## 🗑️ Supprime la base de données et relance le dev
 	@echo "🗑️ Suppression de la base de données..."
-	@docker-compose -f docker-compose.dev.yml down -v
+	@docker compose -f docker-compose.dev.yml down -v
 	@rm -f backend/instance/transcendence.db
 	@mkdir -p backend/avatars
 	@if [ -f backend/avatars/default_avatar.png ]; then mv backend/avatars/default_avatar.png /tmp/default_avatar_backup.png; fi
@@ -87,19 +87,19 @@ reset-db: ## 🗑️ Supprime la base de données et relance le dev
 # Rebuilder les images (dev)
 build:
 	@echo "🔨 Reconstruction des images (dev)..."
-	docker-compose -f docker-compose.dev.yml build --no-cache
+	docker compose -f docker-compose.dev.yml build --no-cache
 
 # Nettoyer tout (dev et prod)
 clean:
 	@echo "🧹 Nettoyage complet..."
-	-docker-compose -f docker-compose.dev.yml down -v --remove-orphans 2>/dev/null
-	-docker-compose -f docker-compose.prod.yml down -v --remove-orphans 2>/dev/null
+	-docker compose -f docker-compose.dev.yml down -v --remove-orphans 2>/dev/null
+	-docker compose -f docker-compose.prod.yml down -v --remove-orphans 2>/dev/null
 	docker system prune -f
 	@echo "✨ Nettoyage terminé !"
 
 # Afficher les logs (dev)
 logs:
-	docker-compose -f docker-compose.dev.yml logs -f
+	docker compose -f docker-compose.dev.yml logs -f
 
 # Serve the `frontend/pong` folder directly so index is available at /
 .PHONY: serve-pong

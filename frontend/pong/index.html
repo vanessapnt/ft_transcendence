@@ -19,6 +19,7 @@
 
     <div id="avatar-container">
         <img id="avatar-img" src="/avatars/default_avatar.png" alt="Avatar">
+        <button id="private-messages-btn" onclick="toggleChat()">Private Messages</button>
     </div>
 
     <div id="home-view" class="screen active">
@@ -127,13 +128,30 @@
 
     <div id="chat-panel">
         <h2>💬 Messages privés</h2>
-        <div id="current-chat">Aucune conversation sélectionnée</div>
-        <div id="conversation-tabs"></div>
-        <div id="chatbox"></div>
-        <div id="controls">
-            <input type="text" id="msg"
-                placeholder="Tape ton message (ou /dm pseudo ton message pour démarrer, /block, /unblock, /invite)..." />
-            <button id="send">Envoyer</button>
+        <div id="chat-container">
+            <div id="chat-main">
+                <div id="chat-content">
+                    <div id="conversations-sidebar">
+                        <h3>Conversations</h3>
+                        <div id="conversation-tabs"></div>
+                    </div>
+                    <div id="chat-right">
+                        <div id="chat-header">
+                            <div id="current-chat">Aucune conversation sélectionnée</div>
+                            <div id="chat-actions">
+                                <button id="invite-btn" title="Inviter à jouer">/invite</button>
+                                <button id="block-btn" title="Bloquer l'utilisateur">/block</button>
+                            </div>
+                        </div>
+                        <div id="chatbox"></div>
+                        <div id="controls">
+                            <input type="text" id="msg"
+                                placeholder="Tape ton message (ou /dm pseudo ton message pour démarrer, /block, /unblock, /invite)..." />
+                            <button id="send">Envoyer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -162,6 +180,237 @@
     <script src="navigation.js" defer></script>
     <script src="user.js" defer></script>
     <script src="chat.js" defer></script>
+
+    <!-- Script pour gérer les invitations depuis le chat -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Lire les paramètres URL pour les invitations de jeu
+            const urlParams = new URLSearchParams(window.location.search);
+            const player1 = urlParams.get('player1');
+            const player2 = urlParams.get('player2');
+
+            if (player1 && player2) {
+                // Délai pour s'assurer que tous les modules sont chargés
+                setTimeout(() => {
+                    if (window.PONG && window.PONG.PongGame && window.PONG.Nav) {
+                        // Configurer les noms des joueurs
+                        window.PONG.PongGame.setPlayerNames(player1, player2);
+
+                        // Aller à la vue de jeu et lancer la partie
+                        window.PONG.Nav.showGame();
+                        window.PONG.PongGame.start();
+
+                        // Nettoyer l'URL pour éviter de relancer le jeu au refresh
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                }, 500);
+            }
+        });
+    </script>
+
+    <script>
+        // Fonction pour afficher/cacher le chat
+        function toggleChat() {
+            const chatPanel = document.getElementById('chat-panel');
+            const button = document.getElementById('private-messages-btn');
+            const screens = document.querySelectorAll('.screen');
+
+            if (chatPanel && button) {
+                if (chatPanel.style.display === 'none' || chatPanel.style.display === '') {
+                    // Afficher le chat et cacher le jeu/menus
+                    chatPanel.style.display = 'flex';
+                    button.textContent = 'Hide Messages';
+
+                    // Cacher tous les écrans du jeu
+                    screens.forEach(screen => {
+                        screen.style.display = 'none';
+                    });
+                } else {
+                    // Cacher le chat et réafficher le jeu/menus
+                    chatPanel.style.display = 'none';
+                    button.textContent = 'Private Messages';
+
+                    // Réafficher l'écran qui était actif
+                    screens.forEach(screen => {
+                        if (screen.classList.contains('active')) {
+                            screen.style.display = 'flex';
+                        } else {
+                            screen.style.display = 'none';
+                        }
+                    });
+                }
+            }
+        }
+
+        // Au chargement de la page, cacher le chat par défaut
+        document.addEventListener('DOMContentLoaded', function () {
+            const chatPanel = document.getElementById('chat-panel');
+            if (chatPanel) {
+                chatPanel.style.display = 'none';
+            }
+
+            // Vérifier l'état de connexion et ajuster la visibilité du bouton
+            checkLoginStatus();
+
+            // Ajouter les événements pour les boutons d'action du chat
+            const inviteBtn = document.getElementById('invite-btn');
+            const blockBtn = document.getElementById('block-btn');
+
+            if (inviteBtn) {
+                inviteBtn.addEventListener('click', function () {
+                    const currentUser = getCurrentChatUser();
+                    if (currentUser && window.PONG && window.PONG.Chat) {
+                        // Simuler la commande /invite
+                        const msgInput = document.getElementById('msg');
+                        if (msgInput) {
+                            msgInput.value = `/invite "${currentUser}"`;
+                            // Déclencher l'envoi du message
+                            const sendBtn = document.getElementById('send');
+                            if (sendBtn) {
+                                sendBtn.click();
+                            }
+                        }
+                    } else {
+                        alert('Aucune conversation sélectionnée');
+                    }
+                });
+            }
+
+            if (blockBtn) {
+                blockBtn.addEventListener('click', function () {
+                    const currentUser = getCurrentChatUser();
+                    if (currentUser && window.PONG && window.PONG.Chat) {
+                        const isBlocked = blockBtn.textContent === '/unblock';
+
+                        if (isBlocked) {
+                            // Débloquer l'utilisateur
+                            const confirm = window.confirm(`Êtes-vous sûr de vouloir débloquer ${currentUser} ?`);
+                            if (confirm) {
+                                const msgInput = document.getElementById('msg');
+                                if (msgInput) {
+                                    msgInput.value = `/unblock "${currentUser}"`;
+                                    const sendBtn = document.getElementById('send');
+                                    if (sendBtn) {
+                                        sendBtn.click();
+                                    }
+                                    // Changer le bouton en /block
+                                    blockBtn.textContent = '/block';
+                                    blockBtn.title = 'Bloquer l\'utilisateur';
+                                }
+                            }
+                        } else {
+                            // Bloquer l'utilisateur
+                            const confirm = window.confirm(`Êtes-vous sûr de vouloir bloquer ${currentUser} ?`);
+                            if (confirm) {
+                                const msgInput = document.getElementById('msg');
+                                if (msgInput) {
+                                    msgInput.value = `/block "${currentUser}"`;
+                                    const sendBtn = document.getElementById('send');
+                                    if (sendBtn) {
+                                        sendBtn.click();
+                                    }
+                                    // Changer le bouton en /unblock
+                                    blockBtn.textContent = '/unblock';
+                                    blockBtn.title = 'Débloquer l\'utilisateur';
+                                }
+                            }
+                        }
+                    } else {
+                        alert('Aucune conversation sélectionnée');
+                    }
+                });
+            }
+        });
+
+        // Fonction utilitaire pour récupérer l'utilisateur de la conversation actuelle
+        function getCurrentChatUser() {
+            const currentChatEl = document.getElementById('current-chat');
+            if (currentChatEl && currentChatEl.textContent) {
+                const text = currentChatEl.textContent;
+                const match = text.match(/Conversation avec (.+)/);
+                return match ? match[1] : null;
+            }
+            return null;
+        }
+
+        // Fonction pour réinitialiser l'état du bouton block/unblock
+        function resetBlockButton() {
+            const blockBtn = document.getElementById('block-btn');
+            if (blockBtn) {
+                blockBtn.textContent = '/block';
+                blockBtn.title = 'Bloquer l\'utilisateur';
+            }
+        }
+
+        // Fonction pour vérifier l'état de connexion et ajuster la visibilité du bouton
+        function checkLoginStatus() {
+            // Vérifier si l'utilisateur est connecté en regardant les éléments d'information utilisateur
+            const userDisplayElement = document.getElementById('user-display');
+            const userInfoElement = document.getElementById('user-info');
+            const privateMessagesBtn = document.getElementById('private-messages-btn');
+
+            if (privateMessagesBtn) {
+                // Si on trouve un élément avec des informations utilisateur et qu'il contient un nom d'utilisateur
+                let isLoggedIn = false;
+
+                if (userDisplayElement && userDisplayElement.textContent.trim() !== '') {
+                    isLoggedIn = true;
+                } else if (userInfoElement && userInfoElement.textContent.trim() !== '') {
+                    isLoggedIn = true;
+                } else {
+                    // Alternative: vérifier s'il y a un cookie de session ou faire un appel API
+                    try {
+                        // Tentative de vérification via un appel à l'API utilisateur
+                        fetch('/api/user/profile')
+                            .then(response => {
+                                if (response.ok) {
+                                    privateMessagesBtn.style.display = 'block';
+                                } else {
+                                    privateMessagesBtn.style.display = 'none';
+                                }
+                            })
+                            .catch(() => {
+                                privateMessagesBtn.style.display = 'none';
+                            });
+                        return; // Sortir ici car on traite le cas de manière asynchrone
+                    } catch (error) {
+                        isLoggedIn = false;
+                    }
+                }
+
+                // Afficher ou cacher le bouton selon l'état de connexion
+                if (isLoggedIn) {
+                    privateMessagesBtn.style.display = 'block';
+                } else {
+                    privateMessagesBtn.style.display = 'none';
+                }
+            }
+        }
+
+        // Observer les changements dans le titre de la conversation pour réinitialiser le bouton
+        const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+                if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                    const currentChatEl = document.getElementById('current-chat');
+                    if (currentChatEl && currentChatEl.textContent.includes('Conversation avec')) {
+                        resetBlockButton();
+                    }
+                }
+            });
+        });
+
+        // Démarrer l'observation quand le DOM est prêt
+        document.addEventListener('DOMContentLoaded', function () {
+            const currentChatEl = document.getElementById('current-chat');
+            if (currentChatEl) {
+                observer.observe(currentChatEl, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

@@ -25,6 +25,7 @@ function setupChat(server) {
 
   // === Connexion d'un nouveau client ===
   wss.on("connection", (socket) => {
+    console.log("💬 Nouvelle connexion WebSocket");
     clients.set(socket, { username: null, displayName: null, userId: null, blocked: new Set() });
 
     // Réception d'un message WebSocket
@@ -36,10 +37,12 @@ function setupChat(server) {
 
         // 1️⃣ Connexion utilisateur - récupération depuis la DB
         if (data.type === "login" && data.username) {
+          console.log("🔐 Tentative de login:", data.username);
           // Récupérer l'utilisateur depuis la base de données
           const user = statements.getUserByUsername.get(data.username);
-          
+
           if (!user) {
+            console.log("❌ Utilisateur non trouvé:", data.username);
             socket.send(
               JSON.stringify({
                 from: "Serveur",
@@ -49,10 +52,24 @@ function setupChat(server) {
             return;
           }
 
+          // Vérifier s'il y a déjà une connexion pour cet utilisateur
+          const existingSocket = findSocketByUsername(data.username);
+          if (existingSocket && existingSocket !== socket) {
+            console.log("⚠️ Utilisateur déjà connecté:", data.username);
+            // Fermer l'ancienne connexion
+            existingSocket.close(1000, "Nouvelle connexion pour cet utilisateur");
+          }
+
           // Utiliser le display_name de la DB (fallback sur username)
           clientData.username = user.username;
           clientData.displayName = user.display_name || user.username;
           clientData.userId = user.id;
+
+          console.log("✅ Utilisateur connecté:", {
+            username: clientData.username,
+            displayName: clientData.displayName,
+            totalConnected: clients.size
+          });
 
           socket.send(
             JSON.stringify({
@@ -60,6 +77,43 @@ function setupChat(server) {
               text: `Bienvenue ${clientData.displayName}`,
             })
           );
+
+          // **NOUVEAU** : Livrer les messages en attente
+          console.log("📬 Vérification messages en attente pour userId:", user.id);
+          try {
+            const undeliveredMessages = statements.getUndeliveredMessages.all(user.id);
+            console.log("📬 Messages non livrés trouvés:", undeliveredMessages.length);
+
+            if (undeliveredMessages.length > 0) {
+              socket.send(
+                JSON.stringify({
+                  from: "Serveur",
+                  text: `📬 Vous avez ${undeliveredMessages.length} message(s) en attente`,
+                })
+              );
+
+              // Livrer chaque message
+              for (const msg of undeliveredMessages) {
+                console.log("📨 Livraison message:", msg);
+                socket.send(
+                  JSON.stringify({
+                    type: "dm",
+                    from: msg.from_username,
+                    fromDisplayName: msg.from_display_name,
+                    to: user.username,
+                    text: msg.message_text,
+                    timestamp: msg.created_at
+                  })
+                );
+
+                // Marquer comme livré
+                statements.markMessageAsDelivered.run(msg.id);
+              }
+            }
+          } catch (dbError) {
+            console.error("❌ Erreur livraison messages:", dbError);
+          }
+
           return;
         }
 
@@ -76,22 +130,46 @@ function setupChat(server) {
 
         // 2️⃣ Blocage / Déblocage d'utilisateur
         if (data.type === "block" && data.target) {
+          // ✅ Vérifier que l'utilisateur à bloquer existe
+          const targetUser = statements.getUserByUsername.get(data.target);
+          if (!targetUser) {
+            socket.send(
+              JSON.stringify({
+                from: "Serveur",
+                text: `L'utilisateur ${data.target} n'existe pas.`,
+              })
+            );
+            return;
+          }
+
           clientData.blocked.add(data.target);
           socket.send(
             JSON.stringify({
               from: "Serveur",
-              text: `Tu as bloqué ${data.target}`,
+              text: `Tu as bloqué ${targetUser.display_name || data.target}`,
             })
           );
           return;
         }
 
         if (data.type === "unblock" && data.target) {
+          // ✅ Vérifier que l'utilisateur à débloquer existe
+          const targetUser = statements.getUserByUsername.get(data.target);
+          if (!targetUser) {
+            socket.send(
+              JSON.stringify({
+                from: "Serveur",
+                text: `L'utilisateur ${data.target} n'existe pas.`,
+              })
+            );
+            return;
+          }
+
           clientData.blocked.delete(data.target);
           socket.send(
             JSON.stringify({
               from: "Serveur",
-              text: `Tu as débloqué ${data.target}`,
+              text: `Tu as débloqué ${targetUser.display_name || data.target}`,
             })
           );
           return;
@@ -101,13 +179,26 @@ function setupChat(server) {
         if (data.type === "invite" && data.target) {
           const fromUser = clientData.username;
           const fromDisplayName = clientData.displayName;
+
+          // ✅ Vérifier que l'utilisateur à inviter existe dans la base de données
+          const targetUser = statements.getUserByUsername.get(data.target);
+          if (!targetUser) {
+            socket.send(
+              JSON.stringify({
+                from: "Serveur",
+                text: `L'utilisateur ${data.target} n'existe pas.`,
+              })
+            );
+            return;
+          }
+
           const targetSocket = findSocketByUsername(data.target);
 
           if (!targetSocket || targetSocket.readyState !== WebSocket.OPEN) {
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `${data.target} n'est pas connecté.`,
+                text: `${targetUser.display_name || data.target} n'est pas connecté actuellement.`,
               })
             );
             return;
@@ -174,40 +265,84 @@ function setupChat(server) {
         if (data.type === "dm" && data.to && data.text) {
           const fromUser = clientData.username;
           const fromDisplayName = clientData.displayName;
+
+          // ✅ Vérifier que l'utilisateur destinataire existe dans la base de données
+          const targetUser = statements.getUserByUsername.get(data.to);
+          if (!targetUser) {
+            socket.send(
+              JSON.stringify({
+                from: "Serveur",
+                text: `L'utilisateur ${data.to} n'existe pas.`,
+              })
+            );
+            return;
+          }
+
           const targetSocket = findSocketByUsername(data.to);
 
-          if (!targetSocket || targetSocket.readyState !== WebSocket.OPEN) {
+          // Vérifier si la cible a bloqué l'expéditeur (seulement si elle est connectée)
+          if (targetSocket) {
+            const targetData = clients.get(targetSocket);
+            if (targetData && targetData.blocked.has(fromUser)) {
+              socket.send(
+                JSON.stringify({
+                  from: "Serveur",
+                  text: `${targetData.displayName || data.to} a bloqué vos messages.`,
+                })
+              );
+              return;
+            }
+          }
+
+          // **NOUVEAU** : Stocker le message en base de données
+          console.log("💾 Tentative sauvegarde message:", {
+            fromUserId: clientData.userId,
+            toUserId: targetUser.id,
+            text: data.text,
+            isDelivered: targetSocket ? 1 : 0
+          });
+
+          try {
+            statements.saveMessage.run(
+              clientData.userId,    // from_user_id
+              targetUser.id,        // to_user_id  
+              data.text,           // message_text
+              'dm',                // message_type
+              targetSocket ? 1 : 0 // is_delivered (1 si en ligne, 0 sinon)
+            );
+            console.log("✅ Message sauvegardé en base de données");
+          } catch (dbError) {
+            console.error("❌ Erreur sauvegarde message:", dbError);
+          }
+
+          // Si l'utilisateur est connecté, envoyer le DM directement
+          if (targetSocket && targetSocket.readyState === WebSocket.OPEN) {
+            targetSocket.send(
+              JSON.stringify({
+                type: "dm",
+                from: fromUser,
+                fromDisplayName: fromDisplayName,
+                to: data.to,
+                text: data.text,
+              })
+            );
+
+            // Confirmation à l'expéditeur
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `${data.to} n'est pas connecté.`,
+                text: `Message livré à ${targetUser.display_name || data.to} (en ligne)`,
               })
             );
-            return;
-          }
-
-          const targetData = clients.get(targetSocket);
-          // Si la cible a bloqué l'expéditeur
-          if (targetData && targetData.blocked.has(fromUser)) {
+          } else {
+            // L'utilisateur n'est pas connecté - DM stocké pour livraison ultérieure
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `${targetData.displayName || data.to} a bloqué vos messages.`,
+                text: `Message envoyé à ${targetUser.display_name || data.to} (sera livré à la connexion)`,
               })
             );
-            return;
           }
-
-          // Envoi du DM à la cible
-          targetSocket.send(
-            JSON.stringify({
-              type: "dm",
-              from: fromUser,
-              fromDisplayName: fromDisplayName,
-              to: data.to,
-              text: data.text,
-            })
-          );
 
           // Écho éventuel à l'expéditeur (utile pour logs ou synchro)
           socket.send(
@@ -223,7 +358,108 @@ function setupChat(server) {
           return;
         }
 
-        // 6️⃣ Messages "standards" : on limite aux messages système (Serveur / Tournoi)
+        // 6️⃣ Commande pour lister les utilisateurs
+        if (data.type === "listUsers") {
+          const fromUser = clientData.username;
+          console.log("🔍 Commande listUsers reçue de:", fromUser);
+          try {
+            // Récupérer tous les utilisateurs de la base de données
+            const allUsers = statements.getAllUsers.all();
+            console.log("👥 Utilisateurs trouvés:", allUsers.length);
+            const userList = allUsers
+              .filter(user => user.username !== fromUser) // Exclure l'utilisateur actuel
+              .map(user => {
+                const isOnline = findSocketByUsername(user.username) !== null;
+                const status = isOnline ? "🟢" : "⚫";
+                return `${status} ${user.display_name || user.username} (@${user.username})`;
+              })
+              .join('\n');
+
+            socket.send(
+              JSON.stringify({
+                from: "Serveur",
+                text: userList || "Aucun autre utilisateur trouvé.",
+              })
+            );
+          } catch (error) {
+            console.error("❌ Erreur lors de listUsers:", error);
+            socket.send(
+              JSON.stringify({
+                from: "Serveur",
+                text: "Erreur lors de la récupération des utilisateurs.",
+              })
+            );
+          }
+          return;
+        }
+
+        // 7️⃣ Commande pour voir l'historique d'une conversation
+        if (data.type === "getHistory" && data.target) {
+          const fromUser = clientData.username;
+
+          // Vérifier que l'utilisateur cible existe
+          const targetUser = statements.getUserByUsername.get(data.target);
+          if (!targetUser) {
+            socket.send(
+              JSON.stringify({
+                from: "Serveur",
+                text: `L'utilisateur ${data.target} n'existe pas.`,
+              })
+            );
+            return;
+          }
+
+          try {
+            const history = statements.getConversationHistory.all(
+              clientData.userId, targetUser.id, targetUser.id, clientData.userId
+            );
+
+            if (history.length === 0) {
+              socket.send(
+                JSON.stringify({
+                  from: "Serveur",
+                  text: `Aucun historique de conversation avec ${targetUser.display_name || data.target}.`,
+                })
+              );
+            } else {
+              socket.send(
+                JSON.stringify({
+                  from: "Serveur",
+                  text: `📜 Historique avec ${targetUser.display_name || data.target} (${history.length} messages):`,
+                })
+              );
+
+              // Envoyer chaque message de l'historique
+              for (const msg of history) {
+                const isFromMe = msg.from_user_id === clientData.userId;
+                const displayName = isFromMe ? "Moi" : (msg.from_display_name || msg.from_username);
+
+                socket.send(
+                  JSON.stringify({
+                    type: "dm",
+                    from: msg.from_username,
+                    fromDisplayName: displayName,
+                    to: isFromMe ? msg.to_username : msg.from_username,
+                    text: msg.message_text,
+                    timestamp: msg.created_at,
+                    isHistory: true
+                  })
+                );
+              }
+            }
+          } catch (dbError) {
+            console.error("❌ Erreur récupération historique:", dbError);
+            socket.send(
+              JSON.stringify({
+                from: "Serveur",
+                text: "Erreur lors de la récupération de l'historique.",
+              })
+            );
+          }
+          return;
+        }
+
+        // 8️⃣ Messages "standards" : on limite aux messages système (Serveur / Tournoi)
         if (data.from && data.text) {
           const isSystem =
             data.from === "Serveur" ||
@@ -255,7 +491,14 @@ function setupChat(server) {
     });
 
     // === Déconnexion ===
-    socket.on("close", () => {
+    socket.on("close", (code, reason) => {
+      const clientData = clients.get(socket);
+      console.log("🔌 Connexion fermée:", {
+        username: clientData?.username || "anonyme",
+        code,
+        reason: reason.toString(),
+        totalConnected: clients.size - 1
+      });
       clients.delete(socket);
     });
   });

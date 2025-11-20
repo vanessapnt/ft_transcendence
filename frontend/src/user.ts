@@ -34,6 +34,7 @@
         const signupBtn = document.querySelector('.signup-btn') as HTMLButtonElement;
         const avatarImg = document.getElementById('avatar-img') as HTMLImageElement;
         const loginBtn = document.querySelector('.login-btn') as HTMLButtonElement;
+        const privateMessagesBtn = document.getElementById('private-messages-btn');
 
         if (!userInfo || !usernameLabel || !logoutBtn || !editProfileBtn || !avatarImg) {
             console.error('UI elements not found');
@@ -51,6 +52,7 @@
 
         if (loginBtn) loginBtn.style.display = 'none';
         if (signupBtn) signupBtn.style.display = 'none';
+        if (privateMessagesBtn) privateMessagesBtn.style.display = 'block';
         const menu = document.querySelector('.menu-buttons') as HTMLElement;
         if (menu) menu.style.display = '';
 
@@ -68,15 +70,39 @@
     }
 
     function logout(): void {
+        // Cacher le chat s'il est ouvert
+        const chatPanel = document.getElementById('chat-panel');
+        if (chatPanel && chatPanel.style.display !== 'none') {
+            // Utiliser la fonction toggleChat si elle existe
+            if (typeof (window as any).toggleChat === 'function') {
+                (window as any).toggleChat();
+            } else {
+                // Sinon cacher manuellement et restaurer les écrans
+                chatPanel.style.display = 'none';
+                const screens = document.querySelectorAll('.screen');
+                const privateMessagesBtn = document.getElementById('private-messages-btn');
+
+                screens.forEach(screen => {
+                    (screen as HTMLElement).style.display = '';
+                });
+
+                if (privateMessagesBtn) {
+                    privateMessagesBtn.textContent = 'Private Messages';
+                }
+            }
+        }
+
         const userInfo = document.getElementById('user-info');
         const signupBtn = document.querySelector('.signup-btn') as HTMLButtonElement;
         const avatarImg = document.getElementById('avatar-img');
         const loginBtn = document.querySelector('.login-btn') as HTMLButtonElement;
+        const privateMessagesBtn = document.getElementById('private-messages-btn');
 
         if (userInfo) userInfo.style.display = 'none';
         if (loginBtn) loginBtn.style.display = 'inline-block';
         if (signupBtn) signupBtn.style.display = 'inline-block';
         if (avatarImg) avatarImg.style.display = 'none';
+        if (privateMessagesBtn) privateMessagesBtn.style.display = 'none';
 
         (window as any).currentUserId = null;
         (window as any).currentAvatarUrl = null;

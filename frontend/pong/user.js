@@ -19,6 +19,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         const signupBtn = document.querySelector('.signup-btn');
         const avatarImg = document.getElementById('avatar-img');
         const loginBtn = document.querySelector('.login-btn');
+        const privateMessagesBtn = document.getElementById('private-messages-btn');
         if (!userInfo || !usernameLabel || !logoutBtn || !editProfileBtn || !avatarImg) {
             console.error('UI elements not found');
             return;
@@ -34,6 +35,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             loginBtn.style.display = 'none';
         if (signupBtn)
             signupBtn.style.display = 'none';
+        if (privateMessagesBtn)
+            privateMessagesBtn.style.display = 'block';
         const menu = document.querySelector('.menu-buttons');
         if (menu)
             menu.style.display = '';
@@ -48,10 +51,31 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         hideGithubLoginIfConnected();
     }
     function logout() {
+        // Cacher le chat s'il est ouvert
+        const chatPanel = document.getElementById('chat-panel');
+        if (chatPanel && chatPanel.style.display !== 'none') {
+            // Utiliser la fonction toggleChat si elle existe
+            if (typeof window.toggleChat === 'function') {
+                window.toggleChat();
+            }
+            else {
+                // Sinon cacher manuellement et restaurer les écrans
+                chatPanel.style.display = 'none';
+                const screens = document.querySelectorAll('.screen');
+                const privateMessagesBtn = document.getElementById('private-messages-btn');
+                screens.forEach(screen => {
+                    screen.style.display = '';
+                });
+                if (privateMessagesBtn) {
+                    privateMessagesBtn.textContent = 'Private Messages';
+                }
+            }
+        }
         const userInfo = document.getElementById('user-info');
         const signupBtn = document.querySelector('.signup-btn');
         const avatarImg = document.getElementById('avatar-img');
         const loginBtn = document.querySelector('.login-btn');
+        const privateMessagesBtn = document.getElementById('private-messages-btn');
         if (userInfo)
             userInfo.style.display = 'none';
         if (loginBtn)
@@ -60,6 +84,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             signupBtn.style.display = 'inline-block';
         if (avatarImg)
             avatarImg.style.display = 'none';
+        if (privateMessagesBtn)
+            privateMessagesBtn.style.display = 'none';
         window.currentUserId = null;
         window.currentAvatarUrl = null;
         window.currentUsername = null;

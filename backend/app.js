@@ -1,4 +1,5 @@
 const express = require('express');
+const http = require('http');
 const session = require('express-session');
 const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
@@ -8,6 +9,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 const { statements } = require('./database');
+const { setupChat } = require('./chat');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -69,7 +71,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-app.listen(PORT, () => {
+// Créer le serveur HTTP
+const server = http.createServer(app);
+
+// Initialiser le chat WebSocket
+setupChat(server);
+
+server.listen(PORT, () => {
   console.log(`🚀 Backend server running on port ${PORT}`);
 });
 

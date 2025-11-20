@@ -317,5 +317,4 @@
         (window as any).PONG = {};
     }
     (window as any).PONG.PongGame = new PongGame();
-
 })();

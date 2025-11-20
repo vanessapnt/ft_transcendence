@@ -339,7 +339,7 @@
             // DM reçu
             if (data.type === "dm") {
                 console.log("📨 DM reçu:", { from, to: data.to, text, isMyMessage: from === this.username, isHistory: data.isHistory });
-                
+
                 if (data.isHistory) {
                     // Message d'historique - l'ajouter au début de la conversation
                     const otherUser = from === this.username ? data.to : from;
@@ -420,13 +420,13 @@
 
         private loadConversationHistory(user: string): void {
             if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-            
+
             // Éviter de charger l'historique plusieurs fois pour le même utilisateur
             if (this.historyLoaded.has(user)) {
                 console.log(`📜 Historique déjà chargé pour ${user}`);
                 return;
             }
-            
+
             console.log(`📜 Chargement de l'historique avec ${user}...`);
             this.historyLoaded.add(user);
             this.ws.send(JSON.stringify({ type: "getHistory", target: user }));
@@ -472,7 +472,7 @@
             this.ensureConversation(otherUser);
             this.conversations[otherUser].push({ from, text, mine });
             this.saveConversationsToStorage(); // Sauvegarder après chaque nouveau message
-            
+
             if (!this.currentChatUser) {
                 // Première conversation → on la sélectionne automatiquement
                 this.setCurrentChatUser(otherUser);
@@ -489,7 +489,7 @@
             // Ajouter le message d'historique au début de la conversation (plus ancien d'abord)
             this.conversations[otherUser].unshift({ from, text, mine, timestamp, isHistory: true });
             this.saveConversationsToStorage(); // Sauvegarder après ajout de l'historique
-            
+
             // Si c'est la conversation active, re-rendre
             if (otherUser === this.currentChatUser) {
                 this.renderCurrentConversation();
@@ -769,7 +769,7 @@
         private createMessageBubble(from: string, text: string, type: string, isHistory?: boolean, timestamp?: string): HTMLElement {
             const msgDiv = document.createElement("div");
             msgDiv.classList.add("message", type);
-            
+
             // Ajouter une classe spéciale pour les messages d'historique
             if (isHistory) {
                 msgDiv.classList.add("history");

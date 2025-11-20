@@ -39,14 +39,14 @@ function setupChat(server) {
     const sockets = findAllSocketsByUsername(username);
     const jsonMessage = JSON.stringify(message);
     let sentCount = 0;
-    
+
     sockets.forEach(socket => {
       if (socket.readyState === WebSocket.OPEN) {
         socket.send(jsonMessage);
         sentCount++;
       }
     });
-    
+
     console.log(`📤 Message envoyé à ${sentCount} onglet(s) de ${username}`);
     return sentCount > 0;
   }

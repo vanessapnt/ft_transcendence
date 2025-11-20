@@ -22,7 +22,7 @@
         <button id="private-messages-btn" class="hidden" onclick="toggleChat()">Private Messages</button>
         <script>
             // Script immédiat pour cacher le bouton par défaut
-            (function() {
+            (function () {
                 function forceHideButton() {
                     const btn = document.getElementById('private-messages-btn');
                     if (btn) {
@@ -36,16 +36,16 @@
                         btn.style.setProperty('margin', '0', 'important');
                         btn.style.setProperty('border', '0', 'important');
                         btn.style.setProperty('overflow', 'hidden', 'important');
-                        
+
                         btn.classList.add('hidden');
                         btn.classList.remove('visible');
-                        
+
                         console.log('🔒 Bouton Private Messages forcé caché');
                         return true;
                     }
                     return false;
                 }
-                
+
                 function forceShowButton() {
                     const btn = document.getElementById('private-messages-btn');
                     if (btn) {
@@ -59,23 +59,23 @@
                         btn.style.removeProperty('margin');
                         btn.style.removeProperty('border');
                         btn.style.removeProperty('overflow');
-                        
+
                         btn.classList.remove('hidden');
                         btn.classList.add('visible');
-                        
+
                         console.log('👁️ Bouton Private Messages forcé visible');
                         return true;
                     }
                     return false;
                 }
-                
+
                 // Exécuter immédiatement le masquage par défaut
                 forceHideButton();
-                
+
                 // Exposer les fonctions globalement pour que checkLoginStatus puisse les utiliser
                 window.forceHidePrivateMessagesButton = forceHideButton;
                 window.forceShowPrivateMessagesButton = forceShowButton;
-                
+
             })();
         </script>
     </div>
@@ -412,7 +412,7 @@
                 if (window.forceHidePrivateMessagesButton) {
                     window.forceHidePrivateMessagesButton();
                 }
-                
+
                 // Si on trouve un élément avec des informations utilisateur et qu'il contient un nom d'utilisateur
                 let isLoggedIn = false;
 

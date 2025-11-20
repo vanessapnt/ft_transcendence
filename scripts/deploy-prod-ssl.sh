@@ -12,11 +12,11 @@ fi
 
 # Arrêt propre des services
 echo "🛑 Arrêt des services..."
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 
 # Reconstruction et démarrage
 echo "🏗️  Construction et lancement..."
-docker-compose -f docker-compose.prod.yml up --build -d
+docker compose -f docker-compose.prod.yml up --build -d
 
 echo "✅ Déploiement terminé !"
 echo "🌐 Testez: curl -I http://localhost (doit rediriger)"

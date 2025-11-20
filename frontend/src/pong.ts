@@ -17,6 +17,14 @@ let player2Score: number = 0;
 let player1Name: string = "PLAYER 1";
 let player2Name: string = "PLAYER 2";
 
+// Helper function to get translated player names
+function getPlayerName(key: string, fallback: string): string {
+    if ((window as any).i18n && typeof (window as any).i18n.t === 'function') {
+        return (window as any).i18n.t(key);
+    }
+    return fallback;
+}
+
 const WINNING_SCORE: number = 5;
 
 let GameEndCallback: ((winner: string) => void) | null = null; // par defaut null mais on peut lui assigner callback(Tournament.onMatchEnd)
@@ -179,9 +187,13 @@ function update(): void
         serve(-1);
     }
 
+    // Use translated player names or custom names
+    const displayPlayer1Name = player1Name === "PLAYER 1" ? getPlayerName("player_1", "PLAYER 1") : player1Name;
+    const displayPlayer2Name = player2Name === "PLAYER 2" ? getPlayerName("player_2", "PLAYER 2") : player2Name;
+
     context.font = "16px 'Press Start 2P', monospace";
-    context.fillText(player1Name, boardWidth/5 - 30, 35);
-    context.fillText(player2Name, boardWidth*4/5 - 75, 35);
+    context.fillText(displayPlayer1Name, boardWidth/5 - 30, 35);
+    context.fillText(displayPlayer2Name, boardWidth*4/5 - 75, 35);
     context.font = "32px 'Press Start 2P', monospace";
     context.fillText(player1Score.toString(), boardWidth/5, 75);
     context.fillText(player2Score.toString(), boardWidth*4/5 - 45, 75);

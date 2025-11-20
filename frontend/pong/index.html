@@ -67,19 +67,19 @@
 
     <div id="tournament-view" class="screen">
         <div id="tournament-selection" class="tournament-section active">
-            <h2>Select Number of Players</h2>
+            <h2 data-i18n-key="select_number_of_players">Select Number of Players</h2>
             <div class="player-count-buttons">
                 <button onclick="PONG.Tournament.createTournament(2)" data-i18n-key="2_players">2 Players</button>
-                <button onclick="PONG.Tournament.createTournament(4)">4 Players</button>
-                <button onclick="PONG.Tournament.createTournament(8)">8 Players</button>
+                <button onclick="PONG.Tournament.createTournament(4)" data-i18n-key="4_players">4 Players</button>
+                <button onclick="PONG.Tournament.createTournament(8)" data-i18n-key="8_players">8 Players</button>
             </div>
-            <button class="menu-button back-btn" onclick="PONG.Nav.showHome()">BACK TO MENU</button>
+            <button class="menu-button back-btn" onclick="PONG.Nav.showHome()" data-i18n-key="back">BACK TO MENU</button>
         </div>
 
         <div id="tournament-setup" class="tournament-section">
-            <h2>Enter Player Names</h2>
+            <h2 data-i18n-key="enter_player_names">Enter Player Names</h2>
             <div id="player-inputs-container"></div>
-            <button class="menu-button back-btn" onclick="PONG.Tournament.reset()">BACK</button>
+            <button class="menu-button back-btn" onclick="PONG.Tournament.reset()" data-i18n-key="back">BACK</button>
         </div>
 
         <div id="tournament-status" class="tournament-section">
@@ -156,7 +156,7 @@
 
     <div id="pause-overlay" class="overlay">
         <div class="overlay-content">
-            <h2>PAUSED</h2>
+            <h2 data-i18n-key="title_paused">PAUSED</h2>
             <button id="resume-btn">RESUME</button>
             <button id="menu-btn" onclick="PONG.Nav.showHome()">MENU</button>
         </div>

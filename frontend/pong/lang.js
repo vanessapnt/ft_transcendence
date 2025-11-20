@@ -31,6 +31,11 @@ function updateAllTranslations() {
       el.textContent = window.i18n.t(key);
     }
   });
+  
+  // Update tournament placeholders if tournament is active
+  if (window.PONG && window.PONG.Tournament && typeof window.PONG.Tournament.updatePlaceholders === 'function') {
+    window.PONG.Tournament.updatePlaceholders();
+  }
 }
 
 // Initialize on page load

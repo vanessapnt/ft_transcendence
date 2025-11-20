@@ -21,6 +21,9 @@ const i18nWrapper = {
       lng: savedLang,
       fallbackLng: 'en',
       debug: false,
+      interpolation: {
+        escapeValue: false // React already safes from xss
+      },
       resources: {
         en: { translation: enData },
         fr: { translation: frData },
@@ -45,8 +48,8 @@ const i18nWrapper = {
     }).catch(() => {});
   },
 
-  t(key: string): string {
-    return i18next.t(key);
+  t(key: string, params?: any): string {
+    return i18next.t(key, params);
   },
 
   getCurrentLanguage(): string {

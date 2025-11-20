@@ -3,7 +3,11 @@
   "start_game": "START GAME",
   "tournament": "TOURNAMENT",
   "signup": "SIGN UP",
+  "signup_form_title": "Create an Account",
+  "signup_submit": "Create my account",
   "login": "LOGIN",
+  "login_form_title": "Login",
+  "login_submit": "Login",
   "login_github": "Login with GitHub",
   "login_google": "Login with Google",
   "edit_profile": "Edit Profile",
@@ -14,5 +18,15 @@
   "back": "BACK",
   "pause_hint": "Press SPACE to pause",
   "menu": "MENU",
-  "2_players": "2 Players"
+  "select_number_of_players": "Select Number of Players",
+  "2_players": "2 Players",
+  "4_players": "4 Players",
+  "8_players": "8 Players",
+  "enter_player_names": "Enter Player Names",
+  "title_paused": "PAUSED",
+  "player_1": "PLAYER 1",
+  "player_2": "PLAYER 2",
+  "ai": "AI",
+  "player_name_placeholder": "Player {{number}} name",
+  "start_tournament": "Start Tournament"
 }

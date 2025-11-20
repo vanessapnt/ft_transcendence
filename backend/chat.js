@@ -13,7 +13,7 @@ function setupChat(server) {
   // socket => { username, displayName, userId, blocked: Set }
   const clients = new Map();
 
-  // Petit helper pour retrouver un socket à partir d'un username
+  // Petit helper pour retrouver un socket à partir d'un username (le premier trouvé)
   function findSocketByUsername(username) {
     for (const [sock, info] of clients.entries()) {
       if (info.username === username) {
@@ -21,6 +21,34 @@ function setupChat(server) {
       }
     }
     return null;
+  }
+
+  // Helper pour retrouver TOUS les sockets d'un utilisateur (pour connexions multiples)
+  function findAllSocketsByUsername(username) {
+    const sockets = [];
+    for (const [sock, info] of clients.entries()) {
+      if (info.username === username && sock.readyState === WebSocket.OPEN) {
+        sockets.push(sock);
+      }
+    }
+    return sockets;
+  }
+
+  // Helper pour envoyer un message à tous les onglets d'un utilisateur
+  function sendToAllUserSockets(username, message) {
+    const sockets = findAllSocketsByUsername(username);
+    const jsonMessage = JSON.stringify(message);
+    let sentCount = 0;
+    
+    sockets.forEach(socket => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(jsonMessage);
+        sentCount++;
+      }
+    });
+    
+    console.log(`📤 Message envoyé à ${sentCount} onglet(s) de ${username}`);
+    return sentCount > 0;
   }
 
   // === Connexion d'un nouveau client ===
@@ -52,12 +80,12 @@ function setupChat(server) {
             return;
           }
 
-          // Vérifier s'il y a déjà une connexion pour cet utilisateur
+          // Note: On permet maintenant plusieurs connexions simultanées du même utilisateur
+          // Cela permet d'ouvrir plusieurs onglets sans fermer les autres
           const existingSocket = findSocketByUsername(data.username);
           if (existingSocket && existingSocket !== socket) {
-            console.log("⚠️ Utilisateur déjà connecté:", data.username);
-            // Fermer l'ancienne connexion
-            existingSocket.close(1000, "Nouvelle connexion pour cet utilisateur");
+            console.log("ℹ️ Utilisateur déjà connecté sur un autre onglet:", data.username, "- Autoriser multiple connexions");
+            // Ne pas fermer l'ancienne connexion, permettre les connexions multiples
           }
 
           // Utiliser le display_name de la DB (fallback sur username)
@@ -217,15 +245,23 @@ function setupChat(server) {
             return;
           }
 
-          // Envoi de l'invitation à la cible
-          targetSocket.send(
-            JSON.stringify({
-              type: "invite",
-              from: fromUser,
-              fromDisplayName: fromDisplayName,
-              text: `${fromDisplayName} t'invite à jouer à Pong.`,
-            })
-          );
+          // Envoi de l'invitation à TOUS les onglets de la cible
+          const sent = sendToAllUserSockets(data.target, {
+            type: "invite",
+            from: fromUser,
+            fromDisplayName: fromDisplayName,
+            text: `${fromDisplayName} t'invite à jouer à Pong.`,
+          });
+
+          if (!sent) {
+            socket.send(
+              JSON.stringify({
+                from: "Serveur",
+                text: `${targetUser.display_name || data.target} n'est pas connecté actuellement.`,
+              })
+            );
+            return;
+          }
 
           // Feedback à l'émetteur
           socket.send(
@@ -246,18 +282,15 @@ function setupChat(server) {
         ) {
           const fromUser = clientData.username;
           const fromDisplayName = clientData.displayName;
-          const targetSocket = findSocketByUsername(data.to);
 
-          if (targetSocket && targetSocket.readyState === WebSocket.OPEN) {
-            targetSocket.send(
-              JSON.stringify({
-                type: "inviteResponse",
-                from: fromUser,
-                fromDisplayName: fromDisplayName,
-                accepted: data.accepted,
-              })
-            );
-          }
+          // Envoyer la réponse à tous les onglets de l'utilisateur cible
+          sendToAllUserSockets(data.to, {
+            type: "inviteResponse",
+            from: fromUser,
+            fromDisplayName: fromDisplayName,
+            accepted: data.accepted,
+          });
+
           return;
         }
 
@@ -315,18 +348,16 @@ function setupChat(server) {
             console.error("❌ Erreur sauvegarde message:", dbError);
           }
 
-          // Si l'utilisateur est connecté, envoyer le DM directement
-          if (targetSocket && targetSocket.readyState === WebSocket.OPEN) {
-            targetSocket.send(
-              JSON.stringify({
-                type: "dm",
-                from: fromUser,
-                fromDisplayName: fromDisplayName,
-                to: data.to,
-                text: data.text,
-              })
-            );
+          // Si l'utilisateur est connecté, envoyer le DM à tous ses onglets
+          const sent = sendToAllUserSockets(data.to, {
+            type: "dm",
+            from: fromUser,
+            fromDisplayName: fromDisplayName,
+            to: data.to,
+            text: data.text,
+          });
 
+          if (sent) {
             // Confirmation à l'expéditeur
             socket.send(
               JSON.stringify({

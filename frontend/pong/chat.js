@@ -24,6 +24,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             this.currentChatUser = null;
             this.username = null;
             this.ws = null;
+            this.historyLoaded = new Set(); // Suivi des historiques chargés
             this.reconnectAttempts = 0;
             this.maxReconnectAttempts = 0; // Désactivé - pas de reconnexion automatique
             this.reconnectDelay = 1000; // 1 seconde au début
@@ -71,6 +72,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                         if (data.user && data.user.username) {
                             this.username = data.user.username;
                             console.log("✅ Username récupéré:", this.username);
+                            // Charger les conversations maintenant qu'on a le username
+                            this.loadConversationsFromStorage();
                         }
                         else {
                             console.log("❌ Pas d'username dans la réponse");
@@ -83,6 +86,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 catch (e) {
                     console.warn("❌ Erreur lors de la récupération du profil:", e);
                 }
+                // Ne pas charger ici car on n'a pas encore le username
+                // this.loadConversationsFromStorage(); 
                 this.setupWebSocket();
                 this.setupEventListeners();
                 console.log("✅ Chat complètement initialisé");
@@ -203,12 +208,68 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 clearTimeout(this.reconnectTimer);
                 this.reconnectTimer = null;
             }
+            // Réinitialiser l'état de l'historique chargé mais CONSERVER les conversations
+            this.historyLoaded.clear();
+            // Ne pas réinitialiser this.conversations pour les conserver
+            this.currentChatUser = null;
             // Fermer la connexion WebSocket
             if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
                 this.ws.close();
             }
             this.ws = null;
             this.isConnecting = false;
+        }
+        // === Méthodes de persistance des conversations ===
+        saveConversationsToStorage() {
+            try {
+                if (!this.username)
+                    return;
+                const key = `chat_conversations_${this.username}`;
+                localStorage.setItem(key, JSON.stringify(this.conversations));
+                console.log("💾 Conversations sauvegardées dans localStorage");
+            }
+            catch (e) {
+                console.warn("❌ Erreur lors de la sauvegarde des conversations:", e);
+            }
+        }
+        loadConversationsFromStorage() {
+            try {
+                if (!this.username)
+                    return;
+                const key = `chat_conversations_${this.username}`;
+                const saved = localStorage.getItem(key);
+                if (saved) {
+                    this.conversations = JSON.parse(saved);
+                    console.log("📂 Conversations chargées depuis localStorage:", Object.keys(this.conversations));
+                    this.renderConversationTabs();
+                }
+            }
+            catch (e) {
+                console.warn("❌ Erreur lors du chargement des conversations:", e);
+                this.conversations = {};
+            }
+        }
+        clearStoredConversations() {
+            try {
+                if (!this.username)
+                    return;
+                const key = `chat_conversations_${this.username}`;
+                localStorage.removeItem(key);
+                console.log("🗑️ Conversations supprimées du localStorage");
+            }
+            catch (e) {
+                console.warn("❌ Erreur lors de la suppression des conversations:", e);
+            }
+        }
+        // Méthode publique pour effacer toutes les conversations
+        clearAllConversations() {
+            this.conversations = {};
+            this.currentChatUser = null;
+            this.historyLoaded.clear();
+            this.clearStoredConversations();
+            this.renderConversationTabs();
+            this.renderCurrentConversation();
+            console.log("🗑️ Toutes les conversations ont été effacées");
         }
         handleWebSocketMessage(event) {
             let data;
@@ -236,8 +297,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 return;
             // DM reçu
             if (data.type === "dm") {
-                console.log("📨 DM reçu:", { from, to: data.to, text, isMyMessage: from === this.username });
-                if (from === this.username) {
+                console.log("📨 DM reçu:", { from, to: data.to, text, isMyMessage: from === this.username, isHistory: data.isHistory });
+                if (data.isHistory) {
+                    // Message d'historique - l'ajouter au début de la conversation
+                    const otherUser = from === this.username ? data.to : from;
+                    if (otherUser) {
+                        this.addHistoryMessageToConversation(otherUser, from, text, from === this.username, data.timestamp);
+                    }
+                }
+                else if (from === this.username) {
                     // C'est l'écho de notre propre message - l'ajouter à la conversation
                     this.addMessageToConversation(data.to || "", from, text, true);
                 }
@@ -297,6 +365,22 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
             this.renderConversationTabs();
             this.renderCurrentConversation();
+            // Charger automatiquement l'historique si disponible
+            if (user && this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.loadConversationHistory(user);
+            }
+        }
+        loadConversationHistory(user) {
+            if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
+                return;
+            // Éviter de charger l'historique plusieurs fois pour le même utilisateur
+            if (this.historyLoaded.has(user)) {
+                console.log(`📜 Historique déjà chargé pour ${user}`);
+                return;
+            }
+            console.log(`📜 Chargement de l'historique avec ${user}...`);
+            this.historyLoaded.add(user);
+            this.ws.send(JSON.stringify({ type: "getHistory", target: user }));
         }
         renderConversationTabs() {
             if (!this.conversationTabs)
@@ -326,7 +410,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             msgs.forEach((m) => {
                 const type = m.mine ? "me" : "other";
                 const fromLabel = m.mine ? this.username || "" : m.from;
-                const node = this.createMessageBubble(fromLabel, m.text, type);
+                const node = this.createMessageBubble(fromLabel, m.text, type, m.isHistory, m.timestamp);
                 if (this.chatBox) {
                     this.chatBox.appendChild(node);
                 }
@@ -338,6 +422,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         addMessageToConversation(otherUser, from, text, mine = false) {
             this.ensureConversation(otherUser);
             this.conversations[otherUser].push({ from, text, mine });
+            this.saveConversationsToStorage(); // Sauvegarder après chaque nouveau message
             if (!this.currentChatUser) {
                 // Première conversation → on la sélectionne automatiquement
                 this.setCurrentChatUser(otherUser);
@@ -347,6 +432,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
             else {
                 // juste mettre à jour les tabs (nouvelle conversation)
+                this.renderConversationTabs();
+            }
+        }
+        addHistoryMessageToConversation(otherUser, from, text, mine = false, timestamp) {
+            this.ensureConversation(otherUser);
+            // Ajouter le message d'historique au début de la conversation (plus ancien d'abord)
+            this.conversations[otherUser].unshift({ from, text, mine, timestamp, isHistory: true });
+            this.saveConversationsToStorage(); // Sauvegarder après ajout de l'historique
+            // Si c'est la conversation active, re-rendre
+            if (otherUser === this.currentChatUser) {
+                this.renderCurrentConversation();
+            }
+            else {
+                // Mettre à jour les tabs pour indiquer qu'il y a une nouvelle conversation
                 this.renderConversationTabs();
             }
         }
@@ -598,9 +697,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 }
             });
         }
-        createMessageBubble(from, text, type) {
+        createMessageBubble(from, text, type, isHistory, timestamp) {
             const msgDiv = document.createElement("div");
             msgDiv.classList.add("message", type);
+            // Ajouter une classe spéciale pour les messages d'historique
+            if (isHistory) {
+                msgDiv.classList.add("history");
+            }
             if (!from || type === "system") {
                 msgDiv.textContent = text;
             }
@@ -615,6 +718,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 textSpan.textContent = text;
                 msgDiv.appendChild(nameSpan);
                 msgDiv.appendChild(textSpan);
+                // Ajouter timestamp pour les messages d'historique
+                if (isHistory && timestamp) {
+                    const timestampSpan = document.createElement("span");
+                    timestampSpan.classList.add("timestamp");
+                    const date = new Date(timestamp);
+                    timestampSpan.textContent = ` (${date.toLocaleDateString()} ${date.toLocaleTimeString()})`;
+                    msgDiv.appendChild(timestampSpan);
+                }
             }
             return msgDiv;
         }

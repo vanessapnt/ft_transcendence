@@ -92,8 +92,33 @@ body {
     cursor: pointer;
     font-family: 'Press Start 2P', cursive;
     transition: all 0.3s ease;
-    display: none;
-    /* Hidden by default until login status is checked */
+}
+
+/* État par défaut : caché avec spécificité maximale */
+body #avatar-container #private-messages-btn.hidden,
+body #avatar-container #private-messages-btn {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+}
+
+/* État visible quand connecté avec spécificité maximale */
+body #avatar-container #private-messages-btn.visible {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    width: auto !important;
+    padding: 8px 12px !important;
+    margin: 0 !important;
+    border: 2px solid #00ff00 !important;
+    overflow: visible !important;
 }
 
 #private-messages-btn:hover {
@@ -1014,6 +1039,39 @@ button:active {
     font-size: 0.5rem;
     border-color: #ffff00;
     box-shadow: 0 0 8px rgba(255, 255, 0, 0.6);
+}
+
+/* Styles pour les messages d'historique */
+.message.history {
+    opacity: 0.7;
+    border-style: dashed;
+    position: relative;
+}
+
+.message.history::before {
+    content: "📜";
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+}
+
+.message.history.me {
+    background-color: #ccffcc;
+}
+
+.message.history.other {
+    background-color: #2a2a2a;
+    color: #ccffcc;
+}
+
+/* Styles pour les timestamps */
+.timestamp {
+    font-size: 0.4rem;
+    color: #888;
+    font-style: italic;
+    margin-left: 10px;
 }
 
 #controls {

@@ -35,8 +35,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             loginBtn.style.display = 'none';
         if (signupBtn)
             signupBtn.style.display = 'none';
-        if (privateMessagesBtn)
-            privateMessagesBtn.style.display = 'block';
+        if (privateMessagesBtn) {
+            privateMessagesBtn.classList.remove('hidden');
+            privateMessagesBtn.classList.add('visible');
+        }
         const menu = document.querySelector('.menu-buttons');
         if (menu)
             menu.style.display = '';
@@ -84,8 +86,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             signupBtn.style.display = 'inline-block';
         if (avatarImg)
             avatarImg.style.display = 'none';
-        if (privateMessagesBtn)
-            privateMessagesBtn.style.display = 'none';
+        if (privateMessagesBtn) {
+            privateMessagesBtn.classList.add('hidden');
+            privateMessagesBtn.classList.remove('visible');
+        }
         window.currentUserId = null;
         window.currentAvatarUrl = null;
         window.currentUsername = null;

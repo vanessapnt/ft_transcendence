@@ -19,7 +19,65 @@
 
     <div id="avatar-container">
         <img id="avatar-img" src="/avatars/default_avatar.png" alt="Avatar">
-        <button id="private-messages-btn" onclick="toggleChat()">Private Messages</button>
+        <button id="private-messages-btn" class="hidden" onclick="toggleChat()">Private Messages</button>
+        <script>
+            // Script immédiat pour cacher le bouton par défaut
+            (function() {
+                function forceHideButton() {
+                    const btn = document.getElementById('private-messages-btn');
+                    if (btn) {
+                        // Forcer tous les styles possibles pour cacher le bouton
+                        btn.style.setProperty('display', 'none', 'important');
+                        btn.style.setProperty('visibility', 'hidden', 'important');
+                        btn.style.setProperty('opacity', '0', 'important');
+                        btn.style.setProperty('height', '0', 'important');
+                        btn.style.setProperty('width', '0', 'important');
+                        btn.style.setProperty('padding', '0', 'important');
+                        btn.style.setProperty('margin', '0', 'important');
+                        btn.style.setProperty('border', '0', 'important');
+                        btn.style.setProperty('overflow', 'hidden', 'important');
+                        
+                        btn.classList.add('hidden');
+                        btn.classList.remove('visible');
+                        
+                        console.log('🔒 Bouton Private Messages forcé caché');
+                        return true;
+                    }
+                    return false;
+                }
+                
+                function forceShowButton() {
+                    const btn = document.getElementById('private-messages-btn');
+                    if (btn) {
+                        // Effacer tous les styles de masquage
+                        btn.style.removeProperty('display');
+                        btn.style.removeProperty('visibility');
+                        btn.style.removeProperty('opacity');
+                        btn.style.removeProperty('height');
+                        btn.style.removeProperty('width');
+                        btn.style.removeProperty('padding');
+                        btn.style.removeProperty('margin');
+                        btn.style.removeProperty('border');
+                        btn.style.removeProperty('overflow');
+                        
+                        btn.classList.remove('hidden');
+                        btn.classList.add('visible');
+                        
+                        console.log('👁️ Bouton Private Messages forcé visible');
+                        return true;
+                    }
+                    return false;
+                }
+                
+                // Exécuter immédiatement le masquage par défaut
+                forceHideButton();
+                
+                // Exposer les fonctions globalement pour que checkLoginStatus puisse les utiliser
+                window.forceHidePrivateMessagesButton = forceHideButton;
+                window.forceShowPrivateMessagesButton = forceShowButton;
+                
+            })();
+        </script>
     </div>
 
     <div id="home-view" class="screen active">
@@ -350,6 +408,11 @@
             const privateMessagesBtn = document.getElementById('private-messages-btn');
 
             if (privateMessagesBtn) {
+                // TOUJOURS commencer par cacher le bouton par sécurité
+                if (window.forceHidePrivateMessagesButton) {
+                    window.forceHidePrivateMessagesButton();
+                }
+                
                 // Si on trouve un élément avec des informations utilisateur et qu'il contient un nom d'utilisateur
                 let isLoggedIn = false;
 
@@ -357,32 +420,54 @@
                     isLoggedIn = true;
                 } else if (userInfoElement && userInfoElement.textContent.trim() !== '') {
                     isLoggedIn = true;
+                }
+
+                // Afficher le bouton seulement si on est sûr que l'utilisateur est connecté
+                if (isLoggedIn) {
+                    if (window.forceShowPrivateMessagesButton) {
+                        window.forceShowPrivateMessagesButton();
+                    }
+                    console.log('🔓 Bouton Private Messages affiché (utilisateur connecté)');
                 } else {
                     // Alternative: vérifier s'il y a un cookie de session ou faire un appel API
+                    // Mais garder le bouton caché en attendant la réponse
                     try {
-                        // Tentative de vérification via un appel à l'API utilisateur
                         fetch('/api/user/profile')
                             .then(response => {
                                 if (response.ok) {
-                                    privateMessagesBtn.style.display = 'block';
+                                    return response.json();
                                 } else {
-                                    privateMessagesBtn.style.display = 'none';
+                                    throw new Error('API response not ok');
+                                }
+                            })
+                            .then(userData => {
+                                // Vérifier si on a vraiment des données utilisateur
+                                if (userData && (userData.username || userData.id)) {
+                                    if (window.forceShowPrivateMessagesButton) {
+                                        window.forceShowPrivateMessagesButton();
+                                    }
+                                    console.log('🔓 Bouton Private Messages affiché (API confirme connexion avec données):', userData);
+                                } else {
+                                    if (window.forceHidePrivateMessagesButton) {
+                                        window.forceHidePrivateMessagesButton();
+                                    }
+                                    console.log('🔒 Bouton Private Messages caché (API ne retourne pas de données utilisateur)');
                                 }
                             })
                             .catch(() => {
-                                privateMessagesBtn.style.display = 'none';
+                                if (window.forceHidePrivateMessagesButton) {
+                                    window.forceHidePrivateMessagesButton();
+                                }
+                                console.log('🔒 Bouton Private Messages caché (erreur API)');
                             });
-                        return; // Sortir ici car on traite le cas de manière asynchrone
                     } catch (error) {
-                        isLoggedIn = false;
+                        // En cas d'erreur, garder le bouton caché
+                        if (window.forceHidePrivateMessagesButton) {
+                            window.forceHidePrivateMessagesButton();
+                        }
+                        privateMessagesBtn.style.visibility = 'hidden';
+                        console.log('🔒 Bouton Private Messages caché (exception JavaScript)');
                     }
-                }
-
-                // Afficher ou cacher le bouton selon l'état de connexion
-                if (isLoggedIn) {
-                    privateMessagesBtn.style.display = 'block';
-                } else {
-                    privateMessagesBtn.style.display = 'none';
                 }
             }
         }

@@ -52,7 +52,10 @@
 
         if (loginBtn) loginBtn.style.display = 'none';
         if (signupBtn) signupBtn.style.display = 'none';
-        if (privateMessagesBtn) privateMessagesBtn.style.display = 'block';
+        if (privateMessagesBtn) {
+            privateMessagesBtn.classList.remove('hidden');
+            privateMessagesBtn.classList.add('visible');
+        }
         const menu = document.querySelector('.menu-buttons') as HTMLElement;
         if (menu) menu.style.display = '';
 
@@ -102,7 +105,10 @@
         if (loginBtn) loginBtn.style.display = 'inline-block';
         if (signupBtn) signupBtn.style.display = 'inline-block';
         if (avatarImg) avatarImg.style.display = 'none';
-        if (privateMessagesBtn) privateMessagesBtn.style.display = 'none';
+        if (privateMessagesBtn) {
+            privateMessagesBtn.classList.add('hidden');
+            privateMessagesBtn.classList.remove('visible');
+        }
 
         (window as any).currentUserId = null;
         (window as any).currentAvatarUrl = null;

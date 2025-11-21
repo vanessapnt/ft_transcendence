@@ -74,4 +74,10 @@ const i18nWrapper = {
       }
     }
   });
+
+  // Update tournament placeholders if tournament module exists
+  const pong = (window as any).PONG;
+  if (pong?.Tournament && typeof pong.Tournament.updatePlaceholders === 'function') {
+    pong.Tournament.updatePlaceholders();
+  }
 };

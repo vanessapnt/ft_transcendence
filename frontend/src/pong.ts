@@ -222,11 +222,19 @@ function endGame(winner: string): void
     const i18n = (window as any).i18n;
     const winnerText = i18n && typeof i18n.t === 'function' ? i18n.t('winner_announcement') : 'WINNER!';
     
+    // Translate winner name if it's a default player name
+    let displayWinnerName = winner;
+    if (winner === "PLAYER 1") {
+        displayWinnerName = getPlayerName("player_1", "PLAYER 1");
+    } else if (winner === "PLAYER 2") {
+        displayWinnerName = getPlayerName("player_2", "PLAYER 2");
+    }
+    
     context.fillStyle = "#00ff00";
     context.font = "48px 'Press Start 2P', monospace";
     context.textAlign = "center";
     context.fillText(winnerText, boardWidth / 2, boardHeight / 2 - 30);
-    context.fillText(winner, boardWidth / 2, boardHeight / 2 + 30);
+    context.fillText(displayWinnerName, boardWidth / 2, boardHeight / 2 + 30);
     context.textAlign = "left";
     
     if (GameEndCallback)

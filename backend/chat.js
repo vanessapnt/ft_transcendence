@@ -441,9 +441,28 @@ function setupChat(server) {
           }
 
           try {
+            console.log("🔍 Requête historique:", {
+              fromUserId: clientData.userId,
+              fromUsername: clientData.username,
+              targetUserId: targetUser.id,
+              targetUsername: targetUser.username,
+              params: [clientData.userId, targetUser.id, targetUser.id, clientData.userId]
+            });
+
             const history = statements.getConversationHistory.all(
               clientData.userId, targetUser.id, targetUser.id, clientData.userId
             );
+
+            console.log("📋 Historique récupéré:", {
+              count: history.length,
+              messages: history.map(msg => ({
+                id: msg.id,
+                from: msg.from_username,
+                to: msg.to_username,
+                text: msg.message_text.substring(0, 50) + "...",
+                date: msg.created_at
+              }))
+            });
 
             if (history.length === 0) {
               socket.send(

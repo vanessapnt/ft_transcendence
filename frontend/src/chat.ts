@@ -37,6 +37,7 @@
         private profileAvatar: HTMLImageElement | null = null;
 
         private conversations: Conversations = {};
+        private unreadMessages: { [username: string]: number } = {}; // Compteur de messages non lus
         private currentChatUser: string | null = null;
         private username: string | null = null;
         private ws: WebSocket | null = null;
@@ -48,36 +49,36 @@
 
         private init(): void {
             document.addEventListener('DOMContentLoaded', () => {
-                this.initChat();
-                console.log('✅ Chat initialized');
+                // Initialiser les éléments DOM
+                this.chatBox = document.getElementById("chatbox");
+                this.messageInput = document.getElementById("msg") as HTMLInputElement;
+                this.btnSend = document.getElementById("send") as HTMLButtonElement;
+                this.conversationTabs = document.getElementById("conversation-tabs");
+                this.currentChatLabel = document.getElementById("current-chat");
+                this.profileModal = document.getElementById("profile-modal");
+                this.profileClose = document.getElementById("profile-modal-close");
+                this.profileName = document.getElementById("profile-modal-name");
+                this.profileUsername = document.getElementById("profile-modal-username");
+                this.profileAvatar = document.getElementById("profile-modal-avatar") as HTMLImageElement;
+                
+                this.setupEventListeners();
+                console.log('✅ Chat DOM initialized');
+                
+                // NE PAS initialiser automatiquement - attendre le login/signup
+                // this.initializeChat();
             });
         }
 
-        private async initChat(): Promise<void> {
-            console.log("🎯 Initialisation du chat...");
-            this.chatBox = document.getElementById("chatbox");
-            this.messageInput = document.getElementById("msg") as HTMLInputElement;
-            this.btnSend = document.getElementById("send") as HTMLButtonElement;
-            this.conversationTabs = document.getElementById("conversation-tabs");
-            this.currentChatLabel = document.getElementById("current-chat");
-            this.profileModal = document.getElementById("profile-modal");
-            this.profileClose = document.getElementById("profile-modal-close");
-            this.profileName = document.getElementById("profile-modal-name");
-            this.profileUsername = document.getElementById("profile-modal-username");
-            this.profileAvatar = document.getElementById("profile-modal-avatar") as HTMLImageElement;
-
-            console.log("🔍 Éléments DOM trouvés:", {
-                chatBox: !!this.chatBox,
-                messageInput: !!this.messageInput,
-                btnSend: !!this.btnSend
-            });
-
+        // Méthode publique pour initialiser le chat après login
+        public async initializeChat(): Promise<void> {
+            console.log("🎯 Initialisation du chat après login...");
+            
             if (!this.chatBox || !this.messageInput || !this.btnSend) {
-                console.error("Chat: éléments DOM introuvables (#chatbox, #msg, #send).");
+                console.error("❌ Éléments DOM du chat non chargés");
                 return;
             }
 
-            // 1) Essayer d'utiliser le vrai username du user connecté
+            // Récupérer le username de l'utilisateur connecté
             try {
                 console.log("🔍 Récupération du profil utilisateur...");
                 const res = await fetch('/api/user/profile');
@@ -90,6 +91,9 @@
                         console.log("✅ Username récupéré:", this.username);
                         // Charger les conversations maintenant qu'on a le username
                         this.loadConversationsFromStorage();
+                        // Connecter le WebSocket
+                        this.setupWebSocket();
+                        console.log("✅ Chat complètement initialisé pour", this.username);
                     } else {
                         console.log("❌ Pas d'username dans la réponse");
                     }
@@ -99,12 +103,6 @@
             } catch (e) {
                 console.warn("❌ Erreur lors de la récupération du profil:", e);
             }
-
-            // Ne pas charger ici car on n'a pas encore le username
-            // this.loadConversationsFromStorage(); 
-            this.setupWebSocket();
-            this.setupEventListeners();
-            console.log("✅ Chat complètement initialisé");
         }
 
         private reconnectAttempts = 0;
@@ -247,10 +245,15 @@
                 this.reconnectTimer = null;
             }
 
-            // Réinitialiser l'état de l'historique chargé mais CONSERVER les conversations
+            // Réinitialiser l'état de l'historique chargé et EFFACER les conversations
             this.historyLoaded.clear();
-            // Ne pas réinitialiser this.conversations pour les conserver
+            this.conversations = {}; // Vider les conversations en mémoire
+            this.unreadMessages = {}; // Vider les messages non lus
             this.currentChatUser = null;
+            
+            // Mettre à jour l'interface
+            this.renderConversationTabs();
+            this.updateAvatarNotification();
 
             // Fermer la connexion WebSocket
             if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
@@ -274,13 +277,19 @@
 
         private loadConversationsFromStorage(): void {
             try {
-                if (!this.username) return;
+                if (!this.username) {
+                    console.log("⚠️ Impossible de charger les conversations: username non défini");
+                    return;
+                }
                 const key = `chat_conversations_${this.username}`;
                 const saved = localStorage.getItem(key);
                 if (saved) {
                     this.conversations = JSON.parse(saved);
-                    console.log("📂 Conversations chargées depuis localStorage:", Object.keys(this.conversations));
+                    console.log("📂 Conversations chargées depuis localStorage pour", this.username, ":", Object.keys(this.conversations));
                     this.renderConversationTabs();
+                } else {
+                    console.log("📂 Aucune conversation sauvegardée pour", this.username);
+                    this.conversations = {};
                 }
             } catch (e) {
                 console.warn("❌ Erreur lors du chargement des conversations:", e);
@@ -404,6 +413,13 @@
 
         private setCurrentChatUser(user: string | null): void {
             this.currentChatUser = user;
+            
+            // Réinitialiser les messages non lus pour cet utilisateur
+            if (user && this.unreadMessages[user]) {
+                this.unreadMessages[user] = 0;
+                this.updateAvatarNotification();
+            }
+            
             if (this.currentChatLabel) {
                 this.currentChatLabel.textContent = user
                     ? `Conversation avec ${user}`
@@ -439,7 +455,37 @@
                 const tab = document.createElement("button");
                 tab.classList.add("conversation-tab");
                 if (user === this.currentChatUser) tab.classList.add("active");
-                tab.textContent = user;
+                
+                // Ajouter l'avatar de l'utilisateur
+                const avatar = document.createElement("img");
+                avatar.classList.add("conversation-tab-avatar");
+                avatar.src = `/api/user/avatar/${user}`;
+                avatar.alt = user;
+                avatar.onerror = () => {
+                    avatar.src = '/api/user/avatar/default';
+                };
+                tab.appendChild(avatar);
+                
+                // Créer un conteneur pour le nom et le badge
+                const contentDiv = document.createElement("div");
+                contentDiv.classList.add("conversation-tab-content");
+                
+                const username = document.createElement("span");
+                username.classList.add("conversation-tab-username");
+                username.textContent = user;
+                contentDiv.appendChild(username);
+                
+                tab.appendChild(contentDiv);
+                
+                // Ajouter le badge de notification si des messages non lus
+                const unreadCount = this.unreadMessages[user] || 0;
+                if (unreadCount > 0) {
+                    const badge = document.createElement("span");
+                    badge.classList.add("unread-badge");
+                    badge.textContent = unreadCount > 99 ? "99+" : unreadCount.toString();
+                    tab.appendChild(badge);
+                }
+                
                 tab.addEventListener("click", () => {
                     this.setCurrentChatUser(user);
                 });
@@ -473,8 +519,18 @@
             this.conversations[otherUser].push({ from, text, mine });
             this.saveConversationsToStorage(); // Sauvegarder après chaque nouveau message
 
-            if (!this.currentChatUser) {
-                // Première conversation → on la sélectionne automatiquement
+            // Incrémenter les messages non lus si ce n'est pas notre message et pas la conversation active
+            if (!mine && otherUser !== this.currentChatUser) {
+                this.unreadMessages[otherUser] = (this.unreadMessages[otherUser] || 0) + 1;
+                this.updateAvatarNotification();
+            }
+
+            // Ne sélectionner automatiquement que si c'est déjà la conversation active ou si le chat est visible
+            const chatPanel = document.getElementById('chat-panel');
+            const isChatVisible = chatPanel && chatPanel.style.display !== 'none';
+            
+            if (!this.currentChatUser && isChatVisible) {
+                // Première conversation ET chat visible → on la sélectionne automatiquement
                 this.setCurrentChatUser(otherUser);
             } else if (otherUser === this.currentChatUser) {
                 this.renderCurrentConversation();
@@ -486,6 +542,19 @@
 
         private addHistoryMessageToConversation(otherUser: string, from: string, text: string, mine: boolean = false, timestamp?: string): void {
             this.ensureConversation(otherUser);
+            
+            // Vérifier si ce message existe déjà pour éviter les doublons
+            const exists = this.conversations[otherUser].some(msg => 
+                msg.from === from && 
+                msg.text === text && 
+                msg.mine === mine
+            );
+            
+            if (exists) {
+                console.log("⚠️ Message d'historique déjà présent, ignoré:", { from, text });
+                return;
+            }
+            
             // Ajouter le message d'historique au début de la conversation (plus ancien d'abord)
             this.conversations[otherUser].unshift({ from, text, mine, timestamp, isHistory: true });
             this.saveConversationsToStorage(); // Sauvegarder après ajout de l'historique
@@ -781,9 +850,6 @@
                 const nameSpan = document.createElement("span");
                 nameSpan.classList.add("chat-username");
                 nameSpan.textContent = from + ": ";
-                nameSpan.addEventListener("click", () => {
-                    this.openUserProfile(from);
-                });
 
                 const textSpan = document.createElement("span");
                 textSpan.textContent = text;
@@ -802,6 +868,36 @@
             }
 
             return msgDiv;
+        }
+
+        // Mettre à jour le badge de notification sur l'avatar
+        private updateAvatarNotification(): void {
+            // Calculer le nombre total de messages non lus
+            let totalUnread = 0;
+            for (const user in this.unreadMessages) {
+                totalUnread += this.unreadMessages[user];
+            }
+            
+            // Chercher ou créer le badge sur l'avatar
+            let badge = document.getElementById('avatar-notification-badge');
+            
+            if (totalUnread > 0) {
+                if (!badge) {
+                    // Créer le badge s'il n'existe pas
+                    badge = document.createElement('span');
+                    badge.id = 'avatar-notification-badge';
+                    badge.classList.add('notification-badge');
+                    const avatarWrapper = document.getElementById('avatar-wrapper');
+                    if (avatarWrapper) {
+                        avatarWrapper.appendChild(badge);
+                    }
+                }
+                badge.textContent = totalUnread > 99 ? '99+' : totalUnread.toString();
+                badge.style.display = 'flex';
+            } else if (badge) {
+                // Cacher le badge s'il n'y a plus de messages non lus
+                badge.style.display = 'none';
+            }
         }
     }
 

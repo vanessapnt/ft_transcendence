@@ -20,56 +20,82 @@
     <div id="user-info">
         <!-- span : vide au départ et affiche dynamiquement le nom d'utilisateur -->
         <span id="username-label"></span>
-        <button id="edit-profile-btn" data-i18n-key="edit_profile">Edit Profile</button>
-        <button id="logout-btn" data-i18n-key="logout">Logout</button>
     </div>
 
     <div id="avatar-container">
-        <img id="avatar-img" src="/avatars/default_avatar.png" alt="Avatar">
-        <!-- Le bouton Private Messages sera créé dynamiquement par JavaScript quand nécessaire -->
+        <div id="avatar-wrapper">
+            <img id="avatar-img" src="/avatars/default_avatar.png" alt="Avatar">
+        </div>
+        <div id="user-dropdown-menu" class="dropdown-menu">
+            <button id="private-messages-btn" data-i18n-key="private_messages">
+                <span class="menu-icon">💬</span>
+                <span class="menu-text">Private Messages</span>
+            </button>
+            <button id="edit-profile-btn" data-i18n-key="edit_profile">
+                <span class="menu-icon">✏️</span>
+                <span class="menu-text">Edit Profile</span>
+            </button>
+            <button id="logout-btn" data-i18n-key="logout">
+                <span class="menu-icon">🚪</span>
+                <span class="menu-text">Logout</span>
+            </button>
+        </div>
         <script>
-            // Script pour gérer dynamiquement le bouton Private Messages
+            // Script pour gérer le menu déroulant de l'avatar
             (function () {
-                function createPrivateMessagesButton() {
-                    // Vérifier si le bouton existe déjà
-                    let btn = document.getElementById('private-messages-btn');
-                    if (btn) {
-                        return btn;
+                const avatarWrapper = document.getElementById('avatar-wrapper');
+                const dropdownMenu = document.getElementById('user-dropdown-menu');
+                const privateMessagesBtn = document.getElementById('private-messages-btn');
+                const editProfileBtn = document.getElementById('edit-profile-btn');
+                const logoutBtn = document.getElementById('logout-btn');
+
+                // Toggle du menu au clic sur l'avatar
+                avatarWrapper.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdownMenu.classList.toggle('show');
+                });
+
+                // Fermer le menu si on clique ailleurs
+                document.addEventListener('click', function(e) {
+                    if (!avatarWrapper.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                        dropdownMenu.classList.remove('show');
                     }
+                });
 
-                    // Créer le bouton
-                    btn = document.createElement('button');
-                    btn.id = 'private-messages-btn';
-                    btn.className = 'visible';
-                    btn.textContent = 'Private Messages';
-                    btn.onclick = function () { if (window.toggleChat) toggleChat(); };
+                // Gérer le clic sur Private Messages
+                privateMessagesBtn.addEventListener('click', function() {
+                    if (window.toggleChat) toggleChat();
+                    dropdownMenu.classList.remove('show');
+                });
 
-                    // L'ajouter au conteneur avatar
-                    const avatarContainer = document.getElementById('avatar-container');
-                    if (avatarContainer) {
-                        avatarContainer.appendChild(btn);
-                    }
+                // Gérer le clic sur Edit Profile
+                editProfileBtn.addEventListener('click', function() {
+                    dropdownMenu.classList.remove('show');
+                });
 
-                    console.log('✅ Bouton Private Messages créé dynamiquement');
-                    return btn;
-                }
+                // Gérer le clic sur Logout
+                logoutBtn.addEventListener('click', function() {
+                    dropdownMenu.classList.remove('show');
+                });
 
-                function removePrivateMessagesButton() {
-                    const btn = document.getElementById('private-messages-btn');
-                    if (btn) {
-                        btn.remove();
-                        console.log('🗑️ Bouton Private Messages supprimé');
-                    }
-                }
+                // Fonctions pour compatibilité avec l'ancien code
+                window.createPrivateMessagesButton = function() {
+                    privateMessagesBtn.style.display = 'flex';
+                    console.log('✅ Bouton Private Messages affiché dans le menu');
+                    return privateMessagesBtn;
+                };
 
-                // Exposer les fonctions globalement
-                window.createPrivateMessagesButton = createPrivateMessagesButton;
-                window.removePrivateMessagesButton = removePrivateMessagesButton;
+                window.removePrivateMessagesButton = function() {
+                    privateMessagesBtn.style.display = 'none';
+                    console.log('🗑️ Bouton Private Messages caché dans le menu');
+                };
 
                 // Pour compatibilité avec l'ancien code
-                window.forceShowPrivateMessagesButton = createPrivateMessagesButton;
-                window.forceHidePrivateMessagesButton = removePrivateMessagesButton;
+                window.forceShowPrivateMessagesButton = window.createPrivateMessagesButton;
+                window.forceHidePrivateMessagesButton = window.removePrivateMessagesButton;
 
+                // Cacher Private Messages par défaut
+                privateMessagesBtn.style.display = 'none';
             })();
         </script>
     </div>

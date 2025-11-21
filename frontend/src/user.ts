@@ -70,6 +70,12 @@
         editProfileBtn.onclick = () => showEditProfile(username, displayName || username);
         logoutBtn.onclick = () => logout();
         hideGithubLoginIfConnected();
+        
+        // Initialiser le chat WebSocket après le login
+        if ((window as any).PONG && (window as any).PONG.Chat && (window as any).PONG.Chat.initializeChat) {
+            console.log('🚀 Initialisation du chat après login');
+            (window as any).PONG.Chat.initializeChat();
+        }
     }
 
     function logout(): void {

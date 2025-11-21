@@ -75,6 +75,22 @@ const i18nWrapper = {
     }
   });
 
+  // Update elements with data-i18n-placeholder attribute
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el: any) => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (key) {
+      el.placeholder = i18nWrapper.t(key);
+    }
+  });
+
+  // Update elements with data-i18n-title attribute
+  document.querySelectorAll('[data-i18n-title]').forEach((el: any) => {
+    const key = el.getAttribute('data-i18n-title');
+    if (key) {
+      el.title = i18nWrapper.t(key);
+    }
+  });
+
   // Update placeholders for signup form if it exists
   const signupUsername = document.getElementById('signup-username') as HTMLInputElement;
   const signupEmail = document.getElementById('signup-email') as HTMLInputElement;

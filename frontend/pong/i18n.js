@@ -77,6 +77,20 @@ window.changeLang = (lang) => __awaiter(this, void 0, void 0, function* () {
             }
         }
     });
+    // Update elements with data-i18n-placeholder attribute
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (key) {
+            el.placeholder = i18nWrapper.t(key);
+        }
+    });
+    // Update elements with data-i18n-title attribute
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+        const key = el.getAttribute('data-i18n-title');
+        if (key) {
+            el.title = i18nWrapper.t(key);
+        }
+    });
     // Update placeholders for signup form if it exists
     const signupUsername = document.getElementById('signup-username');
     const signupEmail = document.getElementById('signup-email');

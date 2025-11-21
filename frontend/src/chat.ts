@@ -141,7 +141,8 @@
             } catch (error) {
                 console.error("❌ Erreur création WebSocket:", error);
                 this.isConnecting = false;
-                this.addSystemMessage("❌ Erreur de connexion au chat. Veuillez rafraîchir la page.");
+                const i18n = (window as any).i18n;
+                this.addSystemMessage(i18n ? i18n.t('chat_error_connection') : "❌ Erreur de connexion au chat. Veuillez rafraîchir la page.");
                 // Plus de reconnexion automatique
                 return;
             }
@@ -166,10 +167,7 @@
                 if (this.ws) {
                     console.log("🔐 Envoi du login:", this.username);
                     this.ws.send(JSON.stringify({ type: "login", username: this.username }));
-                    this.addSystemMessage(`Tu es connecté en tant que ${this.username}`);
-                    this.addSystemMessage(
-                        `Commandes : /dm pseudo message, /block pseudo, /unblock pseudo, /invite pseudo, /list, /history pseudo. Pour usernames avec espaces : utilisez des guillemets "/dm "John Doe" message"`
-                    );
+                    // Message de bienvenue désactivé
                 }
             };
 
@@ -180,13 +178,15 @@
             this.ws.onerror = (err) => {
                 console.error("❌ Chat: WS ERROR", err);
                 this.isConnecting = false; // Erreur de connexion
-                this.addSystemMessage("Erreur de connexion au chat.");
+                const i18n = (window as any).i18n;
+                this.addSystemMessage(i18n ? i18n.t('chat_error_connection_failed') : "Erreur de connexion au chat.");
             };
 
             this.ws.onclose = (event) => {
                 console.log("🔌 WebSocket fermée:", { code: event.code, reason: event.reason, intentional: this.isIntentionalDisconnect });
                 this.isConnecting = false; // Connexion fermée
-                this.addSystemMessage("Connexion au chat fermée.");
+                const i18n = (window as any).i18n;
+                this.addSystemMessage(i18n ? i18n.t('chat_connection_closed') : "Connexion au chat fermée.");
 
                 // Pas de reconnexion automatique - l'utilisateur doit rafraîchir la page
                 // if (!this.isIntentionalDisconnect) {
@@ -198,7 +198,8 @@
         private scheduleReconnect(): void {
             // Système de reconnexion automatique désactivé
             console.log("🚫 Reconnexion automatique désactivée");
-            this.addSystemMessage("❌ Connexion fermée. Veuillez rafraîchir la page pour vous reconnecter.");
+            const i18n = (window as any).i18n;
+            this.addSystemMessage(i18n ? i18n.t('chat_connection_closed_refresh') : "❌ Connexion fermée. Veuillez rafraîchir la page pour vous reconnecter.");
             return;
 
             /* Code de reconnexion désactivé
@@ -421,9 +422,10 @@
             }
             
             if (this.currentChatLabel) {
+                const i18n = (window as any).i18n;
                 this.currentChatLabel.textContent = user
-                    ? `Conversation avec ${user}`
-                    : "Aucune conversation sélectionnée";
+                    ? (i18n ? i18n.t('chat_conversation_with', { user }) : `Conversation avec ${user}`)
+                    : (i18n ? i18n.t('chat_no_conversation') : "Aucune conversation sélectionnée");
             }
             this.renderConversationTabs();
             this.renderCurrentConversation();
@@ -584,7 +586,8 @@
                 // Username entre guillemets
                 const closingQuoteIndex = content.indexOf('"', 1);
                 if (closingQuoteIndex === -1) {
-                    this.addSystemMessage(`Guillemet fermant manquant. Format : ${command} "pseudo avec espaces" OU ${command} pseudo_sans_espaces`);
+                    const i18n = (window as any).i18n;
+                    this.addSystemMessage(i18n ? i18n.t('chat_format_quotes_missing', { command }) : `Guillemet fermant manquant. Format : ${command} "pseudo avec espaces" OU ${command} pseudo_sans_espaces`);
                     return null;
                 }
                 return content.substring(1, closingQuoteIndex);
@@ -619,17 +622,21 @@
                 const target = this.parseCommandTarget("/block ", text);
                 if (target) {
                     this.ws.send(JSON.stringify({ type: "block", target }));
-                    this.addSystemMessage(`Tu bloques ${target}`);
+                    const i18n = (window as any).i18n;
+                    this.addSystemMessage(i18n ? i18n.t('chat_blocked', { target }) : `Tu bloques ${target}`);
                 } else {
-                    this.addSystemMessage("Format : /block pseudo OU /block \"pseudo avec espaces\"");
+                    const i18n = (window as any).i18n;
+                    this.addSystemMessage(i18n ? i18n.t('chat_format_block') : "Format : /block pseudo OU /block \"pseudo avec espaces\"");
                 }
             } else if (text.startsWith("/unblock ")) {
                 const target = this.parseCommandTarget("/unblock ", text);
                 if (target) {
                     this.ws.send(JSON.stringify({ type: "unblock", target }));
-                    this.addSystemMessage(`Tu débloques ${target}`);
+                    const i18n = (window as any).i18n;
+                    this.addSystemMessage(i18n ? i18n.t('chat_unblocked', { target }) : `Tu débloques ${target}`);
                 } else {
-                    this.addSystemMessage("Format : /unblock pseudo OU /unblock \"pseudo avec espaces\"");
+                    const i18n = (window as any).i18n;
+                    this.addSystemMessage(i18n ? i18n.t('chat_format_unblock') : "Format : /unblock pseudo OU /unblock \"pseudo avec espaces\"");
                 }
             } else if (text.startsWith("/invite ")) {
                 const target = this.parseCommandTarget("/invite ", text);
@@ -637,10 +644,12 @@
                 if (target) {
                     console.log("📤 Envoi de l'invitation au serveur:", { type: "invite", target });
                     this.ws.send(JSON.stringify({ type: "invite", target }));
-                    this.addSystemMessage(`Invitation envoyée à ${target}`);
+                    const i18n = (window as any).i18n;
+                    this.addSystemMessage(i18n ? i18n.t('chat_invite_sent', { target }) : `Invitation envoyée à ${target}`);
                 } else {
                     console.log("❌ Target invalide pour /invite");
-                    this.addSystemMessage("Format : /invite pseudo OU /invite \"pseudo avec espaces\"");
+                    const i18n = (window as any).i18n;
+                    this.addSystemMessage(i18n ? i18n.t('chat_format_invite') : "Format : /invite pseudo OU /invite \"pseudo avec espaces\"");
                 }
             } else if (text === "/list") {
                 // Lister tous les utilisateurs disponibles
@@ -650,7 +659,8 @@
                     console.log("✅ Commande /list envoyée au serveur");
                 } else {
                     console.log("❌ WebSocket pas ouverte:", this.ws?.readyState);
-                    this.addSystemMessage("Connexion fermée, impossible d'envoyer la commande");
+                    const i18n = (window as any).i18n;
+                    this.addSystemMessage(i18n ? i18n.t('chat_connection_closed_command') : "Connexion fermée, impossible d'envoyer la commande");
                 }
                 this.messageInput.value = ""; // Vider le champ après /list
             } else if (text.startsWith("/history ")) {
@@ -662,10 +672,12 @@
                         this.ws.send(JSON.stringify({ type: "getHistory", target }));
                         console.log("✅ Commande /history envoyée");
                     } else {
-                        this.addSystemMessage("Connexion fermée, impossible d'envoyer la commande");
+                        const i18n = (window as any).i18n;
+                        this.addSystemMessage(i18n ? i18n.t('chat_connection_closed_command') : "Connexion fermée, impossible d'envoyer la commande");
                     }
                 } else {
-                    this.addSystemMessage("Format : /history pseudo OU /history \"pseudo avec espaces\"");
+                    const i18n = (window as any).i18n;
+                    this.addSystemMessage(i18n ? i18n.t('chat_format_history') : "Format : /history pseudo OU /history \"pseudo avec espaces\"");
                 }
                 this.messageInput.value = ""; // Vider le champ
             } else if (text.startsWith("/dm ")) {
@@ -680,7 +692,8 @@
                     // Username entre guillemets
                     const closingQuoteIndex = dmContent.indexOf('"', 1);
                     if (closingQuoteIndex === -1) {
-                        this.addSystemMessage("Guillemet fermant manquant. Format : /dm \"pseudo avec espaces\" message OU /dm pseudo_sans_espaces message");
+                        const i18n = (window as any).i18n;
+                        this.addSystemMessage(i18n ? i18n.t('chat_format_dm_quotes_missing') : "Guillemet fermant manquant. Format : /dm \"pseudo avec espaces\" message OU /dm pseudo_sans_espaces message");
                         return;
                     }
                     target = dmContent.substring(1, closingQuoteIndex);
@@ -690,7 +703,8 @@
                     // Username sans guillemets (pas d'espaces)
                     const firstSpaceIndex = dmContent.indexOf(" ");
                     if (firstSpaceIndex === -1) {
-                        this.addSystemMessage("Format attendu : /dm pseudo message OU /dm \"pseudo avec espaces\" message");
+                        const i18n = (window as any).i18n;
+                        this.addSystemMessage(i18n ? i18n.t('chat_format_dm') : "Format attendu : /dm pseudo message OU /dm \"pseudo avec espaces\" message");
                         return;
                     }
                     target = dmContent.substring(0, firstSpaceIndex);
@@ -699,7 +713,8 @@
                 }
 
                 if (!target || !body) {
-                    this.addSystemMessage("Format attendu : /dm pseudo message OU /dm \"pseudo avec espaces\" message");
+                    const i18n = (window as any).i18n;
+                    this.addSystemMessage(i18n ? i18n.t('chat_format_dm') : "Format attendu : /dm pseudo message OU /dm \"pseudo avec espaces\" message");
                 } else {
                     console.log("📤 Envoi DM:", { target, body });
                     this.ws.send(
@@ -714,8 +729,9 @@
             } else {
                 // Message simple → envoyé à la conversation actuellement sélectionnée
                 if (!this.currentChatUser) {
+                    const i18n = (window as any).i18n;
                     this.addSystemMessage(
-                        "Aucune conversation sélectionnée. Utilise : /dm pseudo message OU /dm \"pseudo avec espaces\" message pour démarrer une nouvelle conversation."
+                        i18n ? i18n.t('chat_no_conversation_selected') : "Aucune conversation sélectionnée. Utilise : /dm pseudo message OU /dm \"pseudo avec espaces\" message pour démarrer une nouvelle conversation."
                     );
                 } else {
                     this.ws.send(
@@ -757,14 +773,16 @@
 
             if (accept) {
                 // Afficher un message avant la redirection
-                this.addSystemMessage("🎮 Lancement du jeu Pong...");
+                const i18n = (window as any).i18n;
+                this.addSystemMessage(i18n ? i18n.t('chat_launching_game') : "🎮 Lancement du jeu Pong...");
 
                 // Redirection vers la page Pong avec les noms des joueurs
                 setTimeout(() => {
                     window.location.href = `/pong/?player1=${encodeURIComponent(from)}&player2=${encodeURIComponent(this.username || 'Player')}`;
                 }, 500); // Petit délai pour voir le message
             } else {
-                this.addSystemMessage(`Invitation de ${from} refusée.`);
+                const i18n = (window as any).i18n;
+                this.addSystemMessage(i18n ? i18n.t('chat_invite_declined', { from }) : `Invitation de ${from} refusée.`);
             }
         }
 
@@ -772,6 +790,7 @@
             const from = data.from;
             if (!from) return;
 
+            const i18n = (window as any).i18n;
             if (data.accepted) {
                 // Créer un lien cliquable pour rejoindre le jeu
                 const gameUrl = `/pong/?player1=${encodeURIComponent(this.username || 'Player')}&player2=${encodeURIComponent(from)}`;
@@ -780,7 +799,7 @@
                 const msgDiv = document.createElement("div");
                 msgDiv.classList.add("message", "system");
                 msgDiv.innerHTML = `
-                    <span>${from} a accepté ton invitation ! La partie se déroule sur l'autre onglet.</span>
+                    <span>${i18n ? i18n.t('chat_invite_accepted', { from }) : `${from} a accepté ton invitation ! La partie se déroule sur l'autre onglet.`}</span>
                 `;
 
                 if (this.chatBox) {
@@ -789,7 +808,7 @@
                 }
             } else {
                 this.addSystemMessage(
-                    `${from} a refusé ton invitation.`
+                    i18n ? i18n.t('chat_invite_declined_by', { from }) : `${from} a refusé ton invitation.`
                 );
             }
         }
@@ -799,15 +818,16 @@
                 const res = await fetch(
                     `/api/user/public/${encodeURIComponent(usernameToView)}`
                 );
+                const i18n = (window as any).i18n;
                 if (res.status === 404) {
                     this.addSystemMessage(
-                        `Ce joueur (${usernameToView}) n'a pas de profil enregistré (invité ou non inscrit).`
+                        i18n ? i18n.t('chat_profile_not_found', { username: usernameToView }) : `Ce joueur (${usernameToView}) n'a pas de profil enregistré (invité ou non inscrit).`
                     );
                     return;
                 }
                 if (!res.ok) {
                     this.addSystemMessage(
-                        `Erreur en récupérant le profil de ${usernameToView}.`
+                        i18n ? i18n.t('chat_profile_error', { username: usernameToView }) : `Erreur en récupérant le profil de ${usernameToView}.`
                     );
                     return;
                 }
@@ -829,8 +849,9 @@
                 this.setCurrentChatUser(usernameToView);
             } catch (e) {
                 console.error("Erreur chargement profil:", e);
+                const i18n = (window as any).i18n;
                 this.addSystemMessage(
-                    `Erreur lors du chargement du profil de ${usernameToView}.`
+                    i18n ? i18n.t('chat_profile_load_error', { username: usernameToView }) : `Erreur lors du chargement du profil de ${usernameToView}.`
                 );
             }
         }

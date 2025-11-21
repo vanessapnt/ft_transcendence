@@ -205,17 +205,17 @@
     </div>
 
     <div id="chat-panel">
-        <h2>💬 Messages privés</h2>
+        <h2 data-i18n-key="chat_title">💬 Messages privés</h2>
         <div id="chat-container">
             <div id="chat-main">
                 <div id="chat-content">
                     <div id="conversations-sidebar">
-                        <h3>Conversations</h3>
+                        <h3 data-i18n-key="chat_conversations">Conversations</h3>
                         <div id="conversation-tabs"></div>
                     </div>
                     <div id="chat-right">
                         <div id="chat-header">
-                            <div id="current-chat">Aucune conversation sélectionnée</div>
+                            <div id="current-chat" data-i18n-key="chat_no_conversation">Aucune conversation sélectionnée</div>
                             <div id="chat-actions">
                                 <button id="invite-btn" title="Inviter à jouer">/invite</button>
                                 <button id="block-btn" title="Bloquer l'utilisateur">/block</button>
@@ -224,8 +224,9 @@
                         <div id="chatbox"></div>
                         <div id="controls">
                             <input type="text" id="msg"
+                                data-i18n-placeholder="chat_placeholder"
                                 placeholder="Tape ton message (ou /dm pseudo ton message pour démarrer, /block, /unblock, /invite)..." />
-                            <button id="send">Envoyer</button>
+                            <button id="send" data-i18n-key="chat_send">Envoyer</button>
                         </div>
                     </div>
                 </div>

@@ -77,6 +77,26 @@ window.changeLang = (lang) => __awaiter(this, void 0, void 0, function* () {
             }
         }
     });
+    // Update placeholders for signup form if it exists
+    const signupUsername = document.getElementById('signup-username');
+    const signupEmail = document.getElementById('signup-email');
+    const signupPassword = document.getElementById('signup-password');
+    const signupDisplayname = document.getElementById('signup-displayname');
+    if (signupUsername)
+        signupUsername.placeholder = i18nWrapper.t('signup_username_placeholder');
+    if (signupEmail)
+        signupEmail.placeholder = i18nWrapper.t('signup_email_placeholder');
+    if (signupPassword)
+        signupPassword.placeholder = i18nWrapper.t('signup_password_placeholder');
+    if (signupDisplayname)
+        signupDisplayname.placeholder = i18nWrapper.t('signup_displayname_placeholder');
+    // Update placeholders for login form if it exists
+    const loginUsername = document.getElementById('login-username');
+    const loginPassword = document.getElementById('login-password');
+    if (loginUsername)
+        loginUsername.placeholder = i18nWrapper.t('login_username_placeholder');
+    if (loginPassword)
+        loginPassword.placeholder = i18nWrapper.t('login_password_placeholder');
     // Update tournament placeholders if tournament module exists
     const pong = window.PONG;
     if ((pong === null || pong === void 0 ? void 0 : pong.Tournament) && typeof pong.Tournament.updatePlaceholders === 'function') {

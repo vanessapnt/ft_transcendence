@@ -153,6 +153,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         const menu = document.querySelector('.menu-buttons');
         if (!menu)
             return;
+        const i18n = window.i18n;
         // Masquer le menu
         menu.style.display = 'none';
         // Créer le formulaire
@@ -160,16 +161,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         form.id = 'signup-form';
         form.className = 'auth-form';
         form.innerHTML = `
-        <h2>Sign Up</h2>
-        <input type="text" id="signup-username" placeholder="Username" required>
-        <input type="email" id="signup-email" placeholder="Email" required>
-        <input type="password" id="signup-password" placeholder="Password" required>
-        <input type="text" id="signup-displayname" placeholder="Display Name" required>
+        <h2 data-i18n-key="signup_form_title">${i18n ? i18n.t('signup_form_title') : 'Sign Up'}</h2>
+        <input type="text" id="signup-username" placeholder="${i18n ? i18n.t('signup_username_placeholder') : 'Username'}" required>
+        <input type="email" id="signup-email" placeholder="${i18n ? i18n.t('signup_email_placeholder') : 'Email'}" required>
+        <input type="password" id="signup-password" placeholder="${i18n ? i18n.t('signup_password_placeholder') : 'Password'}" required>
+        <input type="text" id="signup-displayname" placeholder="${i18n ? i18n.t('signup_displayname_placeholder') : 'Display Name'}" required>
         <div class="auth-btn-row">
-            <button type="submit" class="auth-submit-btn">Register</button>
-            <button type="button" id="show-login" class="auth-switch-btn">Login</button>
+            <button type="submit" class="auth-submit-btn" data-i18n-key="signup_submit">${i18n ? i18n.t('signup_submit') : 'Register'}</button>
+            <button type="button" id="show-login" class="auth-switch-btn" data-i18n-key="already_have_account">${i18n ? i18n.t('already_have_account') : 'Login'}</button>
         </div>
-        <button type="button" id="cancel-signup" class="auth-cancel-btn">Cancel</button>
+        <button type="button" id="cancel-signup" class="auth-cancel-btn" data-i18n-key="signup_cancel">${i18n ? i18n.t('signup_cancel') : 'Cancel'}</button>
         <div id="signup-message" class="auth-message"></div>
     `;
         (_a = menu.parentElement) === null || _a === void 0 ? void 0 : _a.appendChild(form);
@@ -183,7 +184,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             messageDiv.textContent = '';
             if (!username || !email || !password || !display_name) {
                 messageDiv.className = 'auth-message error';
-                messageDiv.textContent = 'All fields are required';
+                messageDiv.textContent = i18n ? i18n.t('signup_error_required') : 'All fields are required';
                 return;
             }
             try {
@@ -204,19 +205,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 const user = data.user;
                 if (res.ok && user && user.username && user.display_name && user.id) {
                     messageDiv.className = 'auth-message success';
-                    messageDiv.textContent = 'Registration successful!';
+                    messageDiv.textContent = i18n ? i18n.t('signup_success') : 'Registration successful!';
                     setUser(user.username, user.display_name, user.id, user.avatar_path || '/avatars/default_avatar.png');
                     form.remove();
                     menu.style.display = '';
                 }
                 else {
                     messageDiv.className = 'auth-message error';
-                    messageDiv.textContent = data.error || data.message || 'Registration failed';
+                    messageDiv.textContent = data.error || data.message || (i18n ? i18n.t('signup_error_failed') : 'Registration failed');
                 }
             }
             catch (err) {
                 messageDiv.className = 'auth-message error';
-                messageDiv.textContent = 'Server error: unable to connect';
+                messageDiv.textContent = i18n ? i18n.t('signup_error_server') : 'Server error: unable to connect';
                 console.error('Signup error:', err);
             }
         });
@@ -237,22 +238,22 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         const menu = document.querySelector('.menu-buttons');
         if (!menu)
             return;
+        const i18n = window.i18n;
         // Masquer le menu
         menu.style.display = 'none';
-        // <button type="submit" class="auth-submit-btn">Login</button>
         // Créer le formulaire
         const form = document.createElement('form');
         form.id = 'login-form';
         form.className = 'auth-form';
         form.innerHTML = `
-        <h2 data-i18n-key="login_form_title">Login</h2>
-        <input type="text" id="login-username" placeholder="Username" required>
-        <input type="password" id="login-password" placeholder="Password" required>
+        <h2 data-i18n-key="login_form_title">${i18n ? i18n.t('login_form_title') : 'Login'}</h2>
+        <input type="text" id="login-username" placeholder="${i18n ? i18n.t('login_username_placeholder') : 'Username'}" required>
+        <input type="password" id="login-password" placeholder="${i18n ? i18n.t('login_password_placeholder') : 'Password'}" required>
         <div class="auth-btn-row">
-            <button type="submit" data-i18n-key="login_submit">Login</button>
-            <button type="button" id="show-signup-from-login" class="auth-switch-btn">Sign Up</button>
+            <button type="submit" data-i18n-key="login_submit">${i18n ? i18n.t('login_submit') : 'Login'}</button>
+            <button type="button" id="show-signup-from-login" class="auth-switch-btn" data-i18n-key="no_account">${i18n ? i18n.t('no_account') : 'Sign Up'}</button>
         </div>
-        <button type="button" id="cancel-login" class="auth-cancel-btn">Cancel</button>
+        <button type="button" id="cancel-login" class="auth-cancel-btn" data-i18n-key="login_cancel">${i18n ? i18n.t('login_cancel') : 'Cancel'}</button>
         <div id="login-message" class="auth-message"></div>
     `;
         (_a = menu.parentElement) === null || _a === void 0 ? void 0 : _a.appendChild(form);
@@ -271,7 +272,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             messageDiv.textContent = '';
             if (!username || !password) {
                 messageDiv.className = 'auth-message error';
-                messageDiv.textContent = 'Username and password are required';
+                messageDiv.textContent = i18n ? i18n.t('login_error_required') : 'Username and password are required';
                 return;
             }
             try {
@@ -285,7 +286,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 const user = data.user;
                 if (res.ok && user.username && user.display_name && user.id) {
                     messageDiv.className = 'auth-message success';
-                    messageDiv.textContent = 'Login successful!';
+                    messageDiv.textContent = i18n ? i18n.t('login_success') : 'Login successful!';
                     setUser(user.username, user.display_name, user.id, user.avatar_path || user.avatar_url || '/avatars/default_avatar.png');
                     form.style.display = 'none';
                     const userInfo = document.getElementById('user-info');
@@ -297,13 +298,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     let reason = data.error || data.message || '';
                     if (!reason) {
                         if (res.status === 401) {
-                            reason = 'Invalid username or password.';
+                            reason = i18n ? i18n.t('login_error_invalid') : 'Invalid username or password.';
                         }
                         else if (res.status === 404) {
-                            reason = 'User not found.';
+                            reason = i18n ? i18n.t('login_error_notfound') : 'User not found.';
                         }
                         else {
-                            reason = 'Login failed (unknown error)';
+                            reason = i18n ? i18n.t('login_error_failed') : 'Login failed (unknown error)';
                         }
                     }
                     messageDiv.textContent = reason;
@@ -311,7 +312,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
             catch (err) {
                 messageDiv.className = 'auth-message error';
-                messageDiv.textContent = 'Server error: unable to connect';
+                messageDiv.textContent = i18n ? i18n.t('login_error_server') : 'Server error: unable to connect';
                 console.error('Login error:', err);
             }
         });

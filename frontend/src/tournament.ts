@@ -77,16 +77,17 @@ class Tournament
     }
 
     private startTournament(nbPlayers: number): void{
+        const i18n = (window as any).i18n;
         const playerNames: string[] = [];
         for (let i = 0; i < nbPlayers; i++) {
             const input = document.getElementById(`player-${i}`) as HTMLInputElement | null;
-            if (!input) { alert('Input missing'); return; }
+            if (!input) { alert(i18n.t('alert_input_missing')); return; }
             const name = input.value.trim();
-            if (!name) { alert(`Please enter a name for Player ${i + 1}`); return; }
+            if (!name) { alert(i18n.t('alert_enter_name', { number: i + 1 })); return; }
             playerNames.push(name);
         }
 
-        if (new Set(playerNames).size !== playerNames.length) { alert('All player names must be unique!'); return; }
+        if (new Set(playerNames).size !== playerNames.length) { alert(i18n.t('alert_names_unique')); return; }
 
         this.players = playerNames.map(n => ({ name: n, wins: 0 }));
         this.generateMatches();
@@ -108,20 +109,21 @@ class Tournament
     }
 
     private showTournamentStatus(): void {
+        const i18n = (window as any).i18n;
         if (this.currentMatchIndex >= this.matches.length) { this.showWinner(); return; }
         const nextMatch = this.matches[this.currentMatchIndex];
 
         const nextMatchTitle = document.getElementById('next-match-title');
         const nextMatchVersus = document.getElementById('next-match-versus');
         const nextMatchControls = document.getElementById('next-match-controls');
-        if (nextMatchTitle) nextMatchTitle.textContent = `NEXT MATCH (${this.currentMatchIndex + 1}/${this.matches.length})`;
-        if (nextMatchVersus) nextMatchVersus.innerHTML = `${this.escapeHtml(nextMatch.player1)} <span class="vs-text">VS</span> ${this.escapeHtml(nextMatch.player2)}`;
-        if (nextMatchControls) nextMatchControls.textContent = `${nextMatch.player1}: W/S keys | ${nextMatch.player2}: ↑/↓ keys`;
+        if (nextMatchTitle) nextMatchTitle.textContent = i18n.t('next_match_number', { current: this.currentMatchIndex + 1, total: this.matches.length });
+        if (nextMatchVersus) nextMatchVersus.innerHTML = `${this.escapeHtml(nextMatch.player1)} <span class="vs-text">${i18n.t('vs')}</span> ${this.escapeHtml(nextMatch.player2)}`;
+        if (nextMatchControls) nextMatchControls.textContent = i18n.t('controls_info', { player1: nextMatch.player1, player2: nextMatch.player2 });
 
         const standingsContainer = document.getElementById('standings-container');
         if (standingsContainer) {
             const sorted = [...this.players].sort((a,b) => b.wins - a.wins);
-            standingsContainer.innerHTML = sorted.map((p,i) => `<div class="standings-row"><span>${i+1}. ${this.escapeHtml(p.name)}</span><span class="wins-count">${p.wins} wins</span></div>`).join('');
+            standingsContainer.innerHTML = sorted.map((p,i) => `<div class="standings-row"><span>${i+1}. ${this.escapeHtml(p.name)}</span><span class="wins-count">${p.wins} ${i18n.t('wins')}</span></div>`).join('');
         }
 
         const matchesContainer = document.getElementById('matches-container');
@@ -130,15 +132,15 @@ class Tournament
                 const isCompleted = m.winner !== undefined;
                 const isCurrent = i === this.currentMatchIndex;
                 const statusClass = isCompleted ? 'match-completed' : (isCurrent ? 'match-current' : 'match-pending');
-                const statusText = isCompleted ? `Winner: ${this.escapeHtml(m.winner! )}` : (isCurrent ? 'NEXT' : 'Pending');
-                return `<div class="match-item ${statusClass}"><p class="match-players">Match ${i+1}: ${this.escapeHtml(m.player1)} vs ${this.escapeHtml(m.player2)}</p><p class="match-status">${statusText}</p></div>`;
+                const statusText = isCompleted ? `${i18n.t('winner')}: ${this.escapeHtml(m.winner!)}` : (isCurrent ? i18n.t('next') : i18n.t('pending'));
+                return `<div class="match-item ${statusClass}"><p class="match-players">${i18n.t('match')} ${i+1}: ${this.escapeHtml(m.player1)} ${i18n.t('vs').toLowerCase()} ${this.escapeHtml(m.player2)}</p><p class="match-status">${statusText}</p></div>`;
             }).join('');
         }
 
         const startBtn = document.getElementById('start-next-match-btn');
         const quitBtn = document.getElementById('quit-tournament-btn');
         if (startBtn) startBtn.onclick = () => this.launchPongGame(nextMatch);
-        if (quitBtn) quitBtn.onclick = () => { if (confirm('Are you sure you want to quit the tournament?')) { const gm = (window as any).PONG; if (gm?.Nav) gm.Nav.showHome(); } };
+        if (quitBtn) quitBtn.onclick = () => { if (confirm(i18n.t('quit_tournament_confirm'))) { const gm = (window as any).PONG; if (gm?.Nav) gm.Nav.showHome(); } };
 
         this.showSection('tournament-status');
     }
@@ -170,6 +172,7 @@ class Tournament
     }
 
     private showWinner(): void {
+        const i18n = (window as any).i18n;
         if (this.players.length === 0) return;
         let winner = this.players[0];
         for (const p of this.players) if (p.wins > winner.wins) winner = p;
@@ -177,8 +180,8 @@ class Tournament
         const winnerScore = document.getElementById('winner-score');
         const finalStandings = document.getElementById('final-standings-container');
         if (winnerName) winnerName.textContent = winner.name;
-        if (winnerScore) winnerScore.textContent = `${winner.wins} victories`;
-        if (finalStandings) finalStandings.innerHTML = this.players.sort((a,b) => b.wins - a.wins).map((p,i) => `<div class="final-standings-row"><span>${i+1}. ${this.escapeHtml(p.name)}</span><span>${p.wins} wins</span></div>`).join('');
+        if (winnerScore) winnerScore.textContent = `${winner.wins} ${i18n.t('victories')}`;
+        if (finalStandings) finalStandings.innerHTML = this.players.sort((a,b) => b.wins - a.wins).map((p,i) => `<div class="final-standings-row"><span>${i+1}. ${this.escapeHtml(p.name)}</span><span>${p.wins} ${i18n.t('wins')}</span></div>`).join('');
         const backBtn = document.getElementById('back-to-menu-btn');
         if (backBtn) backBtn.onclick = () => { const gm = (window as any).PONG; if (gm?.Nav) gm.Nav.showHome(); };
         this.showSection('tournament-winner');
@@ -199,19 +202,80 @@ class Tournament
 
     // Public method to update placeholders when language changes
     updatePlaceholders(): void {
-        if (this.currentNbPlayers === 0) return;
-        
-        for (let i = 0; i < this.currentNbPlayers; i++) {
-            const input = document.getElementById(`player-${i}`) as HTMLInputElement | null;
-            if (input && (window as any).i18n && typeof (window as any).i18n.t === 'function') {
-                input.placeholder = (window as any).i18n.t('player_name_placeholder', { number: i + 1 });
+        const i18n = (window as any).i18n;
+        if (!i18n || typeof i18n.t !== 'function') return;
+
+        if (this.currentNbPlayers > 0) {
+            for (let i = 0; i < this.currentNbPlayers; i++) {
+                const input = document.getElementById(`player-${i}`) as HTMLInputElement | null;
+                if (input) {
+                    input.placeholder = i18n.t('player_name_placeholder', { number: i + 1 });
+                }
+            }
+            
+            // Update the start tournament button
+            const startBtn = document.getElementById('start-tournament-btn') as HTMLButtonElement | null;
+            if (startBtn) {
+                startBtn.textContent = i18n.t('start_tournament');
             }
         }
-        
-        // Update the start tournament button
-        const startBtn = document.getElementById('start-tournament-btn') as HTMLButtonElement | null;
-        if (startBtn && (window as any).i18n && typeof (window as any).i18n.t === 'function') {
-            startBtn.textContent = (window as any).i18n.t('start_tournament');
+
+        // Update tournament status if currently displayed
+        if (this.currentMatchIndex < this.matches.length && this.matches.length > 0) {
+            const nextMatch = this.matches[this.currentMatchIndex];
+            
+            // Update next match title
+            const nextMatchTitle = document.getElementById('next-match-title');
+            if (nextMatchTitle) {
+                nextMatchTitle.textContent = i18n.t('next_match_number', { current: this.currentMatchIndex + 1, total: this.matches.length });
+            }
+
+            // Update VS text
+            const nextMatchVersus = document.getElementById('next-match-versus');
+            if (nextMatchVersus) {
+                nextMatchVersus.innerHTML = `${this.escapeHtml(nextMatch.player1)} <span class="vs-text">${i18n.t('vs')}</span> ${this.escapeHtml(nextMatch.player2)}`;
+            }
+
+            // Update controls info
+            const nextMatchControls = document.getElementById('next-match-controls');
+            if (nextMatchControls) {
+                nextMatchControls.textContent = i18n.t('controls_info', { player1: nextMatch.player1, player2: nextMatch.player2 });
+            }
+
+            // Update standings
+            const standingsContainer = document.getElementById('standings-container');
+            if (standingsContainer) {
+                const sorted = [...this.players].sort((a,b) => b.wins - a.wins);
+                standingsContainer.innerHTML = sorted.map((p,i) => `<div class="standings-row"><span>${i+1}. ${this.escapeHtml(p.name)}</span><span class="wins-count">${p.wins} ${i18n.t('wins')}</span></div>`).join('');
+            }
+
+            // Update matches list
+            const matchesContainer = document.getElementById('matches-container');
+            if (matchesContainer) {
+                matchesContainer.innerHTML = this.matches.map((m,i) => {
+                    const isCompleted = m.winner !== undefined;
+                    const isCurrent = i === this.currentMatchIndex;
+                    const statusClass = isCompleted ? 'match-completed' : (isCurrent ? 'match-current' : 'match-pending');
+                    const statusText = isCompleted ? `${i18n.t('winner')}: ${this.escapeHtml(m.winner!)}` : (isCurrent ? i18n.t('next') : i18n.t('pending'));
+                    return `<div class="match-item ${statusClass}"><p class="match-players">${i18n.t('match')} ${i+1}: ${this.escapeHtml(m.player1)} ${i18n.t('vs').toLowerCase()} ${this.escapeHtml(m.player2)}</p><p class="match-status">${statusText}</p></div>`;
+                }).join('');
+            }
+        }
+
+        // Update winner screen if displayed
+        if (this.currentMatchIndex >= this.matches.length && this.players.length > 0) {
+            let winner = this.players[0];
+            for (const p of this.players) if (p.wins > winner.wins) winner = p;
+            
+            const winnerScore = document.getElementById('winner-score');
+            if (winnerScore) {
+                winnerScore.textContent = `${winner.wins} ${i18n.t('victories')}`;
+            }
+
+            const finalStandings = document.getElementById('final-standings-container');
+            if (finalStandings) {
+                finalStandings.innerHTML = this.players.sort((a,b) => b.wins - a.wins).map((p,i) => `<div class="final-standings-row"><span>${i+1}. ${this.escapeHtml(p.name)}</span><span>${p.wins} ${i18n.t('wins')}</span></div>`).join('');
+            }
         }
     }
 }

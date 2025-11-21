@@ -84,7 +84,7 @@
 
         <div id="tournament-status" class="tournament-section">
             <div class="tournament-container">
-                <h1>TOURNAMENT STATUS</h1>
+                <h1 data-i18n-key="tournament_status">TOURNAMENT STATUS</h1>
 
                 <div class="tournament-next-match">
                     <h2 id="next-match-title">NEXT MATCH</h2>
@@ -97,19 +97,19 @@
                 </div>
 
                 <div class="tournament-buttons">
-                    <button id="start-next-match-btn" class="tournament-btn-start">
+                    <button id="start-next-match-btn" class="tournament-btn-start" data-i18n-key="start_match">
                         START MATCH
                     </button>
-                    <button id="quit-tournament-btn" class="tournament-btn-quit">
+                    <button id="quit-tournament-btn" class="tournament-btn-quit" data-i18n-key="quit_tournament">
                         QUIT TOURNAMENT
                     </button>
                 </div>
 
-                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;">Current
+                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;" data-i18n-key="current_standings">Current
                     Standings:</h3>
                 <div class="tournament-standings" id="standings-container"></div>
 
-                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;">Match
+                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;" data-i18n-key="match_results">Match
                     Results:</h3>
                 <div class="tournament-results" id="matches-container"></div>
             </div>
@@ -118,14 +118,14 @@
 
     <div id="tournament-winner" class="tournament-section">
         <div class="tournament-winner">
-            <h1>🏆 TOURNAMENT COMPLETE 🏆</h1>
-            <h2>WINNER: <span id="winner-name"></span></h2>
+            <h1 data-i18n-key="tournament_complete">🏆 TOURNAMENT COMPLETE 🏆</h1>
+            <h2><span data-i18n-key="tournament_winner_label">WINNER:</span> <span id="winner-name"></span></h2>
             <p class="winner-score" id="winner-score">0 victories</p>
 
-            <h3>Final Standings:</h3>
+            <h3 data-i18n-key="final_standings">Final Standings:</h3>
             <div class="final-standings" id="final-standings-container"></div>
 
-            <button id="back-to-menu-btn" class="tournament-back-btn">
+            <button id="back-to-menu-btn" class="tournament-back-btn" data-i18n-key="back_to_menu">
                 BACK TO MENU
             </button>
         </div>
@@ -157,8 +157,8 @@
     <div id="pause-overlay" class="overlay">
         <div class="overlay-content">
             <h2 data-i18n-key="title_paused">PAUSED</h2>
-            <button id="resume-btn">RESUME</button>
-            <button id="menu-btn" onclick="PONG.Nav.showHome()">MENU</button>
+            <button id="resume-btn" data-i18n-key="resume">RESUME</button>
+            <button id="menu-btn" onclick="PONG.Nav.showHome()" data-i18n-key="menu">MENU</button>
         </div>
     </div>
 

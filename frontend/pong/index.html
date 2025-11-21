@@ -19,62 +19,49 @@
 
     <div id="avatar-container">
         <img id="avatar-img" src="/avatars/default_avatar.png" alt="Avatar">
-        <button id="private-messages-btn" class="hidden" onclick="toggleChat()">Private Messages</button>
+        <!-- Le bouton Private Messages sera créé dynamiquement par JavaScript quand nécessaire -->
         <script>
-            // Script immédiat pour cacher le bouton par défaut
+            // Script pour gérer dynamiquement le bouton Private Messages
             (function () {
-                function forceHideButton() {
-                    const btn = document.getElementById('private-messages-btn');
+                function createPrivateMessagesButton() {
+                    // Vérifier si le bouton existe déjà
+                    let btn = document.getElementById('private-messages-btn');
                     if (btn) {
-                        // Forcer tous les styles possibles pour cacher le bouton
-                        btn.style.setProperty('display', 'none', 'important');
-                        btn.style.setProperty('visibility', 'hidden', 'important');
-                        btn.style.setProperty('opacity', '0', 'important');
-                        btn.style.setProperty('height', '0', 'important');
-                        btn.style.setProperty('width', '0', 'important');
-                        btn.style.setProperty('padding', '0', 'important');
-                        btn.style.setProperty('margin', '0', 'important');
-                        btn.style.setProperty('border', '0', 'important');
-                        btn.style.setProperty('overflow', 'hidden', 'important');
-
-                        btn.classList.add('hidden');
-                        btn.classList.remove('visible');
-
-                        console.log('🔒 Bouton Private Messages forcé caché');
-                        return true;
+                        return btn;
                     }
-                    return false;
+
+                    // Créer le bouton
+                    btn = document.createElement('button');
+                    btn.id = 'private-messages-btn';
+                    btn.className = 'visible';
+                    btn.textContent = 'Private Messages';
+                    btn.onclick = function () { if (window.toggleChat) toggleChat(); };
+
+                    // L'ajouter au conteneur avatar
+                    const avatarContainer = document.getElementById('avatar-container');
+                    if (avatarContainer) {
+                        avatarContainer.appendChild(btn);
+                    }
+
+                    console.log('✅ Bouton Private Messages créé dynamiquement');
+                    return btn;
                 }
 
-                function forceShowButton() {
+                function removePrivateMessagesButton() {
                     const btn = document.getElementById('private-messages-btn');
                     if (btn) {
-                        // Effacer tous les styles de masquage
-                        btn.style.removeProperty('display');
-                        btn.style.removeProperty('visibility');
-                        btn.style.removeProperty('opacity');
-                        btn.style.removeProperty('height');
-                        btn.style.removeProperty('width');
-                        btn.style.removeProperty('padding');
-                        btn.style.removeProperty('margin');
-                        btn.style.removeProperty('border');
-                        btn.style.removeProperty('overflow');
-
-                        btn.classList.remove('hidden');
-                        btn.classList.add('visible');
-
-                        console.log('👁️ Bouton Private Messages forcé visible');
-                        return true;
+                        btn.remove();
+                        console.log('🗑️ Bouton Private Messages supprimé');
                     }
-                    return false;
                 }
 
-                // Exécuter immédiatement le masquage par défaut
-                forceHideButton();
+                // Exposer les fonctions globalement
+                window.createPrivateMessagesButton = createPrivateMessagesButton;
+                window.removePrivateMessagesButton = removePrivateMessagesButton;
 
-                // Exposer les fonctions globalement pour que checkLoginStatus puisse les utiliser
-                window.forceHidePrivateMessagesButton = forceHideButton;
-                window.forceShowPrivateMessagesButton = forceShowButton;
+                // Pour compatibilité avec l'ancien code
+                window.forceShowPrivateMessagesButton = createPrivateMessagesButton;
+                window.forceHidePrivateMessagesButton = removePrivateMessagesButton;
 
             })();
         </script>

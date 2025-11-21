@@ -43,11 +43,22 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Static files for avatars
+// Static files for avatars - copier votre default_avatar.png
 const avatarsDir = path.join(__dirname, 'avatars');
 if (!fs.existsSync(avatarsDir)) {
   fs.mkdirSync(avatarsDir, { recursive: true });
 }
+
+// Copier votre default_avatar.png depuis la racine du backend
+const defaultAvatarPath = path.join(avatarsDir, 'default_avatar.png');
+const sourceAvatarPath = path.join(__dirname, 'default_avatar.png');
+
+if (fs.existsSync(sourceAvatarPath) && !fs.existsSync(defaultAvatarPath)) {
+  fs.copyFileSync(sourceAvatarPath, defaultAvatarPath);
+  console.log('✅ Votre default_avatar.png copié');
+}
+
+console.log('✅ Dossier avatars configuré');
 app.use('/avatars', express.static(avatarsDir));
 
 // Routes

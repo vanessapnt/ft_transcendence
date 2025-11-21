@@ -360,27 +360,49 @@
         if (!homeView) return;
 
         const currentAvatarUrl = (window as any).currentAvatarUrl;
+        const i18n = (window as any).i18n;
 
         const form = document.createElement('form');
         form.id = 'edit-profile-form';
         form.className = 'auth-form edit-profile-form';
         form.innerHTML = `
-        <h2>Edit Profile</h2>
+        <h2 data-i18n-key="edit_profile_title">${i18n ? i18n.t('edit_profile_title') : 'Edit Profile'}</h2>
         <img id="edit-avatar-img" src="${getAvatarUrl(currentAvatarUrl)}" alt="Avatar" class="edit-avatar-preview">
-        <label>Avatar</label>
-        <input type="file" id="edit-avatar" accept="image/*">
-        <label>Username (non modifiable)</label>
+        <label data-i18n-key="edit_profile_avatar">${i18n ? i18n.t('edit_profile_avatar') : 'Avatar'}</label>
+        <div class="file-input-wrapper">
+            <input type="file" id="edit-avatar" accept="image/*" style="display: none;">
+            <button type="button" id="edit-avatar-btn" class="file-input-btn" data-i18n-key="edit_profile_choose_file">${i18n ? i18n.t('edit_profile_choose_file') : 'Choose file'}</button>
+            <span id="edit-avatar-filename" class="file-input-name" data-i18n-key="edit_profile_no_file">${i18n ? i18n.t('edit_profile_no_file') : 'No file selected'}</span>
+        </div>
+        <label data-i18n-key="edit_profile_username">${i18n ? i18n.t('edit_profile_username') : 'Username (not editable)'}</label>
         <input type="text" value="${escapeHtml(currentUsername)}" disabled class="disabled-input">
-        <label>Display Name</label>
+        <label data-i18n-key="edit_profile_displayname">${i18n ? i18n.t('edit_profile_displayname') : 'Display Name'}</label>
         <input type="text" id="edit-displayname" value="${escapeHtml(currentDisplayName)}" required>
-        <button type="submit" class="auth-submit-btn">Save</button>
-        <button type="button" id="cancel-edit-profile" class="auth-cancel-btn">Cancel</button>
+        <button type="submit" class="auth-submit-btn" data-i18n-key="edit_profile_save">${i18n ? i18n.t('edit_profile_save') : 'Save'}</button>
+        <button type="button" id="cancel-edit-profile" class="auth-cancel-btn" data-i18n-key="edit_profile_cancel">${i18n ? i18n.t('edit_profile_cancel') : 'Cancel'}</button>
         <div id="edit-profile-message" class="auth-message"></div>
     `;
         homeView.appendChild(form);
         form.querySelector('.auth-submit-btn')?.addEventListener('click', () => {
             console.log('Save button clicked');
         });
+
+        // Handle custom file input
+        const fileInput = document.getElementById('edit-avatar') as HTMLInputElement;
+        const fileButton = document.getElementById('edit-avatar-btn') as HTMLButtonElement;
+        const fileNameSpan = document.getElementById('edit-avatar-filename') as HTMLSpanElement;
+
+        fileButton.onclick = () => {
+            fileInput.click();
+        };
+
+        fileInput.onchange = () => {
+            if (fileInput.files && fileInput.files.length > 0) {
+                fileNameSpan.textContent = fileInput.files[0].name;
+            } else {
+                fileNameSpan.textContent = i18n ? i18n.t('edit_profile_no_file') : 'No file selected';
+            }
+        };
 
         document.getElementById('cancel-edit-profile')!.onclick = () => {
             form.remove();
@@ -399,7 +421,7 @@
 
             if (!display_name) {
                 messageDiv.className = 'auth-message error';
-                messageDiv.textContent = 'Display name is required';
+                messageDiv.textContent = i18n ? i18n.t('edit_profile_error_required') : 'Display name is required';
                 return;
             }
 
@@ -418,7 +440,7 @@
                         updateOk = false;
                         console.log('PUT /api/user/profile failed', data);
                         messageDiv.className = 'auth-message error';
-                        messageDiv.textContent = data.error || 'Update failed';
+                        messageDiv.textContent = data.error || (i18n ? i18n.t('edit_profile_error_failed') : 'Update failed');
                     }
                 }
 
@@ -456,13 +478,13 @@
                         updateOk = false;
                         console.log('POST /api/user/avatar failed', dataAvatar);
                         messageDiv.className = 'auth-message error';
-                        messageDiv.textContent = dataAvatar && dataAvatar.error || 'Avatar upload failed';
+                        messageDiv.textContent = dataAvatar && dataAvatar.error || (i18n ? i18n.t('edit_profile_error_avatar') : 'Avatar upload failed');
                     }
                 }
 
                 if (updateOk) {
                     messageDiv.className = 'auth-message success';
-                    messageDiv.textContent = 'Profile updated!';
+                    messageDiv.textContent = i18n ? i18n.t('edit_profile_success') : 'Profile updated!';
                     form.remove();
                     if (menu) menu.style.display = '';
                     const finalAvatar =
@@ -479,7 +501,7 @@
                 }
             } catch (err) {
                 messageDiv.className = 'auth-message error';
-                messageDiv.textContent = 'Server error';
+                messageDiv.textContent = i18n ? i18n.t('edit_profile_error_server') : 'Server error';
                 console.error('Edit profile error:', err);
             }
         };

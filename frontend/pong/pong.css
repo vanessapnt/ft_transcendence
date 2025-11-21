@@ -338,6 +338,40 @@ body {
     box-shadow: 0 0 15px #00ff00;
 }
 
+.file-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.file-input-btn {
+    padding: 8px 16px;
+    background: #00ff00;
+    color: #000;
+    border: 2px solid #00ff00;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.6em;
+    text-shadow: none;
+    transition: all 0.3s;
+}
+
+.file-input-btn:hover {
+    background: #00cc00;
+    box-shadow: 0 0 10px #00ff00;
+}
+
+.file-input-name {
+    color: #00ff00;
+    font-size: 0.7em;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 #mode-selection h1 {
     font-size: 3em;
     margin-bottom: 50px;

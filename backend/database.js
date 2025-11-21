@@ -73,6 +73,16 @@ try {
   }
 }
 
+// Add preferred_language column if missing (migration)
+try {
+  db.prepare('ALTER TABLE users ADD COLUMN preferred_language TEXT DEFAULT "en"').run();
+  console.log('✅ Migrated: Added preferred_language column');
+} catch (e) {
+  if (!String(e).includes('duplicate column name')) {
+    console.error('Migration error:', e);
+  }
+}
+
 // Prepared statements for better performance
 const statements = {
   // User operations
@@ -102,6 +112,12 @@ const statements = {
   updateUserAvatar: db.prepare(`
     UPDATE users
     SET avatar_path = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `),
+
+  updateUserLanguage: db.prepare(`
+    UPDATE users
+    SET preferred_language = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `),
 

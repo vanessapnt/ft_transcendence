@@ -11,6 +11,40 @@ body {
     overflow: hidden;
 }
 
+/* Language Selector Styling */
+#lang-selector-container {
+    position: fixed;
+    top: 20px;
+    left: 30px;
+    display: flex;
+    gap: 10px;
+    z-index: 1000;
+}
+
+#lang-selector-container button {
+    padding: 8px 14px;
+    border: 2px solid #00ff00;
+    background: #000;
+    color: #00ff00;
+    cursor: pointer;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.7em;
+    text-shadow: 0 0 5px #00ff00;
+    transition: all 0.3s ease;
+}
+
+#lang-selector-container button:hover {
+    background: #00ff00;
+    color: #000;
+    box-shadow: 0 0 10px #00ff00;
+}
+
+#lang-selector-container button.active {
+    background: #00ff00;
+    color: #000;
+    box-shadow: 0 0 20px #00ff00;
+}
+
 .screen {
     display: none;
     flex-direction: column;

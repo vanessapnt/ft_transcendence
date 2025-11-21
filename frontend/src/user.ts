@@ -255,16 +255,18 @@
         // Masquer le menu
         menu.style.display = 'none';
 
+            // <button type="submit" class="auth-submit-btn">Login</button>
+
         // Créer le formulaire
         const form = document.createElement('form');
         form.id = 'login-form';
         form.className = 'auth-form';
         form.innerHTML = `
-        <h2>Login</h2>
+        <h2 data-i18n-key="login_form_title">Login</h2>
         <input type="text" id="login-username" placeholder="Username" required>
         <input type="password" id="login-password" placeholder="Password" required>
         <div class="auth-btn-row">
-            <button type="submit" class="auth-submit-btn">Login</button>
+            <button type="submit" data-i18n-key="login_submit">Login</button>
             <button type="button" id="show-signup-from-login" class="auth-switch-btn">Sign Up</button>
         </div>
         <button type="button" id="cancel-login" class="auth-cancel-btn">Cancel</button>

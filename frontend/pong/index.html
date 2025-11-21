@@ -7,14 +7,21 @@
     <title>PONG</title>
     <link rel="stylesheet" href="pong.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- i18next library from CDN - loaded first -->
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.7.6/i18next.min.js"></script>
 </head>
 
 <body>
+    <div id="lang-selector-container">
+        <button id="lang-btn-en" onclick="changeLang('en')">EN</button>
+        <button id="lang-btn-fr" onclick="changeLang('fr')">FR</button>
+        <button id="lang-btn-es" onclick="changeLang('es')">ES</button>
+    </div>
     <div id="user-info">
         <!-- span : vide au départ et affiche dynamiquement le nom d'utilisateur -->
         <span id="username-label"></span>
-        <button id="edit-profile-btn">Edit Profile</button>
-        <button id="logout-btn">Logout</button>
+        <button id="edit-profile-btn" data-i18n-key="edit_profile">Edit Profile</button>
+        <button id="logout-btn" data-i18n-key="logout">Logout</button>
     </div>
 
     <div id="avatar-container">
@@ -68,19 +75,19 @@
     </div>
 
     <div id="home-view" class="screen active">
-        <h1>PONG</h1>
+        <h1 data-i18n-key="title_pong">PONG</h1>
         <div class="menu-buttons">
-            <button onclick="PONG.Nav.showModeSelection()">START GAME</button>
-            <button onclick="PONG.Nav.showTournament()">TOURNAMENT</button>
+            <button onclick="PONG.Nav.showModeSelection()" data-i18n-key="start_game">START GAME</button>
+            <button onclick="PONG.Nav.showTournament()" data-i18n-key="tournament">TOURNAMENT</button>
             <div class="auth-buttons-row">
-                <button class="signup-btn" onclick="showSignup()">SIGN UP</button>
-                <button class="login-btn" onclick="showLogin()">LOGIN</button>
+                <button class="signup-btn" onclick="showSignup()" data-i18n-key="signup">SIGN UP</button>
+                <button class="login-btn" onclick="showLogin()" data-i18n-key="login">LOGIN</button>
             </div>
             <div class="oauth-buttons-row">
-                <button id="github-login-btn" onclick="PONG.oauthLogin()" class="github-btn">
+                <button id="github-login-btn" onclick="PONG.oauthLogin()" class="github-btn" data-i18n-key="login_github">
                     Login with GitHub
                 </button>
-                <button id="google-login-btn" onclick="PONG.oauthGoogleLogin()" class="google-btn">
+                <button id="google-login-btn" onclick="PONG.oauthGoogleLogin()" class="google-btn" data-i18n-key="login_google">
                     Login with Google
                 </button>
             </div>
@@ -88,37 +95,37 @@
     </div>
 
     <div id="mode-selection" class="screen">
-        <h1>SELECT MODE</h1>
+        <h1 data-i18n-key="select_mode">SELECT MODE</h1>
         <div class="mode-buttons">
-            <button id="mode-local">LOCAL 2 PLAYERS</button>
+            <button id="mode-local" data-i18n-key="local_2_players">LOCAL 2 PLAYERS</button>
             <!-- bindGameModeBtns() -> addEventListener('click', () => this.launchGame('local')); -->
-            <button id="mode-ai">VS AI</button>
+            <button id="mode-ai" data-i18n-key="vs_ai">VS AI</button>
             <!-- bindGameModeBtns() -> addEventListener('click', () => this.launchGame('ai')); -->
-            <button class="back-btn" onclick="PONG.Nav.showHome()">BACK</button>
+            <button class="back-btn" onclick="PONG.Nav.showHome()" data-i18n-key="back">BACK</button>
         </div>
     </div>
 
     <div id="game-view" class="screen">
-        <div class="pause-hint">Press SPACE to pause</div>
+        <div class="pause-hint" data-i18n-key="pause_hint">Press SPACE to pause</div>
         <canvas id="board"></canvas>
-        <button class="menu-button" onclick="PONG.Nav.showHome()">MENU</button>
+        <button class="menu-button" onclick="PONG.Nav.showHome()" data-i18n-key="menu">MENU</button>
     </div>
 
     <div id="tournament-view" class="screen">
         <div id="tournament-selection" class="tournament-section active">
-            <h2>Select Number of Players</h2>
+            <h2 data-i18n-key="select_number_of_players">Select Number of Players</h2>
             <div class="player-count-buttons">
-                <button onclick="PONG.Tournament.createTournament(2)">2 Players</button>
-                <button onclick="PONG.Tournament.createTournament(4)">4 Players</button>
-                <button onclick="PONG.Tournament.createTournament(8)">8 Players</button>
+                <button onclick="PONG.Tournament.createTournament(2)" data-i18n-key="2_players">2 Players</button>
+                <button onclick="PONG.Tournament.createTournament(4)" data-i18n-key="4_players">4 Players</button>
+                <button onclick="PONG.Tournament.createTournament(8)" data-i18n-key="8_players">8 Players</button>
             </div>
-            <button class="menu-button back-btn" onclick="PONG.Nav.showHome()">BACK TO MENU</button>
+            <button class="menu-button back-btn" onclick="PONG.Nav.showHome()" data-i18n-key="back">BACK TO MENU</button>
         </div>
 
         <div id="tournament-setup" class="tournament-section">
-            <h2>Enter Player Names</h2>
+            <h2 data-i18n-key="enter_player_names">Enter Player Names</h2>
             <div id="player-inputs-container"></div>
-            <button class="menu-button back-btn" onclick="PONG.Tournament.reset()">BACK</button>
+            <button class="menu-button back-btn" onclick="PONG.Tournament.reset()" data-i18n-key="back">BACK</button>
         </div>
 
         <div id="tournament-status" class="tournament-section">
@@ -212,13 +219,15 @@
 
     <div id="pause-overlay" class="overlay">
         <div class="overlay-content">
-            <h2>PAUSED</h2>
+            <h2 data-i18n-key="title_paused">PAUSED</h2>
             <button id="resume-btn">RESUME</button>
             <button id="menu-btn" onclick="PONG.Nav.showHome()">MENU</button>
         </div>
     </div>
 
     <!-- defer : script chargé en arrière-plan mais exécuté après le HTML -->
+    <script src="i18n.js" defer></script>
+    <script src="lang.js" defer></script>
     <script src="pong.js" defer></script>
     <script src="pongAI.js" defer></script>
     <script src="tournament.js" defer></script>

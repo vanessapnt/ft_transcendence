@@ -8,6 +8,7 @@ class Tournament
     private players: TournamentPlayer[] = [];
     private matches: Match[] = [];
     private currentMatchIndex = 0;
+    private currentNbPlayers: number = 0; // Store current number of players
 
     constructor() {
         console.log('Tournament module initialized');
@@ -35,6 +36,7 @@ class Tournament
         this.players = [];
         this.matches = [];
         this.currentMatchIndex = 0;
+        this.currentNbPlayers = nbPlayers; // Store it
         this.createPlayerInputs(nbPlayers);
     }
 
@@ -51,13 +53,23 @@ class Tournament
             const input = document.createElement('input');
             input.type = 'text';
             input.id = `player-${i}`;
-            input.placeholder = `Player ${i + 1} name`;
+            // Use i18next with interpolation for placeholder
+            if ((window as any).i18n && typeof (window as any).i18n.t === 'function') {
+                input.placeholder = (window as any).i18n.t('player_name_placeholder', { number: i + 1 });
+            } else {
+                input.placeholder = `Player ${i + 1} name`;
+            }
             container.appendChild(input);
         }
 
         const startBtn = document.createElement('button');
         startBtn.type = 'button';
-        startBtn.textContent = 'Start Tournament';
+        startBtn.id = 'start-tournament-btn';
+        if ((window as any).i18n && typeof (window as any).i18n.t === 'function') {
+            startBtn.textContent = (window as any).i18n.t('start_tournament');
+        } else {
+            startBtn.textContent = 'Start Tournament';
+        }
         startBtn.addEventListener('click', () => this.startTournament(nbPlayers));
         container.appendChild(startBtn);
 
@@ -178,10 +190,29 @@ class Tournament
         this.players = [];
         this.matches = [];
         this.currentMatchIndex = 0;
+        this.currentNbPlayers = 0;
         const container = document.getElementById('player-inputs-container');
         if (container)
             container.innerHTML = '';
         this.showSection('tournament-selection');
+    }
+
+    // Public method to update placeholders when language changes
+    updatePlaceholders(): void {
+        if (this.currentNbPlayers === 0) return;
+        
+        for (let i = 0; i < this.currentNbPlayers; i++) {
+            const input = document.getElementById(`player-${i}`) as HTMLInputElement | null;
+            if (input && (window as any).i18n && typeof (window as any).i18n.t === 'function') {
+                input.placeholder = (window as any).i18n.t('player_name_placeholder', { number: i + 1 });
+            }
+        }
+        
+        // Update the start tournament button
+        const startBtn = document.getElementById('start-tournament-btn') as HTMLButtonElement | null;
+        if (startBtn && (window as any).i18n && typeof (window as any).i18n.t === 'function') {
+            startBtn.textContent = (window as any).i18n.t('start_tournament');
+        }
     }
 }
 

@@ -59,3 +59,19 @@ const i18nWrapper = {
 
 // Expose globally for lang.js and other scripts
 (window as any).i18n = i18nWrapper;
+
+// Expose changeLang function globally for onclick handlers in HTML
+(window as any).changeLang = async (lang: string) => {
+  await i18nWrapper.changeLanguage(lang);
+  // Update all elements with data-i18n-key attribute
+  document.querySelectorAll('[data-i18n-key]').forEach((el: any) => {
+    const key = el.getAttribute('data-i18n-key');
+    if (key) {
+      if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+        el.placeholder = i18nWrapper.t(key);
+      } else {
+        el.textContent = i18nWrapper.t(key);
+      }
+    }
+  });
+};

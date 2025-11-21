@@ -71,6 +71,16 @@
                 // Gérer le clic sur Edit Profile
                 editProfileBtn.addEventListener('click', function() {
                     dropdownMenu.classList.remove('show');
+                    // Fermer le chat s'il est ouvert
+                    const chatPanel = document.getElementById('chat-panel');
+                    if (chatPanel && chatPanel.style.display === 'flex') {
+                        chatPanel.style.display = 'none';
+                        // Réafficher les écrans du jeu
+                        const screens = document.querySelectorAll('.screen');
+                        screens.forEach(screen => {
+                            screen.style.display = 'block';
+                        });
+                    }
                 });
 
                 // Gérer le clic sur Logout

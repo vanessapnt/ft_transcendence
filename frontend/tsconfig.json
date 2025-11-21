@@ -3,21 +3,20 @@
     // Environment Settings - Configuration pour le navigateur
     "module": "ES6",
     "target": "ES6",
-    "lib": ["DOM", "ES6"],
-    
+    "lib": [
+      "DOM",
+      "ES6"
+    ],
     // File Layout - Sources .ts dans src/, fichiers compilés dans pong/
     "outDir": "./pong",
     "rootDir": "./src",
-
     // Other Outputs
     "sourceMap": true,
     "declaration": false,
     "declarationMap": false,
-
     // Stricter Typechecking Options (temporarily relaxed for development)
     "noUncheckedIndexedAccess": false,
     "exactOptionalPropertyTypes": false,
-
     // Recommended Options (temporarily relaxed)
     "strict": false,
     "skipLibCheck": true,
@@ -25,6 +24,19 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node"
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "pong"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "pong"
+  ],
+  "watchOptions": {
+    "watchFile": "PriorityPollingInterval",
+    "watchDirectory": "DynamicPriorityPolling",
+    "excludeDirectories": [
+      "**/node_modules",
+      "pong"
+    ]
+  }
 }

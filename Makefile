@@ -29,7 +29,7 @@ dev-verbose: ## 🚀 Lance l'environnement de développement avec logs détaill�
 dev: ## 🚀 Lance l'environnement de développement avec monitoring
 	@echo "🔧 Démarrage de l'environnement de développement..."
 	@sh -lc '\
-docker compose -f docker-compose.dev.yml up -d --build > /dev/null 2>&1 &\
+	docker compose -f docker-compose.dev.yml up -d --build &\
 DC_PID=$$!;\
 i=0;\
 echo "";\
@@ -59,7 +59,7 @@ prod:
 
 # # Logs production
 # logs-prod:
-# 	docker-compose -f docker-compose.prod.yml logs -f
+# 	docker compose -f docker-compose.prod.yml logs -f
 
 # Build production
 build-prod:
@@ -99,7 +99,7 @@ clean:
 
 # Afficher les logs (dev)
 logs:
-	docker compose -f docker-compose.dev.yml logs -f
+	docker-compose -f docker-compose.dev.yml logs -f
 
 # Serve the `frontend/pong` folder directly so index is available at /
 .PHONY: serve-pong

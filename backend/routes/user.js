@@ -201,4 +201,59 @@ router.delete('/avatar', requireAuth, (req, res) => {
   }
 });
 
+// Get user avatar by username or 'default'
+router.get('/avatar/:username', (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    const getDefaultAvatar = () => {
+      // Use default_avatar.png
+      const defaultAvatarPath = path.join(__dirname, '../avatars/default_avatar.png');
+      if (fs.existsSync(defaultAvatarPath)) {
+        return res.sendFile(defaultAvatarPath);
+      }
+      
+      // Fallback to default.png if default_avatar.png doesn't exist
+      const defaultPngPath = path.join(__dirname, '../avatars/default.png');
+      if (fs.existsSync(defaultPngPath)) {
+        return res.sendFile(defaultPngPath);
+      }
+      
+      // Generate a simple SVG avatar as last resort
+      const defaultSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="50" fill="#00ff00"/>
+        <circle cx="50" cy="40" r="15" fill="#000"/>
+        <path d="M 30 70 Q 50 85 70 70" stroke="#000" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>`;
+      res.setHeader('Content-Type', 'image/svg+xml');
+      return res.send(defaultSvg);
+    };
+    
+    // Handle default avatar request
+    if (username === 'default') {
+      return getDefaultAvatar();
+    }
+    
+    // Get user by username
+    const user = statements.getUserByUsername.get(username);
+    if (!user || !user.avatar_path) {
+      // User doesn't exist or has no custom avatar - return default
+      return getDefaultAvatar();
+    }
+
+    // User has a custom avatar - try to send it
+    const avatarPath = path.join(__dirname, '../avatars', user.avatar_path);
+    if (fs.existsSync(avatarPath)) {
+      return res.sendFile(avatarPath);
+    }
+
+    // Avatar file doesn't exist - return default
+    return getDefaultAvatar();
+
+  } catch (error) {
+    console.error('Get avatar error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

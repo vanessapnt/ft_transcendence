@@ -10,6 +10,7 @@
   "login_submit": "Login",
   "login_github": "Login with GitHub",
   "login_google": "Login with Google",
+  "private_messages": "Private Messages",
   "edit_profile": "Edit Profile",
   "logout": "Logout",
   "select_mode": "SELECT MODE",

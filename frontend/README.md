@@ -20,10 +20,10 @@ npm run clean
 
 ```bash
 # Development (avec hot reload)
-docker-compose -f docker-compose.dev.yml up frontend
+docker compose -f docker-compose.dev.yml up frontend
 
 # Production
-docker-compose up frontend
+docker compose up frontend
 ```
 
 ## Utilisation

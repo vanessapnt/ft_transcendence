@@ -374,6 +374,38 @@ body {
     white-space: nowrap;
 }
 
+.language-selector {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.lang-option {
+    padding: 8px 16px;
+    background: transparent;
+    color: #00ff00;
+    border: 2px solid #00ff00;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.6em;
+    text-shadow: 0 0 5px #00ff00;
+    transition: all 0.3s;
+}
+
+.lang-option:hover {
+    background: rgba(0, 255, 0, 0.1);
+    box-shadow: 0 0 10px #00ff00;
+}
+
+.lang-option.active {
+    background: #00ff00;
+    color: #000;
+    text-shadow: none;
+    box-shadow: 0 0 15px #00ff00;
+}
+
 #mode-selection h1 {
     font-size: 3em;
     margin-bottom: 50px;

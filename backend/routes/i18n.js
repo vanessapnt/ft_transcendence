@@ -13,13 +13,8 @@ router.post('/set-language', (req, res) => {
   // if logged in, try persist in DB
   if (req.session.userId) {
     try {
-      // Try to find the appropriate update statement
-      if (statements.updatePreferredLanguage) {
-        statements.updatePreferredLanguage.run(language, req.session.userId);
-      } else if (statements.updateUserPreferredLanguage) {
-        statements.updateUserPreferredLanguage.run(language, req.session.userId);
-      }
-      // If neither exists, just skip DB update (session is enough for now)
+      statements.updateUserLanguage.run(language, req.session.userId);
+      console.log(`✅ Language updated to ${language} for user ${req.session.userId}`);
     } catch (err) {
       console.error('Failed to persist preferred language', err);
       // don't block the response if DB update fails

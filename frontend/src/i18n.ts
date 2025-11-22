@@ -46,6 +46,13 @@ const i18nWrapper = {
       credentials: 'include',
       body: JSON.stringify({ language: lang })
     }).catch(() => {});
+
+    // Update WebSocket chat language if connected
+    const pong = (window as any).PONG;
+    if (pong?.Chat?.ws && pong.Chat.ws.readyState === WebSocket.OPEN) {
+      pong.Chat.ws.send(JSON.stringify({ type: "updateLanguage", language: lang }));
+      console.log(`🌐 Langue du chat mise à jour: ${lang}`);
+    }
   },
 
   t(key: string, params?: any): string {
@@ -70,7 +77,15 @@ const i18nWrapper = {
       if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
         el.placeholder = i18nWrapper.t(key);
       } else {
-        el.textContent = i18nWrapper.t(key);
+        // Check if element has a .menu-text child (for dropdown menu buttons with icons)
+        const menuText = el.querySelector('.menu-text');
+        if (menuText) {
+          // Only update the text span, preserving the icon
+          menuText.textContent = i18nWrapper.t(key);
+        } else {
+          // For simple elements without children, update textContent
+          el.textContent = i18nWrapper.t(key);
+        }
       }
     }
   });
@@ -113,5 +128,25 @@ const i18nWrapper = {
   const pong = (window as any).PONG;
   if (pong?.Tournament && typeof pong.Tournament.updatePlaceholders === 'function') {
     pong.Tournament.updatePlaceholders();
+  }
+
+  // Update block button text after language change
+  if (pong?.Chat && typeof pong.Chat.updateBlockButton === 'function') {
+    pong.Chat.updateBlockButton();
+  }
+
+  // Update Private Messages button text if chat is visible
+  const privateMessagesBtn = document.getElementById('private-messages-btn') as HTMLButtonElement;
+  const chatPanel = document.getElementById('chat-panel') as HTMLElement;
+  if (privateMessagesBtn && chatPanel) {
+    const menuText = privateMessagesBtn.querySelector('.menu-text');
+    if (menuText) {
+      // Update only the text span, preserving the icon
+      if (chatPanel.style.display === 'flex') {
+        menuText.textContent = i18nWrapper.t('chat_hide_messages');
+      } else {
+        menuText.textContent = i18nWrapper.t('private_messages');
+      }
+    }
   }
 };

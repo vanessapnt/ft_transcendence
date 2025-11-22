@@ -58,6 +58,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         }
     }
     function logout() {
+        var _a;
         // Cacher le chat s'il est ouvert
         const chatPanel = document.getElementById('chat-panel');
         if (chatPanel && chatPanel.style.display !== 'none') {
@@ -99,6 +100,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         window.currentAvatarUrl = null;
         window.currentUsername = null;
         window.currentDisplayName = null;
+        // Restaurer la langue du navigateur en supprimant la langue préférée de l'utilisateur
+        localStorage.removeItem('preferred_language');
+        const browserLang = ((_a = navigator.language) === null || _a === void 0 ? void 0 : _a.split('-')[0]) || 'en';
+        if (window.changeLang) {
+            window.changeLang(browserLang);
+            console.log(`🌐 Langue restaurée à celle du navigateur: ${browserLang}`);
+        }
         console.log('✅ User logged out');
         hideGithubLoginIfConnected();
     }
@@ -354,6 +362,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         <input type="text" value="${escapeHtml(currentUsername)}" disabled class="disabled-input">
         <label data-i18n-key="edit_profile_displayname">${i18n ? i18n.t('edit_profile_displayname') : 'Display Name'}</label>
         <input type="text" id="edit-displayname" value="${escapeHtml(currentDisplayName)}" required>
+        <label data-i18n-key="edit_profile_language">${i18n ? i18n.t('edit_profile_language') : 'Preferred Language'}</label>
+        <div class="language-selector">
+            <button type="button" class="lang-option" data-lang="en">English</button>
+            <button type="button" class="lang-option" data-lang="fr">Français</button>
+            <button type="button" class="lang-option" data-lang="es">Español</button>
+        </div>
         <button type="submit" class="auth-submit-btn" data-i18n-key="edit_profile_save">${i18n ? i18n.t('edit_profile_save') : 'Save'}</button>
         <button type="button" id="cancel-edit-profile" class="auth-cancel-btn" data-i18n-key="edit_profile_cancel">${i18n ? i18n.t('edit_profile_cancel') : 'Cancel'}</button>
         <div id="edit-profile-message" class="auth-message"></div>
@@ -361,6 +375,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         homeView.appendChild(form);
         (_a = form.querySelector('.auth-submit-btn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
             console.log('Save button clicked');
+        });
+        // Handle language selector
+        const currentLang = i18n ? i18n.getCurrentLanguage() : 'en';
+        let selectedLanguage = currentLang;
+        const langButtons = form.querySelectorAll('.lang-option');
+        langButtons.forEach(btn => {
+            const button = btn;
+            if (button.dataset.lang === currentLang) {
+                button.classList.add('active');
+            }
+            button.onclick = () => {
+                langButtons.forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                selectedLanguage = button.dataset.lang || 'en';
+            };
         });
         // Handle custom file input
         const fileInput = document.getElementById('edit-avatar');
@@ -404,7 +433,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include', // Ajouté pour envoyer les cookies de session
-                        body: JSON.stringify({ display_name })
+                        body: JSON.stringify({ display_name, preferred_language: selectedLanguage })
                     });
                     const data = yield res.json();
                     if (!res.ok) {
@@ -448,6 +477,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 if (updateOk) {
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = i18n ? i18n.t('edit_profile_success') : 'Profile updated!';
+                    // Change language if it was updated
+                    if (selectedLanguage !== currentLang && window.changeLang) {
+                        yield window.changeLang(selectedLanguage);
+                    }
                     form.remove();
                     if (menu)
                         menu.style.display = '';

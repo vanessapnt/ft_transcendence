@@ -40,6 +40,12 @@
   "chat_confirm_block": "Êtes-vous sûr de vouloir bloquer {{user}} ?",
   "chat_confirm_unblock": "Êtes-vous sûr de vouloir débloquer {{user}} ?",
   "chat_hide_messages": "Cacher les messages",
+  "chat_btn_invite": "Inviter",
+  "chat_btn_invite_title": "Inviter à jouer",
+  "chat_btn_block": "Bloquer",
+  "chat_btn_block_title": "Bloquer l'utilisateur",
+  "chat_btn_unblock": "Débloquer",
+  "chat_btn_unblock_title": "Débloquer l'utilisateur",
 
 
   "chat_error_connection": "❌ Erreur de connexion au chat. Veuillez rafraîchir la page.",
@@ -74,6 +80,7 @@
   "edit_profile_avatar": "Avatar",
   "edit_profile_username": "Nom d'utilisateur (non modifiable)",
   "edit_profile_displayname": "Nom d'affichage",
+  "edit_profile_language": "Langue préférée",
   "edit_profile_save": "Enregistrer",
   "edit_profile_cancel": "Annuler",
   "edit_profile_success": "Profil mis à jour !",

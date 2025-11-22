@@ -60,11 +60,18 @@ router.post('/register', async (req, res) => {
         result.lastInsertRowid
       );
     }
+    
+    // Set preferred language from session if available
+    const preferredLang = req.session.lang || 'en';
+    if (preferredLang !== 'en') {
+      statements.updateUserLanguage.run(preferredLang, result.lastInsertRowid);
+    }
+    
     const user = statements.getUserById.get(result.lastInsertRowid);
 
     // Set session
     req.session.userId = user.id;
-    req.session.lang = user.preferred_language || 'en';
+    req.session.lang = user.preferred_language || preferredLang;
 
     // Return user data (without password)
     const { password_hash, ...userData } = user;

@@ -121,6 +121,14 @@
         (window as any).currentUsername = null;
         (window as any).currentDisplayName = null;
 
+        // Restaurer la langue du navigateur en supprimant la langue préférée de l'utilisateur
+        localStorage.removeItem('preferred_language');
+        const browserLang = navigator.language?.split('-')[0] || 'en';
+        if ((window as any).changeLang) {
+            (window as any).changeLang(browserLang);
+            console.log(`🌐 Langue restaurée à celle du navigateur: ${browserLang}`);
+        }
+
         console.log('✅ User logged out');
         hideGithubLoginIfConnected();
     }
@@ -378,6 +386,12 @@
         <input type="text" value="${escapeHtml(currentUsername)}" disabled class="disabled-input">
         <label data-i18n-key="edit_profile_displayname">${i18n ? i18n.t('edit_profile_displayname') : 'Display Name'}</label>
         <input type="text" id="edit-displayname" value="${escapeHtml(currentDisplayName)}" required>
+        <label data-i18n-key="edit_profile_language">${i18n ? i18n.t('edit_profile_language') : 'Preferred Language'}</label>
+        <div class="language-selector">
+            <button type="button" class="lang-option" data-lang="en">English</button>
+            <button type="button" class="lang-option" data-lang="fr">Français</button>
+            <button type="button" class="lang-option" data-lang="es">Español</button>
+        </div>
         <button type="submit" class="auth-submit-btn" data-i18n-key="edit_profile_save">${i18n ? i18n.t('edit_profile_save') : 'Save'}</button>
         <button type="button" id="cancel-edit-profile" class="auth-cancel-btn" data-i18n-key="edit_profile_cancel">${i18n ? i18n.t('edit_profile_cancel') : 'Cancel'}</button>
         <div id="edit-profile-message" class="auth-message"></div>
@@ -385,6 +399,23 @@
         homeView.appendChild(form);
         form.querySelector('.auth-submit-btn')?.addEventListener('click', () => {
             console.log('Save button clicked');
+        });
+
+        // Handle language selector
+        const currentLang = i18n ? i18n.getCurrentLanguage() : 'en';
+        let selectedLanguage = currentLang;
+        const langButtons = form.querySelectorAll('.lang-option');
+        
+        langButtons.forEach(btn => {
+            const button = btn as HTMLButtonElement;
+            if (button.dataset.lang === currentLang) {
+                button.classList.add('active');
+            }
+            button.onclick = () => {
+                langButtons.forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                selectedLanguage = button.dataset.lang || 'en';
+            };
         });
 
         // Handle custom file input
@@ -432,7 +463,7 @@
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include', // Ajouté pour envoyer les cookies de session
-                        body: JSON.stringify({ display_name })
+                        body: JSON.stringify({ display_name, preferred_language: selectedLanguage })
                     });
                     const data: ApiResponse = await res.json();
 
@@ -485,6 +516,12 @@
                 if (updateOk) {
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = i18n ? i18n.t('edit_profile_success') : 'Profile updated!';
+                    
+                    // Change language if it was updated
+                    if (selectedLanguage !== currentLang && (window as any).changeLang) {
+                        await (window as any).changeLang(selectedLanguage);
+                    }
+                    
                     form.remove();
                     if (menu) menu.style.display = '';
                     const finalAvatar =

@@ -166,8 +166,14 @@
                 this.reconnectDelay = 1000; // Reset délai
 
                 if (this.ws) {
-                    console.log("🔐 Envoi du login:", this.username);
-                    this.ws.send(JSON.stringify({ type: "login", username: this.username }));
+                    const i18n = (window as any).i18n;
+                    const currentLanguage = i18n ? i18n.getCurrentLanguage() : 'en';
+                    console.log("🔐 Envoi du login:", this.username, "langue:", currentLanguage);
+                    this.ws.send(JSON.stringify({ 
+                        type: "login", 
+                        username: this.username,
+                        language: currentLanguage 
+                    }));
                     // Message de bienvenue désactivé
                 }
             };
@@ -444,12 +450,14 @@
             const blockBtn = document.getElementById('block-btn') as HTMLButtonElement;
             if (!blockBtn) return;
 
+            const i18n = (window as any).i18n;
+            
             if (this.currentChatUser && this.blockedUsers.has(this.currentChatUser)) {
-                blockBtn.textContent = '/unblock';
-                blockBtn.title = 'Débloquer l\'utilisateur';
+                blockBtn.textContent = i18n ? i18n.t('chat_btn_unblock') : 'Débloquer';
+                blockBtn.title = i18n ? i18n.t('chat_btn_unblock_title') : 'Débloquer l\'utilisateur';
             } else {
-                blockBtn.textContent = '/block';
-                blockBtn.title = 'Bloquer l\'utilisateur';
+                blockBtn.textContent = i18n ? i18n.t('chat_btn_block') : 'Bloquer';
+                blockBtn.title = i18n ? i18n.t('chat_btn_block_title') : 'Bloquer l\'utilisateur';
             }
         }
 
@@ -641,8 +649,7 @@
                     this.ws.send(JSON.stringify({ type: "block", target }));
                     this.blockedUsers.add(target);
                     this.updateBlockButton();
-                    const i18n = (window as any).i18n;
-                    this.addSystemMessage(i18n ? i18n.t('chat_blocked', { target }) : `Tu bloques ${target}`);
+                    // Message envoyé par le serveur, pas besoin de l'afficher ici
                 } else {
                     const i18n = (window as any).i18n;
                     this.addSystemMessage(i18n ? i18n.t('chat_format_block') : "Format : /block pseudo OU /block \"pseudo avec espaces\"");
@@ -653,8 +660,7 @@
                     this.ws.send(JSON.stringify({ type: "unblock", target }));
                     this.blockedUsers.delete(target);
                     this.updateBlockButton();
-                    const i18n = (window as any).i18n;
-                    this.addSystemMessage(i18n ? i18n.t('chat_unblocked', { target }) : `Tu débloques ${target}`);
+                    // Message envoyé par le serveur, pas besoin de l'afficher ici
                 } else {
                     const i18n = (window as any).i18n;
                     this.addSystemMessage(i18n ? i18n.t('chat_format_unblock') : "Format : /unblock pseudo OU /unblock \"pseudo avec espaces\"");
@@ -665,8 +671,7 @@
                 if (target) {
                     console.log("📤 Envoi de l'invitation au serveur:", { type: "invite", target });
                     this.ws.send(JSON.stringify({ type: "invite", target }));
-                    const i18n = (window as any).i18n;
-                    this.addSystemMessage(i18n ? i18n.t('chat_invite_sent', { target }) : `Invitation envoyée à ${target}`);
+                    // Message envoyé par le serveur, pas besoin de l'afficher ici
                 } else {
                     console.log("❌ Target invalide pour /invite");
                     const i18n = (window as any).i18n;

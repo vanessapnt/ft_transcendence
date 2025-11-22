@@ -1,6 +1,7 @@
 // backend/chat.js
 const WebSocket = require("ws");
 const { statements } = require("./database");
+const { t } = require("./translations");
 
 /**
  * Attache le chat WebSocket à un serveur HTTP existant.
@@ -54,7 +55,7 @@ function setupChat(server) {
   // === Connexion d'un nouveau client ===
   wss.on("connection", (socket) => {
     console.log("💬 Nouvelle connexion WebSocket");
-    clients.set(socket, { username: null, displayName: null, userId: null, blocked: new Set() });
+    clients.set(socket, { username: null, displayName: null, userId: null, blocked: new Set(), language: 'en' });
 
     // Réception d'un message WebSocket
     socket.on("message", (msg) => {
@@ -74,7 +75,7 @@ function setupChat(server) {
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: "Utilisateur non trouvé dans la base de données.",
+                text: t('user_not_found_db', clientData.language || 'en'),
               })
             );
             return;
@@ -92,17 +93,24 @@ function setupChat(server) {
           clientData.username = user.username;
           clientData.displayName = user.display_name || user.username;
           clientData.userId = user.id;
+          // Utiliser la langue envoyée par le client (langue actuelle du site) ou celle de la DB
+          clientData.language = data.language || user.preferred_language || 'en';
 
           console.log("✅ Utilisateur connecté:", {
             username: clientData.username,
             displayName: clientData.displayName,
+            language: clientData.language,
+            preferredLanguageFromDB: user.preferred_language,
             totalConnected: clients.size
           });
 
+          const welcomeMsg = t('welcome', clientData.language, { user: clientData.displayName });
+          console.log(`📨 Envoi message de bienvenue en ${clientData.language}:`, welcomeMsg);
+          
           socket.send(
             JSON.stringify({
               from: "Serveur",
-              text: `Bienvenue ${clientData.displayName}`,
+              text: welcomeMsg,
             })
           );
 
@@ -116,7 +124,7 @@ function setupChat(server) {
               socket.send(
                 JSON.stringify({
                   from: "Serveur",
-                  text: `📬 Vous avez ${undeliveredMessages.length} message(s) en attente`,
+                  text: t('undelivered_messages', clientData.language, { count: undeliveredMessages.length }),
                 })
               );
 
@@ -150,7 +158,7 @@ function setupChat(server) {
           socket.send(
             JSON.stringify({
               from: "Serveur",
-              text: "Tu dois d'abord te connecter au chat.",
+              text: t('must_login_first', clientData.language || 'en'),
             })
           );
           return;
@@ -164,7 +172,7 @@ function setupChat(server) {
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `L'utilisateur ${data.target} n'existe pas.`,
+                text: t('user_not_exists', clientData.language, { user: data.target }),
               })
             );
             return;
@@ -174,7 +182,7 @@ function setupChat(server) {
           socket.send(
             JSON.stringify({
               from: "Serveur",
-              text: `Tu as bloqué ${targetUser.display_name || data.target}`,
+              text: t('you_blocked', clientData.language, { user: targetUser.display_name || data.target }),
             })
           );
           return;
@@ -187,7 +195,7 @@ function setupChat(server) {
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `L'utilisateur ${data.target} n'existe pas.`,
+                text: t('user_not_exists', clientData.language, { user: data.target }),
               })
             );
             return;
@@ -197,7 +205,7 @@ function setupChat(server) {
           socket.send(
             JSON.stringify({
               from: "Serveur",
-              text: `Tu as débloqué ${targetUser.display_name || data.target}`,
+              text: t('you_unblocked', clientData.language, { user: targetUser.display_name || data.target }),
             })
           );
           return;
@@ -214,7 +222,7 @@ function setupChat(server) {
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `L'utilisateur ${data.target} n'existe pas.`,
+                text: t('user_not_exists', clientData.language, { user: data.target }),
               })
             );
             return;
@@ -226,7 +234,7 @@ function setupChat(server) {
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `${targetUser.display_name || data.target} n'est pas connecté actuellement.`,
+                text: t('user_not_connected', clientData.language, { user: targetUser.display_name || data.target }),
               })
             );
             return;
@@ -234,30 +242,31 @@ function setupChat(server) {
 
           const targetData = clients.get(targetSocket);
 
-          // Si la cible a bloqué l'invitant, on ne lui envoie rien
+          // Si la cible a bloqué l'invitant, on ne lui envoie rien (message silencieux)
           if (targetData && targetData.blocked.has(fromUser)) {
+            // Envoyer confirmation à l'expéditeur sans révéler le blocage
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `${data.target} t'a bloqué, invitation ignorée.`,
+                text: t('invitation_sent', clientData.language, { user: targetUser.display_name || data.target }),
               })
             );
             return;
           }
 
-          // Envoi de l'invitation à TOUS les onglets de la cible
+          // Envoi de l'invitation à TOUS les onglets de la cible (avec sa langue)
           const sent = sendToAllUserSockets(data.target, {
             type: "invite",
             from: fromUser,
             fromDisplayName: fromDisplayName,
-            text: `${fromDisplayName} t'invite à jouer à Pong.`,
+            text: t('invite_message', targetData.language, { user: fromDisplayName }),
           });
 
           if (!sent) {
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `${targetUser.display_name || data.target} n'est pas connecté actuellement.`,
+                text: t('invitation_not_sent', clientData.language, { user: targetUser.display_name || data.target }),
               })
             );
             return;
@@ -267,7 +276,7 @@ function setupChat(server) {
           socket.send(
             JSON.stringify({
               from: "Serveur",
-              text: `Invitation envoyée à ${targetData.displayName || data.target}`,
+              text: t('invitation_sent', clientData.language, { user: targetData.displayName || data.target }),
             })
           );
 
@@ -294,6 +303,13 @@ function setupChat(server) {
           return;
         }
 
+        // 5️⃣ Mise à jour de la langue
+        if (data.type === "updateLanguage" && data.language) {
+          clientData.language = data.language;
+          console.log(`🌐 Langue mise à jour pour ${clientData.username}: ${data.language}`);
+          return;
+        }
+
         // 5️⃣ Message direct (DM) entre deux utilisateurs
         if (data.type === "dm" && data.to && data.text) {
           const fromUser = clientData.username;
@@ -305,7 +321,7 @@ function setupChat(server) {
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `L'utilisateur ${data.to} n'existe pas.`,
+                text: t('user_not_exists', clientData.language, { user: data.to }),
               })
             );
             return;
@@ -320,7 +336,7 @@ function setupChat(server) {
               socket.send(
                 JSON.stringify({
                   from: "Serveur",
-                  text: `${targetData.displayName || data.to} a bloqué vos messages.`,
+                  text: t('user_blocked_messages', clientData.language, { user: targetData.displayName || data.to }),
                 })
               );
               return;
@@ -362,7 +378,7 @@ function setupChat(server) {
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `Message livré à ${targetUser.display_name || data.to} (en ligne)`,
+                text: t('message_delivered', clientData.language, { user: targetUser.display_name || data.to }),
               })
             );
           } else {
@@ -370,7 +386,7 @@ function setupChat(server) {
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `Message envoyé à ${targetUser.display_name || data.to} (sera livré à la connexion)`,
+                text: t('message_sent_offline', clientData.language, { user: targetUser.display_name || data.to }),
               })
             );
           }
@@ -434,7 +450,7 @@ function setupChat(server) {
             socket.send(
               JSON.stringify({
                 from: "Serveur",
-                text: `L'utilisateur ${data.target} n'existe pas.`,
+                text: t('user_not_exists', clientData.language, { user: data.target }),
               })
             );
             return;
@@ -468,14 +484,17 @@ function setupChat(server) {
               socket.send(
                 JSON.stringify({
                   from: "Serveur",
-                  text: `Aucun historique de conversation avec ${targetUser.display_name || data.target}.`,
+                  text: t('no_history', clientData.language, { user: targetUser.display_name || data.target }),
                 })
               );
             } else {
               socket.send(
                 JSON.stringify({
                   from: "Serveur",
-                  text: `📜 Historique avec ${targetUser.display_name || data.target} (${history.length} messages):`,
+                  text: t('history_with', clientData.language, { 
+                    user: targetUser.display_name || data.target, 
+                    count: history.length 
+                  }),
                 })
               );
 

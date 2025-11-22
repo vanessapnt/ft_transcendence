@@ -40,6 +40,12 @@
   "chat_confirm_block": "Are you sure you want to block {{user}}?",
   "chat_confirm_unblock": "Are you sure you want to unblock {{user}}?",
   "chat_hide_messages": "Hide Messages",
+  "chat_btn_invite": "Invite",
+  "chat_btn_invite_title": "Invite to play",
+  "chat_btn_block": "Block",
+  "chat_btn_block_title": "Block user",
+  "chat_btn_unblock": "Unblock",
+  "chat_btn_unblock_title": "Unblock user",
 
   
   "chat_error_connection": "❌ Chat connection error. Please refresh the page.",
@@ -74,6 +80,7 @@
   "edit_profile_avatar": "Avatar",
   "edit_profile_username": "Username (not editable)",
   "edit_profile_displayname": "Display Name",
+  "edit_profile_language": "Preferred Language",
   "edit_profile_save": "Save",
   "edit_profile_cancel": "Cancel",
   "edit_profile_success": "Profile updated!",

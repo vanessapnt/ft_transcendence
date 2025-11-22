@@ -384,9 +384,6 @@
                                     if (sendBtn) {
                                         sendBtn.click();
                                     }
-                                    // Changer le bouton en /block
-                                    blockBtn.textContent = '/block';
-                                    blockBtn.title = 'Bloquer l\'utilisateur';
                                 }
                             }
                         } else {
@@ -400,9 +397,6 @@
                                     if (sendBtn) {
                                         sendBtn.click();
                                     }
-                                    // Changer le bouton en /unblock
-                                    blockBtn.textContent = '/unblock';
-                                    blockBtn.title = 'Débloquer l\'utilisateur';
                                 }
                             }
                         }
@@ -415,11 +409,9 @@
 
         // Fonction utilitaire pour récupérer l'utilisateur de la conversation actuelle
         function getCurrentChatUser() {
-            const currentChatEl = document.getElementById('current-chat');
-            if (currentChatEl && currentChatEl.textContent) {
-                const text = currentChatEl.textContent;
-                const match = text.match(/Conversation avec (.+)/);
-                return match ? match[1] : null;
+            // Utiliser la propriété currentChatUser de l'instance Chat
+            if (window.PONG && window.PONG.Chat && window.PONG.Chat.currentChatUser) {
+                return window.PONG.Chat.currentChatUser;
             }
             return null;
         }

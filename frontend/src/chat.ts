@@ -38,10 +38,11 @@
 
         private conversations: Conversations = {};
         private unreadMessages: { [username: string]: number } = {}; // Compteur de messages non lus
-        private currentChatUser: string | null = null;
+        public currentChatUser: string | null = null;
         private username: string | null = null;
         private ws: WebSocket | null = null;
         private historyLoaded: Set<string> = new Set(); // Suivi des historiques chargés
+        public blockedUsers: Set<string> = new Set(); // Liste des utilisateurs bloqués
 
         constructor() {
             this.init();
@@ -250,11 +251,13 @@
             this.historyLoaded.clear();
             this.conversations = {}; // Vider les conversations en mémoire
             this.unreadMessages = {}; // Vider les messages non lus
+            this.blockedUsers.clear(); // Vider la liste des utilisateurs bloqués
             this.currentChatUser = null;
             
             // Mettre à jour l'interface
             this.renderConversationTabs();
             this.updateAvatarNotification();
+            this.updateBlockButton();
 
             // Fermer la connexion WebSocket
             if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
@@ -429,10 +432,24 @@
             }
             this.renderConversationTabs();
             this.renderCurrentConversation();
+            this.updateBlockButton();
 
             // Charger automatiquement l'historique si disponible
             if (user && this.ws && this.ws.readyState === WebSocket.OPEN) {
                 this.loadConversationHistory(user);
+            }
+        }
+
+        public updateBlockButton(): void {
+            const blockBtn = document.getElementById('block-btn') as HTMLButtonElement;
+            if (!blockBtn) return;
+
+            if (this.currentChatUser && this.blockedUsers.has(this.currentChatUser)) {
+                blockBtn.textContent = '/unblock';
+                blockBtn.title = 'Débloquer l\'utilisateur';
+            } else {
+                blockBtn.textContent = '/block';
+                blockBtn.title = 'Bloquer l\'utilisateur';
             }
         }
 
@@ -622,6 +639,8 @@
                 const target = this.parseCommandTarget("/block ", text);
                 if (target) {
                     this.ws.send(JSON.stringify({ type: "block", target }));
+                    this.blockedUsers.add(target);
+                    this.updateBlockButton();
                     const i18n = (window as any).i18n;
                     this.addSystemMessage(i18n ? i18n.t('chat_blocked', { target }) : `Tu bloques ${target}`);
                 } else {
@@ -632,6 +651,8 @@
                 const target = this.parseCommandTarget("/unblock ", text);
                 if (target) {
                     this.ws.send(JSON.stringify({ type: "unblock", target }));
+                    this.blockedUsers.delete(target);
+                    this.updateBlockButton();
                     const i18n = (window as any).i18n;
                     this.addSystemMessage(i18n ? i18n.t('chat_unblocked', { target }) : `Tu débloques ${target}`);
                 } else {

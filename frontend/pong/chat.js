@@ -26,6 +26,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             this.username = null;
             this.ws = null;
             this.historyLoaded = new Set(); // Suivi des historiques chargés
+            this.blockedUsers = new Set(); // Liste des utilisateurs bloqués
             this.reconnectAttempts = 0;
             this.maxReconnectAttempts = 0; // Désactivé - pas de reconnexion automatique
             this.reconnectDelay = 1000; // 1 seconde au début
@@ -137,11 +138,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 this.reconnectAttempts = 0; // Reset compteur de reconnexion
                 this.reconnectDelay = 1000; // Reset délai
                 if (this.ws) {
-                    const i18n = window.i18n;
                     console.log("🔐 Envoi du login:", this.username);
                     this.ws.send(JSON.stringify({ type: "login", username: this.username }));
-                    this.addSystemMessage(i18n ? i18n.t('chat_connected_as', { username: this.username }) : `Tu es connecté en tant que ${this.username}`);
-                    this.addSystemMessage(i18n ? i18n.t('chat_commands_help') : `Commandes : /dm pseudo message, /block pseudo, /unblock pseudo, /invite pseudo, /list, /history pseudo. Pour usernames avec espaces : utilisez des guillemets "/dm "John Doe" message"`);
+                    // Message de bienvenue désactivé
                 }
             };
             this.ws.onmessage = (event) => {
@@ -215,10 +214,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             this.historyLoaded.clear();
             this.conversations = {}; // Vider les conversations en mémoire
             this.unreadMessages = {}; // Vider les messages non lus
+            this.blockedUsers.clear(); // Vider la liste des utilisateurs bloqués
             this.currentChatUser = null;
             // Mettre à jour l'interface
             this.renderConversationTabs();
             this.updateAvatarNotification();
+            this.updateBlockButton();
             // Fermer la connexion WebSocket
             if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
                 this.ws.close();
@@ -384,9 +385,23 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
             this.renderConversationTabs();
             this.renderCurrentConversation();
+            this.updateBlockButton();
             // Charger automatiquement l'historique si disponible
             if (user && this.ws && this.ws.readyState === WebSocket.OPEN) {
                 this.loadConversationHistory(user);
+            }
+        }
+        updateBlockButton() {
+            const blockBtn = document.getElementById('block-btn');
+            if (!blockBtn)
+                return;
+            if (this.currentChatUser && this.blockedUsers.has(this.currentChatUser)) {
+                blockBtn.textContent = '/unblock';
+                blockBtn.title = 'Débloquer l\'utilisateur';
+            }
+            else {
+                blockBtn.textContent = '/block';
+                blockBtn.title = 'Bloquer l\'utilisateur';
             }
         }
         loadConversationHistory(user) {
@@ -559,6 +574,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 const target = this.parseCommandTarget("/block ", text);
                 if (target) {
                     this.ws.send(JSON.stringify({ type: "block", target }));
+                    this.blockedUsers.add(target);
+                    this.updateBlockButton();
                     const i18n = window.i18n;
                     this.addSystemMessage(i18n ? i18n.t('chat_blocked', { target }) : `Tu bloques ${target}`);
                 }
@@ -571,6 +588,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 const target = this.parseCommandTarget("/unblock ", text);
                 if (target) {
                     this.ws.send(JSON.stringify({ type: "unblock", target }));
+                    this.blockedUsers.delete(target);
+                    this.updateBlockButton();
                     const i18n = window.i18n;
                     this.addSystemMessage(i18n ? i18n.t('chat_unblocked', { target }) : `Tu débloques ${target}`);
                 }

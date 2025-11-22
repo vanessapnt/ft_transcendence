@@ -517,13 +517,15 @@
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = i18n ? i18n.t('edit_profile_success') : 'Profile updated!';
                     
-                    // Change language if it was updated
+                    // Close form first
+                    form.remove();
+                    if (menu) menu.style.display = '';
+                    
+                    // Then change language if it was updated
                     if (selectedLanguage !== currentLang && (window as any).changeLang) {
                         await (window as any).changeLang(selectedLanguage);
                     }
                     
-                    form.remove();
-                    if (menu) menu.style.display = '';
                     const finalAvatar =
                         (dataAvatar && dataAvatar.user && (dataAvatar.user.avatar_path || dataAvatar.user.avatar_url))
                         || (dataAvatar && (dataAvatar.avatar_path || dataAvatar.avatar_url))

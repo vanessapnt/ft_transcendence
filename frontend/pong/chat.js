@@ -728,17 +728,96 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 accepted: accept,
             }));
             if (accept) {
-                // Afficher un message avant la redirection
+                // Afficher un message
                 const i18n = window.i18n;
                 this.addSystemMessage(i18n ? i18n.t('chat_launching_game') : "🎮 Lancement du jeu Pong...");
-                // Redirection vers la page Pong avec les noms des joueurs
+                // Fermer le chat panel
+                const chatPanel = document.getElementById('chat-panel');
+                if (chatPanel) {
+                    chatPanel.style.display = 'none';
+                }
+                // Lancer le jeu directement (comme dans le tournoi)
                 setTimeout(() => {
-                    window.location.href = `/pong/?player1=${encodeURIComponent(from)}&player2=${encodeURIComponent(this.username || 'Player')}`;
-                }, 500); // Petit délai pour voir le message
+                    this.launchInvitedGame(from, this.username || 'Player');
+                }, 300);
             }
             else {
                 const i18n = window.i18n;
                 this.addSystemMessage(i18n ? i18n.t('chat_invite_declined', { from }) : `Invitation de ${from} refusée.`);
+            }
+        }
+        launchInvitedGame(player1, player2) {
+            const gameView = document.getElementById('game-view');
+            // Désactiver tous les écrans
+            const screens = document.querySelectorAll('.screen');
+            screens.forEach(screen => {
+                screen.classList.remove('active');
+            });
+            // Activer la vue de jeu
+            if (gameView) {
+                gameView.classList.add('active');
+            }
+            // Cacher les éléments d'interface utilisateur (avatar, boutons de langue, info utilisateur)
+            const avatarContainer = document.getElementById('avatar-container');
+            const langSelector = document.getElementById('lang-selector-container');
+            const userInfo = document.getElementById('user-info');
+            if (avatarContainer)
+                avatarContainer.style.display = 'none';
+            if (langSelector)
+                langSelector.style.display = 'none';
+            if (userInfo)
+                userInfo.style.display = 'none';
+            // Cacher le chat s'il est ouvert
+            const chatPanel = document.getElementById('chat-panel');
+            if (chatPanel) {
+                chatPanel.style.display = 'none';
+            }
+            // Cacher tous les overlays/modals qui pourraient être ouverts
+            const overlays = document.querySelectorAll('.overlay');
+            overlays.forEach(overlay => {
+                overlay.style.display = 'none';
+            });
+            // Supprimer tous les formulaires qui pourraient être ouverts
+            const authForms = document.querySelectorAll('.auth-form');
+            authForms.forEach(form => {
+                form.remove();
+            });
+            const pong = window.PONG;
+            if (pong === null || pong === void 0 ? void 0 : pong.PongGame) {
+                // Configurer les noms des joueurs
+                pong.PongGame.setPlayerNames(player1, player2);
+                // Définir un callback pour la fin du match (retour au menu)
+                pong.PongGame.setCallback((winner) => {
+                    console.log('🏆 Winner:', winner);
+                    // Arrêter le jeu
+                    if (pong.PongGame) {
+                        pong.PongGame.stop();
+                    }
+                    // Réafficher les éléments d'interface utilisateur
+                    const avatarContainer = document.getElementById('avatar-container');
+                    const langSelector = document.getElementById('lang-selector-container');
+                    const userInfo = document.getElementById('user-info');
+                    const dropdownMenu = document.getElementById('user-dropdown-menu');
+                    if (avatarContainer)
+                        avatarContainer.style.display = '';
+                    if (langSelector)
+                        langSelector.style.display = '';
+                    if (userInfo)
+                        userInfo.style.display = '';
+                    if (dropdownMenu) {
+                        dropdownMenu.style.display = '';
+                        dropdownMenu.classList.remove('show'); // Fermer le dropdown s'il était ouvert
+                    }
+                    // Retourner au menu principal
+                    if (pong.Nav) {
+                        pong.Nav.showHome();
+                    }
+                });
+                // Démarrer le jeu
+                pong.PongGame.start();
+            }
+            else {
+                console.error('❌ PongGame not found');
             }
         }
         handleInviteResponse(data) {
@@ -747,17 +826,31 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 return;
             const i18n = window.i18n;
             if (data.accepted) {
-                // Créer un lien cliquable pour rejoindre le jeu
-                const gameUrl = `/pong/?player1=${encodeURIComponent(this.username || 'Player')}&player2=${encodeURIComponent(from)}`;
-                // Créer un message avec un lien cliquable
+                // Afficher un message avec un bouton pour rejoindre
                 const msgDiv = document.createElement("div");
                 msgDiv.classList.add("message", "system");
                 msgDiv.innerHTML = `
-                    <span>${i18n ? i18n.t('chat_invite_accepted', { from }) : `${from} a accepté ton invitation ! La partie se déroule sur l'autre onglet.`}</span>
+                    <span>${i18n ? i18n.t('chat_invite_accepted', { from }) : `${from} a accepté ton invitation !`}</span>
+                    <button id="join-game-btn" style="margin-left: 10px; padding: 5px 10px; background: #00ff00; color: #000; border: none; border-radius: 3px; cursor: pointer; font-family: 'Press Start 2P', monospace; font-size: 0.6em;">
+                        ${i18n ? i18n.t('chat_join_game') : 'Rejoindre'}
+                    </button>
                 `;
                 if (this.chatBox) {
                     this.chatBox.appendChild(msgDiv);
                     this.chatBox.scrollTop = this.chatBox.scrollHeight;
+                    // Ajouter l'événement au bouton
+                    const joinBtn = document.getElementById('join-game-btn');
+                    if (joinBtn) {
+                        joinBtn.addEventListener('click', () => {
+                            // Fermer le chat panel
+                            const chatPanel = document.getElementById('chat-panel');
+                            if (chatPanel) {
+                                chatPanel.style.display = 'none';
+                            }
+                            // Lancer le jeu
+                            this.launchInvitedGame(this.username || 'Player', from);
+                        });
+                    }
                 }
             }
             else {

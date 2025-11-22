@@ -477,13 +477,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 if (updateOk) {
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = i18n ? i18n.t('edit_profile_success') : 'Profile updated!';
-                    // Change language if it was updated
-                    if (selectedLanguage !== currentLang && window.changeLang) {
-                        yield window.changeLang(selectedLanguage);
-                    }
+                    // Close form first
                     form.remove();
                     if (menu)
                         menu.style.display = '';
+                    // Then change language if it was updated
+                    if (selectedLanguage !== currentLang && window.changeLang) {
+                        yield window.changeLang(selectedLanguage);
+                    }
                     const finalAvatar = (dataAvatar && dataAvatar.user && (dataAvatar.user.avatar_path || dataAvatar.user.avatar_url))
                         || (dataAvatar && (dataAvatar.avatar_path || dataAvatar.avatar_url))
                         || window.currentAvatarUrl;

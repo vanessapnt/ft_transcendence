@@ -37,16 +37,18 @@
         overlays.forEach(overlay => {
             overlay.style.display = 'none';
         });
-        // Supprimer le formulaire d'édition de profil s'il est ouvert
+        // Cacher le formulaire d'édition de profil s'il est ouvert
         const editProfileForm = document.getElementById('edit-profile-form');
         if (editProfileForm) {
-            editProfileForm.remove();
+            editProfileForm.style.display = 'none';
         }
-        // Supprimer tous les autres formulaires auth qui pourraient être ouverts
-        const authForms = document.querySelectorAll('.auth-form');
-        authForms.forEach(form => {
-            form.remove();
-        });
+        // Cacher tous les autres formulaires auth qui pourraient être ouverts
+        const signupForm = document.getElementById('signup-form');
+        const loginForm = document.getElementById('login-form');
+        if (signupForm)
+            signupForm.style.display = 'none';
+        if (loginForm)
+            loginForm.style.display = 'none';
         // Réafficher le menu des boutons s'il était caché
         const menuButtons = document.querySelector('.menu-buttons');
         if (menuButtons) {

@@ -25,6 +25,7 @@
     <div id="avatar-container">
         <div id="avatar-wrapper">
             <img id="avatar-img" src="/avatars/default_avatar.png" alt="Avatar">
+            <span id="avatar-notification-badge" class="notification-badge" style="display: none;"></span>
         </div>
         <div id="user-dropdown-menu" class="dropdown-menu">
             <button id="private-messages-btn" data-i18n-key="private_messages">
@@ -62,6 +63,33 @@
         </div>
     </div>
 
+    <!-- Formulaires d'authentification statiques (cachés par défaut) -->
+    <form id="signup-form" class="auth-form" style="display: none;">
+        <h2 data-i18n-key="signup_form_title">Sign Up</h2>
+        <input type="text" id="signup-username" data-i18n-placeholder="signup_username_placeholder" placeholder="Username" required>
+        <input type="email" id="signup-email" data-i18n-placeholder="signup_email_placeholder" placeholder="Email" required>
+        <input type="password" id="signup-password" data-i18n-placeholder="signup_password_placeholder" placeholder="Password" required>
+        <input type="text" id="signup-displayname" data-i18n-placeholder="signup_displayname_placeholder" placeholder="Display Name" required>
+        <div class="auth-btn-row">
+            <button type="submit" class="auth-submit-btn" data-i18n-key="signup_submit">Register</button>
+            <button type="button" id="show-login-from-signup" class="auth-switch-btn" data-i18n-key="already_have_account">Login</button>
+        </div>
+        <button type="button" id="cancel-signup" class="auth-cancel-btn" data-i18n-key="signup_cancel">Cancel</button>
+        <div id="signup-message" class="auth-message"></div>
+    </form>
+
+    <form id="login-form" class="auth-form" style="display: none;">
+        <h2 data-i18n-key="login_form_title">Login</h2>
+        <input type="text" id="login-username" data-i18n-placeholder="login_username_placeholder" placeholder="Username or Email" required>
+        <input type="password" id="login-password" data-i18n-placeholder="login_password_placeholder" placeholder="Password" required>
+        <div class="auth-btn-row">
+            <button type="submit" class="auth-submit-btn" data-i18n-key="login_submit">Login</button>
+            <button type="button" id="show-signup-from-login" class="auth-switch-btn" data-i18n-key="no_account_signup">Sign Up</button>
+        </div>
+        <button type="button" id="cancel-login" class="auth-cancel-btn" data-i18n-key="login_cancel">Cancel</button>
+        <div id="login-message" class="auth-message"></div>
+    </form>
+
     <div id="mode-selection" class="screen">
         <h1 data-i18n-key="select_mode">SELECT MODE</h1>
         <div class="mode-buttons">
@@ -75,7 +103,7 @@
 
     <div id="game-view" class="screen">
         <div class="pause-hint" data-i18n-key="pause_hint">Press SPACE to pause</div>
-        <canvas id="board"></canvas>
+        <canvas id="board" tabindex="0"></canvas>
         <button class="menu-button" onclick="PONG.Nav.showHome()" data-i18n-key="menu">MENU</button>
     </div>
 
@@ -191,6 +219,16 @@
             <h2 data-i18n-key="title_paused">PAUSED</h2>
             <button id="resume-btn" data-i18n-key="resume">RESUME</button>
             <button id="menu-btn" onclick="PONG.Nav.showHome()" data-i18n-key="menu">MENU</button>
+        </div>
+    </div>
+
+    <div id="game-in-progress-overlay" class="overlay" style="display: none;">
+        <div class="overlay-content">
+            <h2 data-i18n-key="game_in_progress_title">🎮 PARTIE EN COURS</h2>
+            <p data-i18n-key="game_in_progress_message"><span id="opponent-name"></span> joue actuellement...</p>
+            <div class="loading-dots">
+                <span>.</span><span>.</span><span>.</span>
+            </div>
         </div>
     </div>
 

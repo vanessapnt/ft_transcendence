@@ -303,7 +303,21 @@ function setupChat(server) {
           return;
         }
 
-        // 5️⃣ Mise à jour de la langue
+        // 5️⃣ Notification de fin de partie
+        if (data.type === "gameEnded" && data.to) {
+          const fromUser = clientData.username;
+          
+          // Envoyer la notification à tous les onglets de l'utilisateur cible
+          sendToAllUserSockets(data.to, {
+            type: "gameEnded",
+            from: fromUser
+          });
+          
+          console.log(`🏁 Notification de fin de partie envoyée de ${fromUser} à ${data.to}`);
+          return;
+        }
+
+        // 6️⃣ Mise à jour de la langue
         if (data.type === "updateLanguage" && data.language) {
           clientData.language = data.language;
           console.log(`🌐 Langue mise à jour pour ${clientData.username}: ${data.language}`);

@@ -349,6 +349,11 @@
                 this.handleInviteResponse(data);
                 return;
             }
+            if (data.type === "gameEnded") {
+                console.log("🏁 Type gameEnded détecté...");
+                this.handleGameEnded(data);
+                return;
+            }
 
             const from = data.from;
             const text = data.text;
@@ -811,6 +816,16 @@
                 // Lancer le jeu directement (comme dans le tournoi)
                 setTimeout(() => {
                     this.launchInvitedGame(from, this.username || 'Player');
+                    
+                    // Donner le focus au document pour que les touches fonctionnent
+                    setTimeout(() => {
+                        const board = document.getElementById('board') as HTMLCanvasElement;
+                        if (board) {
+                            board.focus();
+                        }
+                        // Fallback: focus sur le document
+                        window.focus();
+                    }, 100);
                 }, 300);
             } else {
                 const i18n = (window as any).i18n;
@@ -853,11 +868,13 @@
                 (overlay as HTMLElement).style.display = 'none';
             });
             
-            // Supprimer tous les formulaires qui pourraient être ouverts
-            const authForms = document.querySelectorAll('.auth-form');
-            authForms.forEach(form => {
-                form.remove();
-            });
+            // Cacher tous les formulaires qui pourraient être ouverts
+            const signupForm = document.getElementById('signup-form') as HTMLElement;
+            const loginForm = document.getElementById('login-form') as HTMLElement;
+            const editProfileForm = document.getElementById('edit-profile-form') as HTMLElement;
+            if (signupForm) signupForm.style.display = 'none';
+            if (loginForm) loginForm.style.display = 'none';
+            if (editProfileForm) editProfileForm.style.display = 'none';
             
             const pong = (window as any).PONG;
             if (pong?.PongGame) {
@@ -870,6 +887,16 @@
                     // Arrêter le jeu
                     if (pong.PongGame) {
                         pong.PongGame.stop();
+                    }
+                    
+                    // Notifier l'autre joueur que la partie est terminée
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        // player1 est celui qui a envoyé l'invitation (celui qui attend)
+                        const waitingPlayer = player1 === this.username ? player2 : player1;
+                        this.ws.send(JSON.stringify({
+                            type: "gameEnded",
+                            to: waitingPlayer
+                        }));
                     }
                     
                     // Réafficher les éléments d'interface utilisateur
@@ -894,8 +921,26 @@
                 
                 // Démarrer le jeu
                 pong.PongGame.start();
+                
+                // Donner le focus pour que les touches fonctionnent
+                setTimeout(() => {
+                    const board = document.getElementById('board') as HTMLCanvasElement;
+                    if (board) {
+                        board.focus();
+                    }
+                    window.focus();
+                }, 100);
             } else {
                 console.error('❌ PongGame not found');
+            }
+        }
+
+        private handleGameEnded(data: ChatData): void {
+            console.log("🏁 Partie terminée, fermeture de l'overlay");
+            // Cacher l'overlay "Partie en cours"
+            const gameInProgressOverlay = document.getElementById('game-in-progress-overlay');
+            if (gameInProgressOverlay) {
+                gameInProgressOverlay.style.display = 'none';
             }
         }
 
@@ -905,33 +950,13 @@
 
             const i18n = (window as any).i18n;
             if (data.accepted) {
-                // Afficher un message avec un bouton pour rejoindre
-                const msgDiv = document.createElement("div");
-                msgDiv.classList.add("message", "system");
-                msgDiv.innerHTML = `
-                    <span>${i18n ? i18n.t('chat_invite_accepted', { from }) : `${from} a accepté ton invitation !`}</span>
-                    <button id="join-game-btn" style="margin-left: 10px; padding: 5px 10px; background: #00ff00; color: #000; border: none; border-radius: 3px; cursor: pointer; font-family: 'Press Start 2P', monospace; font-size: 0.6em;">
-                        ${i18n ? i18n.t('chat_join_game') : 'Rejoindre'}
-                    </button>
-                `;
-
-                if (this.chatBox) {
-                    this.chatBox.appendChild(msgDiv);
-                    this.chatBox.scrollTop = this.chatBox.scrollHeight;
-                    
-                    // Ajouter l'événement au bouton
-                    const joinBtn = document.getElementById('join-game-btn');
-                    if (joinBtn) {
-                        joinBtn.addEventListener('click', () => {
-                            // Fermer le chat panel
-                            const chatPanel = document.getElementById('chat-panel');
-                            if (chatPanel) {
-                                chatPanel.style.display = 'none';
-                            }
-                            // Lancer le jeu
-                            this.launchInvitedGame(this.username || 'Player', from);
-                        });
-                    }
+                // Afficher l'overlay "Partie en cours" par-dessus le chat (sans fermer le chat)
+                const gameInProgressOverlay = document.getElementById('game-in-progress-overlay');
+                const opponentNameSpan = document.getElementById('opponent-name');
+                if (gameInProgressOverlay && opponentNameSpan) {
+                    opponentNameSpan.textContent = from;
+                    gameInProgressOverlay.style.display = 'flex';
+                    console.log('✅ Overlay "Partie en cours" affiché pour', from, '(chat reste ouvert)');
                 }
             } else {
                 this.addSystemMessage(
@@ -1026,24 +1051,14 @@
                 totalUnread += this.unreadMessages[user];
             }
             
-            // Chercher ou créer le badge sur l'avatar
-            let badge = document.getElementById('avatar-notification-badge');
+            // Utiliser le badge statique
+            const badge = document.getElementById('avatar-notification-badge');
+            if (!badge) return;
             
             if (totalUnread > 0) {
-                if (!badge) {
-                    // Créer le badge s'il n'existe pas
-                    badge = document.createElement('span');
-                    badge.id = 'avatar-notification-badge';
-                    badge.classList.add('notification-badge');
-                    const avatarWrapper = document.getElementById('avatar-wrapper');
-                    if (avatarWrapper) {
-                        avatarWrapper.appendChild(badge);
-                    }
-                }
                 badge.textContent = totalUnread > 99 ? '99+' : totalUnread.toString();
                 badge.style.display = 'flex';
-            } else if (badge) {
-                // Cacher le badge s'il n'y a plus de messages non lus
+            } else {
                 badge.style.display = 'none';
             }
         }

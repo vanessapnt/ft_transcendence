@@ -1,182 +1,161 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 (function () {
-
-    interface UserData {
-        username: string;
-        display_name: string;
-        id: number;
-        avatar_url: string | null;
-        email?: string;
-        avatar_path?: string | null;
-    }
-
-    interface ApiResponse {
-        username?: string;
-        display_name?: string;
-        id?: number;
-        avatar_url?: string | null;
-        avatar_path?: string | null;
-        error?: string;
-        user?: UserData;
-        message?: string;
-    }
-
-    const API_BASE_URL =
-        window.location.hostname === 'localhost' && window.location.port === '3000'
-            ? 'http://localhost:8000'
-            : '';
-
-
-    function setUser(username: string, displayName: string | null, userId: number, avatarUrl: string | null): void {
+    const API_BASE_URL = window.location.hostname === 'localhost' && window.location.port === '3000'
+        ? 'http://localhost:8000'
+        : '';
+    function setUser(username, displayName, userId, avatarUrl) {
         const userInfo = document.getElementById('user-info');
         const usernameLabel = document.getElementById('username-label');
         const logoutBtn = document.getElementById('logout-btn');
         const editProfileBtn = document.getElementById('edit-profile-btn');
-        const signupBtn = document.querySelector('.signup-btn') as HTMLButtonElement;
-        const avatarImg = document.getElementById('avatar-img') as HTMLImageElement;
-        const loginBtn = document.querySelector('.login-btn') as HTMLButtonElement;
+        const signupBtn = document.querySelector('.signup-btn');
+        const avatarImg = document.getElementById('avatar-img');
+        const loginBtn = document.querySelector('.login-btn');
         const privateMessagesBtn = document.getElementById('private-messages-btn');
-
         if (!userInfo || !usernameLabel || !logoutBtn || !editProfileBtn || !avatarImg) {
             console.error('UI elements not found');
             return;
         }
-
         // Correction : fallback si displayName ou avatarUrl est null/undefined
         const safeDisplayName = displayName || username;
         const safeAvatarUrl = avatarUrl || '/avatars/default_avatar.png';
-
         usernameLabel.textContent = safeDisplayName ? `${escapeHtml(safeDisplayName)} (${escapeHtml(username)})` : escapeHtml(username);
         userInfo.style.display = 'block';
         logoutBtn.style.display = 'inline-block';
         editProfileBtn.style.display = 'inline-block';
-
-        if (loginBtn) loginBtn.style.display = 'none';
-        if (signupBtn) signupBtn.style.display = 'none';
+        if (loginBtn)
+            loginBtn.style.display = 'none';
+        if (signupBtn)
+            signupBtn.style.display = 'none';
         // Créer le bouton Private Messages dynamiquement
-        if ((window as any).createPrivateMessagesButton) {
-            (window as any).createPrivateMessagesButton();
+        if (window.createPrivateMessagesButton) {
+            window.createPrivateMessagesButton();
         }
-        const menu = document.querySelector('.menu-buttons') as HTMLElement;
-        if (menu) menu.style.display = '';
-
-        (window as any).currentUserId = userId;
-        (window as any).currentAvatarUrl = avatarUrl;
-        (window as any).currentUsername = username;
-        (window as any).currentDisplayName = displayName;
-
+        const menu = document.querySelector('.menu-buttons');
+        if (menu)
+            menu.style.display = '';
+        window.currentUserId = userId;
+        window.currentAvatarUrl = avatarUrl;
+        window.currentUsername = username;
+        window.currentDisplayName = displayName;
         avatarImg.src = getAvatarUrl(avatarUrl);
         avatarImg.style.display = 'inline-block';
-
         editProfileBtn.onclick = () => showEditProfile(username, displayName || username);
         logoutBtn.onclick = () => logout();
         hideGithubLoginIfConnected();
-        
         // Initialiser le chat WebSocket après le login
-        if ((window as any).PONG && (window as any).PONG.Chat && (window as any).PONG.Chat.initializeChat) {
+        if (window.PONG && window.PONG.Chat && window.PONG.Chat.initializeChat) {
             console.log('🚀 Initialisation du chat après login');
-            (window as any).PONG.Chat.initializeChat();
+            window.PONG.Chat.initializeChat();
         }
     }
-
-    function logout(): void {
+    function logout() {
         // Cacher le chat s'il est ouvert
         const chatPanel = document.getElementById('chat-panel');
         if (chatPanel && chatPanel.style.display !== 'none') {
             // Utiliser la fonction toggleChat si elle existe
-            if (typeof (window as any).toggleChat === 'function') {
-                (window as any).toggleChat();
-            } else {
+            if (typeof window.toggleChat === 'function') {
+                window.toggleChat();
+            }
+            else {
                 // Sinon cacher manuellement et restaurer les écrans
                 chatPanel.style.display = 'none';
                 const screens = document.querySelectorAll('.screen');
                 const privateMessagesBtn = document.getElementById('private-messages-btn');
-
                 screens.forEach(screen => {
-                    (screen as HTMLElement).style.display = '';
+                    screen.style.display = '';
                 });
-
                 if (privateMessagesBtn) {
                     privateMessagesBtn.textContent = 'Private Messages';
                 }
             }
         }
-
         const userInfo = document.getElementById('user-info');
-        const signupBtn = document.querySelector('.signup-btn') as HTMLButtonElement;
+        const signupBtn = document.querySelector('.signup-btn');
         const avatarImg = document.getElementById('avatar-img');
-        const loginBtn = document.querySelector('.login-btn') as HTMLButtonElement;
+        const loginBtn = document.querySelector('.login-btn');
         const privateMessagesBtn = document.getElementById('private-messages-btn');
-
-        if (userInfo) userInfo.style.display = 'none';
-        if (loginBtn) loginBtn.style.display = 'inline-block';
-        if (signupBtn) signupBtn.style.display = 'inline-block';
-        if (avatarImg) avatarImg.style.display = 'none';
+        if (userInfo)
+            userInfo.style.display = 'none';
+        if (loginBtn)
+            loginBtn.style.display = 'inline-block';
+        if (signupBtn)
+            signupBtn.style.display = 'inline-block';
+        if (avatarImg)
+            avatarImg.style.display = 'none';
         // Supprimer le bouton Private Messages
-        if ((window as any).removePrivateMessagesButton) {
-            (window as any).removePrivateMessagesButton();
+        if (window.removePrivateMessagesButton) {
+            window.removePrivateMessagesButton();
         }
-
-        (window as any).currentUserId = null;
-        (window as any).currentAvatarUrl = null;
-        (window as any).currentUsername = null;
-        (window as any).currentDisplayName = null;
-
+        window.currentUserId = null;
+        window.currentAvatarUrl = null;
+        window.currentUsername = null;
+        window.currentDisplayName = null;
         console.log('✅ User logged out');
         hideGithubLoginIfConnected();
     }
-
-    function getAvatarUrl(url: string | null | undefined): string {
+    function getAvatarUrl(url) {
         const defaultUrl = '/avatars/default_avatar.png';
-        if (!url) return defaultUrl;
-        if (url.startsWith('http://') || url.startsWith('https://')) return url;
-        if (url.startsWith('/avatars/')) return url;
+        if (!url)
+            return defaultUrl;
+        if (url.startsWith('http://') || url.startsWith('https://'))
+            return url;
+        if (url.startsWith('/avatars/'))
+            return url;
         return `/avatars/${url}`;
     }
-
-    function escapeHtml(text: string): string {
-        const map: { [key: string]: string } = {
+    function escapeHtml(text) {
+        const map = {
             '&': '&amp;',
             '<': '&lt;',
             '>': '&gt;',
             '"': '&quot;',
             "'": '&#039;'
         };
-        if (!text) return '';
-        return text.replace(/[&<>"']/g, char => map[char] ?? char);
+        if (!text)
+            return '';
+        return text.replace(/[&<>"']/g, char => { var _a; return (_a = map[char]) !== null && _a !== void 0 ? _a : char; });
     }
-
     // Fonction utilitaire pour cacher le bouton GitHub login si connecté
     function hideGithubLoginIfConnected() {
         const githubBtn = document.getElementById('github-login-btn');
         const googleBtn = document.getElementById('google-login-btn');
-        console.log('hideGithubLoginIfConnected:', { githubBtn, googleBtn, currentUserId: (window as any).currentUserId });
+        console.log('hideGithubLoginIfConnected:', { githubBtn, googleBtn, currentUserId: window.currentUserId });
         if (githubBtn) {
-            if ((window as any).currentUserId) {
+            if (window.currentUserId) {
                 githubBtn.style.display = 'none';
-            } else {
+            }
+            else {
                 githubBtn.style.display = 'inline-block';
             }
         }
         if (googleBtn) {
-            if ((window as any).currentUserId) {
+            if (window.currentUserId) {
                 googleBtn.style.display = 'none';
-            } else {
+            }
+            else {
                 googleBtn.style.display = 'inline-block';
             }
         }
     }
-
-    function showSignup(): void {
-        if (document.getElementById('signup-form')) return;
-
-        const menu = document.querySelector('.menu-buttons') as HTMLElement;
-        if (!menu) return;
-
-        const i18n = (window as any).i18n;
-
+    function showSignup() {
+        var _a;
+        if (document.getElementById('signup-form'))
+            return;
+        const menu = document.querySelector('.menu-buttons');
+        if (!menu)
+            return;
+        const i18n = window.i18n;
         // Masquer le menu
         menu.style.display = 'none';
-
         // Créer le formulaire
         const form = document.createElement('form');
         form.id = 'signup-form';
@@ -194,35 +173,33 @@
         <button type="button" id="cancel-signup" class="auth-cancel-btn" data-i18n-key="signup_cancel">${i18n ? i18n.t('signup_cancel') : 'Cancel'}</button>
         <div id="signup-message" class="auth-message"></div>
     `;
-        menu.parentElement?.appendChild(form);
-
-        form.onsubmit = async (e: Event) => {
+        (_a = menu.parentElement) === null || _a === void 0 ? void 0 : _a.appendChild(form);
+        form.onsubmit = (e) => __awaiter(this, void 0, void 0, function* () {
             e.preventDefault();
-            const username = (document.getElementById('signup-username') as HTMLInputElement).value.trim();
-            const email = (document.getElementById('signup-email') as HTMLInputElement).value.trim();
-            const password = (document.getElementById('signup-password') as HTMLInputElement).value;
-            const display_name = (document.getElementById('signup-displayname') as HTMLInputElement).value.trim();
-            const messageDiv = document.getElementById('signup-message')!;
+            const username = document.getElementById('signup-username').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const display_name = document.getElementById('signup-displayname').value.trim();
+            const messageDiv = document.getElementById('signup-message');
             messageDiv.textContent = '';
-
             if (!username || !email || !password || !display_name) {
                 messageDiv.className = 'auth-message error';
                 messageDiv.textContent = i18n ? i18n.t('signup_error_required') : 'All fields are required';
                 return;
             }
-
             try {
-                const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                const res = yield fetch(`${API_BASE_URL}/api/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ username, email, password, display_name })
                 });
-                const text = await res.text();
-                let data: ApiResponse;
+                const text = yield res.text();
+                let data;
                 try {
                     data = JSON.parse(text);
-                } catch (err) {
+                }
+                catch (err) {
                     data = { error: 'Invalid JSON from backend' };
                 }
                 const user = data.user;
@@ -232,39 +209,38 @@
                     setUser(user.username, user.display_name, user.id, user.avatar_path || '/avatars/default_avatar.png');
                     form.remove();
                     menu.style.display = '';
-                } else {
+                }
+                else {
                     messageDiv.className = 'auth-message error';
                     messageDiv.textContent = data.error || data.message || (i18n ? i18n.t('signup_error_failed') : 'Registration failed');
                 }
-            } catch (err) {
+            }
+            catch (err) {
                 messageDiv.className = 'auth-message error';
                 messageDiv.textContent = i18n ? i18n.t('signup_error_server') : 'Server error: unable to connect';
                 console.error('Signup error:', err);
             }
-        };
-
-        document.getElementById('cancel-signup')!.onclick = () => {
+        });
+        document.getElementById('cancel-signup').onclick = () => {
             form.remove();
             menu.style.display = '';
         };
-        document.getElementById('show-login')!.onclick = () => {
+        document.getElementById('show-login').onclick = () => {
             form.remove();
             menu.style.display = '';
             showLogin();
         };
     }
-
-    function showLogin(): void {
-        if (document.getElementById('login-form')) return;
-
-        const menu = document.querySelector('.menu-buttons') as HTMLElement;
-        if (!menu) return;
-
-        const i18n = (window as any).i18n;
-
+    function showLogin() {
+        var _a;
+        if (document.getElementById('login-form'))
+            return;
+        const menu = document.querySelector('.menu-buttons');
+        if (!menu)
+            return;
+        const i18n = window.i18n;
         // Masquer le menu
         menu.style.display = 'none';
-
         // Créer le formulaire
         const form = document.createElement('form');
         form.id = 'login-form';
@@ -280,13 +256,12 @@
         <button type="button" id="cancel-login" class="auth-cancel-btn" data-i18n-key="login_cancel">${i18n ? i18n.t('login_cancel') : 'Cancel'}</button>
         <div id="login-message" class="auth-message"></div>
     `;
-        menu.parentElement?.appendChild(form);
-
-        form.onsubmit = async (e: Event) => {
+        (_a = menu.parentElement) === null || _a === void 0 ? void 0 : _a.appendChild(form);
+        form.onsubmit = (e) => __awaiter(this, void 0, void 0, function* () {
             e.preventDefault();
             console.log('submit edit-profile-form');
-            const usernameInput = document.getElementById('login-username') as HTMLInputElement | null;
-            const passwordInput = document.getElementById('login-password') as HTMLInputElement | null;
+            const usernameInput = document.getElementById('login-username');
+            const passwordInput = document.getElementById('login-password');
             const messageDiv = document.getElementById('login-message');
             if (!usernameInput || !passwordInput || !messageDiv) {
                 console.error('Login form elements not found');
@@ -295,73 +270,74 @@
             const username = usernameInput.value.trim();
             const password = passwordInput.value;
             messageDiv.textContent = '';
-
             if (!username || !password) {
                 messageDiv.className = 'auth-message error';
                 messageDiv.textContent = i18n ? i18n.t('login_error_required') : 'Username and password are required';
                 return;
             }
-
             try {
-                const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                const res = yield fetch(`${API_BASE_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ username, password })
                 });
-                const data: ApiResponse = await res.json();
-                const user = data.user as UserData;
+                const data = yield res.json();
+                const user = data.user;
                 if (res.ok && user.username && user.display_name && user.id) {
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = i18n ? i18n.t('login_success') : 'Login successful!';
                     setUser(user.username, user.display_name, user.id, user.avatar_path || user.avatar_url || '/avatars/default_avatar.png');
                     form.style.display = 'none';
                     const userInfo = document.getElementById('user-info');
-                    if (userInfo) userInfo.style.display = 'block';
-                } else {
+                    if (userInfo)
+                        userInfo.style.display = 'block';
+                }
+                else {
                     messageDiv.className = 'auth-message error';
                     let reason = data.error || data.message || '';
                     if (!reason) {
                         if (res.status === 401) {
                             reason = i18n ? i18n.t('login_error_invalid') : 'Invalid username or password.';
-                        } else if (res.status === 404) {
+                        }
+                        else if (res.status === 404) {
                             reason = i18n ? i18n.t('login_error_notfound') : 'User not found.';
-                        } else {
+                        }
+                        else {
                             reason = i18n ? i18n.t('login_error_failed') : 'Login failed (unknown error)';
                         }
                     }
                     messageDiv.textContent = reason;
                 }
-            } catch (err) {
+            }
+            catch (err) {
                 messageDiv.className = 'auth-message error';
                 messageDiv.textContent = i18n ? i18n.t('login_error_server') : 'Server error: unable to connect';
                 console.error('Login error:', err);
             }
-        };
-
-        document.getElementById('cancel-login')!.onclick = () => {
+        });
+        document.getElementById('cancel-login').onclick = () => {
             form.remove();
             menu.style.display = '';
         };
-        document.getElementById('show-signup-from-login')!.onclick = () => {
+        document.getElementById('show-signup-from-login').onclick = () => {
             form.remove();
             menu.style.display = '';
             showSignup();
         };
     }
-
-    function showEditProfile(currentUsername: string, currentDisplayName: string): void {
-        if (document.getElementById('edit-profile-form')) return;
-
-        const menu = document.querySelector('.menu-buttons') as HTMLElement;
-        if (menu) menu.style.display = 'none';
-
+    function showEditProfile(currentUsername, currentDisplayName) {
+        var _a;
+        if (document.getElementById('edit-profile-form'))
+            return;
+        const menu = document.querySelector('.menu-buttons');
+        if (menu)
+            menu.style.display = 'none';
         const homeView = document.getElementById('home-view');
-        if (!homeView) return;
-
-        const currentAvatarUrl = (window as any).currentAvatarUrl;
-        const i18n = (window as any).i18n;
-
+        if (!homeView)
+            return;
+        const currentAvatarUrl = window.currentAvatarUrl;
+        const i18n = window.i18n;
         const form = document.createElement('form');
         form.id = 'edit-profile-form';
         form.className = 'auth-form edit-profile-form';
@@ -383,59 +359,54 @@
         <div id="edit-profile-message" class="auth-message"></div>
     `;
         homeView.appendChild(form);
-        form.querySelector('.auth-submit-btn')?.addEventListener('click', () => {
+        (_a = form.querySelector('.auth-submit-btn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
             console.log('Save button clicked');
         });
-
         // Handle custom file input
-        const fileInput = document.getElementById('edit-avatar') as HTMLInputElement;
-        const fileButton = document.getElementById('edit-avatar-btn') as HTMLButtonElement;
-        const fileNameSpan = document.getElementById('edit-avatar-filename') as HTMLSpanElement;
-
+        const fileInput = document.getElementById('edit-avatar');
+        const fileButton = document.getElementById('edit-avatar-btn');
+        const fileNameSpan = document.getElementById('edit-avatar-filename');
         fileButton.onclick = () => {
             fileInput.click();
         };
-
         fileInput.onchange = () => {
             if (fileInput.files && fileInput.files.length > 0) {
                 fileNameSpan.textContent = fileInput.files[0].name;
-            } else {
+            }
+            else {
                 fileNameSpan.textContent = i18n ? i18n.t('edit_profile_no_file') : 'No file selected';
             }
         };
-
-        document.getElementById('cancel-edit-profile')!.onclick = () => {
+        document.getElementById('cancel-edit-profile').onclick = () => {
             form.remove();
-            if (menu) menu.style.display = '';
+            if (menu)
+                menu.style.display = '';
         };
-
-        form.onsubmit = async (e: Event) => {
+        form.onsubmit = (e) => __awaiter(this, void 0, void 0, function* () {
+            var _a;
             e.preventDefault();
             console.log('onsubmit called');
-            const display_name = (document.getElementById('edit-displayname') as HTMLInputElement).value.trim();
-            const messageDiv = document.getElementById('edit-profile-message')!;
-            const avatarFile = (document.getElementById('edit-avatar') as HTMLInputElement).files?.[0];
+            const display_name = document.getElementById('edit-displayname').value.trim();
+            const messageDiv = document.getElementById('edit-profile-message');
+            const avatarFile = (_a = document.getElementById('edit-avatar').files) === null || _a === void 0 ? void 0 : _a[0];
             let updateOk = true;
-            let dataAvatar: ApiResponse | undefined = undefined;
+            let dataAvatar = undefined;
             messageDiv.textContent = '';
-
             if (!display_name) {
                 messageDiv.className = 'auth-message error';
                 messageDiv.textContent = i18n ? i18n.t('edit_profile_error_required') : 'Display name is required';
                 return;
             }
-
             try {
                 // Correction : utiliser la bonne route backend
                 if (display_name) {
-                    const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
+                    const res = yield fetch(`${API_BASE_URL}/api/user/profile`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include', // Ajouté pour envoyer les cookies de session
                         body: JSON.stringify({ display_name })
                     });
-                    const data: ApiResponse = await res.json();
-
+                    const data = yield res.json();
                     if (!res.ok) {
                         updateOk = false;
                         console.log('PUT /api/user/profile failed', data);
@@ -443,71 +414,56 @@
                         messageDiv.textContent = data.error || (i18n ? i18n.t('edit_profile_error_failed') : 'Update failed');
                     }
                 }
-
                 if (avatarFile && updateOk) {
                     console.log('Sending POST /api/user/avatar');
                     const formData = new FormData();
                     formData.append('avatar', avatarFile);
                     // Correction : route avatar
-                    const resAvatar = await fetch(`${API_BASE_URL}/api/user/avatar`, {
+                    const resAvatar = yield fetch(`${API_BASE_URL}/api/user/avatar`, {
                         method: 'POST',
                         body: formData,
                         credentials: 'include' // Ajouté pour envoyer les cookies de session
                     });
-                    dataAvatar = await resAvatar.json();
-
-                    if (
-                        resAvatar.ok &&
-                        (
-                            (dataAvatar.avatar_url) ||
+                    dataAvatar = yield resAvatar.json();
+                    if (resAvatar.ok &&
+                        ((dataAvatar.avatar_url) ||
                             (dataAvatar.avatar_path) ||
-                            (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path))
-                        )
-                    ) {
-                        const avatarImg = document.getElementById('avatar-img') as HTMLImageElement;
-                        const editAvatarImg = document.getElementById('edit-avatar-img') as HTMLImageElement;
-                        const newAvatarUrl = getAvatarUrl(
-                            dataAvatar.avatar_url ||
+                            (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path)))) {
+                        const avatarImg = document.getElementById('avatar-img');
+                        const editAvatarImg = document.getElementById('edit-avatar-img');
+                        const newAvatarUrl = getAvatarUrl(dataAvatar.avatar_url ||
                             dataAvatar.avatar_path ||
-                            (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path))
-                        );
+                            (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path)));
                         avatarImg.src = newAvatarUrl;
                         editAvatarImg.src = newAvatarUrl;
-                        (window as any).currentAvatarUrl = dataAvatar.avatar_url || dataAvatar.avatar_path || (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path));
-                    } else {
+                        window.currentAvatarUrl = dataAvatar.avatar_url || dataAvatar.avatar_path || (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path));
+                    }
+                    else {
                         updateOk = false;
                         console.log('POST /api/user/avatar failed', dataAvatar);
                         messageDiv.className = 'auth-message error';
                         messageDiv.textContent = dataAvatar && dataAvatar.error || (i18n ? i18n.t('edit_profile_error_avatar') : 'Avatar upload failed');
                     }
                 }
-
                 if (updateOk) {
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = i18n ? i18n.t('edit_profile_success') : 'Profile updated!';
                     form.remove();
-                    if (menu) menu.style.display = '';
-                    const finalAvatar =
-                        (dataAvatar && dataAvatar.user && (dataAvatar.user.avatar_path || dataAvatar.user.avatar_url))
+                    if (menu)
+                        menu.style.display = '';
+                    const finalAvatar = (dataAvatar && dataAvatar.user && (dataAvatar.user.avatar_path || dataAvatar.user.avatar_url))
                         || (dataAvatar && (dataAvatar.avatar_path || dataAvatar.avatar_url))
-                        || (window as any).currentAvatarUrl;
-
-                    setUser(
-                        currentUsername,
-                        display_name,
-                        (window as any).currentUserId,
-                        finalAvatar
-                    );
+                        || window.currentAvatarUrl;
+                    setUser(currentUsername, display_name, window.currentUserId, finalAvatar);
                 }
-            } catch (err) {
+            }
+            catch (err) {
                 messageDiv.className = 'auth-message error';
                 messageDiv.textContent = i18n ? i18n.t('edit_profile_error_server') : 'Server error';
                 console.error('Edit profile error:', err);
             }
-        };
-
+        });
     }
-
     // // Au chargement de la page, déconnexion automatique PUIS récupération du profil (dev only)
     // window.addEventListener('DOMContentLoaded', async () => {
     //     try {
@@ -535,50 +491,52 @@
     //         // ignore
     //     }
     // });
-
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener('DOMContentLoaded', () => __awaiter(this, void 0, void 0, function* () {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
+            const res = yield fetch(`${API_BASE_URL}/api/user/profile`, {
                 credentials: 'include'
             });
             if (res.ok) {
-                const data = await res.json();
+                const data = yield res.json();
                 const user = data.user;
                 if (user && user.username && user.display_name && user.id) {
                     setUser(user.username, user.display_name, user.id, user.avatar_path || user.avatar_url || '/avatars/default_avatar.png');
                 }
             }
-        } catch (err) {
+        }
+        catch (err) {
             // ignore
         }
-    });
+    }));
     // Si pas connecté, cacher les éléments utilisateur
     const userInfo = document.getElementById('user-info');
     const avatarImg = document.getElementById('avatar-img');
-    const loginBtn = document.querySelector('.login-btn') as HTMLButtonElement;
-    const signupBtn = document.querySelector('.signup-btn') as HTMLButtonElement;
-    if (userInfo) userInfo.style.display = 'none';
-    if (avatarImg) avatarImg.style.display = 'none';
-    if (loginBtn) loginBtn.style.display = 'inline-block';
-    if (signupBtn) signupBtn.style.display = 'inline-block';
-    if (!(window as any).PONG) {
-        (window as any).PONG = {};
+    const loginBtn = document.querySelector('.login-btn');
+    const signupBtn = document.querySelector('.signup-btn');
+    if (userInfo)
+        userInfo.style.display = 'none';
+    if (avatarImg)
+        avatarImg.style.display = 'none';
+    if (loginBtn)
+        loginBtn.style.display = 'inline-block';
+    if (signupBtn)
+        signupBtn.style.display = 'inline-block';
+    if (!window.PONG) {
+        window.PONG = {};
     }
-
-    (window as any).PONG.showSignup = showSignup;
-    (window as any).PONG.showLogin = showLogin;
-    (window as any).PONG.showEditProfile = showEditProfile;
-    (window as any).PONG.setUser = setUser;
-    (window as any).PONG.logout = logout;
-    (window as any).PONG.oauthLogin = function () {
+    window.PONG.showSignup = showSignup;
+    window.PONG.showLogin = showLogin;
+    window.PONG.showEditProfile = showEditProfile;
+    window.PONG.setUser = setUser;
+    window.PONG.logout = logout;
+    window.PONG.oauthLogin = function () {
         window.location.href = '/api/oauth/login/github';
     };
-    (window as any).PONG.oauthGoogleLogin = function () {
+    window.PONG.oauthGoogleLogin = function () {
         window.location.href = '/api/oauth/login/google';
     };
-    (window as any).showSignup = showSignup;
-    (window as any).showLogin = showLogin;
-
+    window.showSignup = showSignup;
+    window.showLogin = showLogin;
     console.log('✅ User module loaded');
-
 })();
+//# sourceMappingURL=user.js.map

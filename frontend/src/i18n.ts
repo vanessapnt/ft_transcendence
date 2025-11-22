@@ -74,4 +74,44 @@ const i18nWrapper = {
       }
     }
   });
+
+  // Update elements with data-i18n-placeholder attribute
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el: any) => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (key) {
+      el.placeholder = i18nWrapper.t(key);
+    }
+  });
+
+  // Update elements with data-i18n-title attribute
+  document.querySelectorAll('[data-i18n-title]').forEach((el: any) => {
+    const key = el.getAttribute('data-i18n-title');
+    if (key) {
+      el.title = i18nWrapper.t(key);
+    }
+  });
+
+  // Update placeholders for signup form if it exists
+  const signupUsername = document.getElementById('signup-username') as HTMLInputElement;
+  const signupEmail = document.getElementById('signup-email') as HTMLInputElement;
+  const signupPassword = document.getElementById('signup-password') as HTMLInputElement;
+  const signupDisplayname = document.getElementById('signup-displayname') as HTMLInputElement;
+  
+  if (signupUsername) signupUsername.placeholder = i18nWrapper.t('signup_username_placeholder');
+  if (signupEmail) signupEmail.placeholder = i18nWrapper.t('signup_email_placeholder');
+  if (signupPassword) signupPassword.placeholder = i18nWrapper.t('signup_password_placeholder');
+  if (signupDisplayname) signupDisplayname.placeholder = i18nWrapper.t('signup_displayname_placeholder');
+
+  // Update placeholders for login form if it exists
+  const loginUsername = document.getElementById('login-username') as HTMLInputElement;
+  const loginPassword = document.getElementById('login-password') as HTMLInputElement;
+  
+  if (loginUsername) loginUsername.placeholder = i18nWrapper.t('login_username_placeholder');
+  if (loginPassword) loginPassword.placeholder = i18nWrapper.t('login_password_placeholder');
+
+  // Update tournament placeholders if tournament module exists
+  const pong = (window as any).PONG;
+  if (pong?.Tournament && typeof pong.Tournament.updatePlaceholders === 'function') {
+    pong.Tournament.updatePlaceholders();
+  }
 };

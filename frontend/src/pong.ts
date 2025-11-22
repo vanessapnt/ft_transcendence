@@ -25,7 +25,7 @@ function getPlayerName(key: string, fallback: string): string {
     return fallback;
 }
 
-const WINNING_SCORE: number = 5;
+const WINNING_SCORE: number = 1;
 
 let GameEndCallback: ((winner: string) => void) | null = null; // par defaut null mais on peut lui assigner callback(Tournament.onMatchEnd)
 
@@ -219,11 +219,22 @@ function endGame(winner: string): void
     context.fillStyle = "rgba(0, 0, 0, 0.8)";
     context.fillRect(0, 0, boardWidth, boardHeight);
     
+    const i18n = (window as any).i18n;
+    const winnerText = i18n && typeof i18n.t === 'function' ? i18n.t('winner_announcement') : 'WINNER!';
+    
+    // Translate winner name if it's a default player name
+    let displayWinnerName = winner;
+    if (winner === "PLAYER 1") {
+        displayWinnerName = getPlayerName("player_1", "PLAYER 1");
+    } else if (winner === "PLAYER 2") {
+        displayWinnerName = getPlayerName("player_2", "PLAYER 2");
+    }
+    
     context.fillStyle = "#00ff00";
     context.font = "48px 'Press Start 2P', monospace";
     context.textAlign = "center";
-    context.fillText("WINNER!", boardWidth / 2, boardHeight / 2 - 30);
-    context.fillText(winner, boardWidth / 2, boardHeight / 2 + 30);
+    context.fillText(winnerText, boardWidth / 2, boardHeight / 2 - 30);
+    context.fillText(displayWinnerName, boardWidth / 2, boardHeight / 2 + 30);
     context.textAlign = "left";
     
     if (GameEndCallback)

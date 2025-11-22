@@ -92,8 +92,14 @@ build:
 # Nettoyer tout (dev et prod)
 clean:
 	@echo "🧹 Nettoyage complet..."
+	@echo "🛑 Arrêt forcé de tous les conteneurs du projet..."
 	-docker compose -f docker-compose.dev.yml down -v --remove-orphans 2>/dev/null
 	-docker compose -f docker-compose.prod.yml down -v --remove-orphans 2>/dev/null
+	@echo "🗑️ Suppression des conteneurs spécifiques du projet..."
+	-docker rm -f elasticsearch-prod elasticsearch-dev kibana-prod kibana-dev logstash-prod logstash-dev filebeat-prod filebeat-dev prometheus-prod prometheus-dev grafana-prod grafana-dev nginx-prod nginx-dev backend-prod backend-dev frontend-prod frontend-dev node-exporter-prod node-exporter-dev 2>/dev/null || true
+	@echo "🗑️ Suppression de tous les conteneurs restants du projet..."
+	-docker ps -aq --filter "name=elasticsearch" --filter "name=kibana" --filter "name=logstash" --filter "name=filebeat" --filter "name=prometheus" --filter "name=grafana" --filter "name=nginx" --filter "name=backend" --filter "name=frontend" --filter "name=node-exporter" --filter "name=testtrans" | xargs -r docker rm -f 2>/dev/null || true
+	@echo "🧹 Nettoyage du système Docker..."
 	docker system prune -f
 	@echo "✨ Nettoyage terminé !"
 

@@ -153,6 +153,33 @@ class Navigation
     private handleRouteChange(): void
     {
         const hash = window.location.hash;
+        const chatPanel = document.getElementById('chat-panel');
+        const editProfileForm = document.getElementById('edit-profile-form') as HTMLElement;
+        
+        // Fermer le chat si on n'est pas sur #chat
+        if (hash !== '#chat' && chatPanel && chatPanel.classList.contains('active')) {
+            chatPanel.classList.remove('active');
+            // Mettre à jour le bouton Private Messages
+            const privateMessagesBtn = document.getElementById('private-messages-btn');
+            if (privateMessagesBtn) {
+                const menuText = privateMessagesBtn.querySelector('.menu-text');
+                const i18n = (window as any).i18n;
+                if (menuText) {
+                    menuText.textContent = i18n ? i18n.t('private_messages') : 'Private Messages';
+                }
+            }
+        }
+        
+        // Fermer le formulaire edit profile si on n'est pas sur #edit-profile
+        if (hash !== '#edit-profile' && editProfileForm && editProfileForm.style.display !== 'none') {
+            editProfileForm.style.display = 'none';
+            // S'assurer qu'un screen soit actif
+            const hasActiveScreen = Array.from(document.querySelectorAll('.screen')).some(s => s.classList.contains('active'));
+            if (!hasActiveScreen) {
+                const homeView = document.getElementById('home-view');
+                if (homeView) homeView.classList.add('active');
+            }
+        }
         
         if (hash === '#home' || hash === '') {
             this.showHome();
@@ -162,6 +189,21 @@ class Navigation
             this.showTournament();
         } else if (hash === '#mode') {
             this.showModeSelection();
+        } else if (hash === '#chat') {
+            // Ouvrir le chat
+            if ((window as any).toggleChat) {
+                if (chatPanel && !chatPanel.classList.contains('active')) {
+                    (window as any).toggleChat();
+                }
+            }
+        } else if (hash === '#edit-profile') {
+            // Ouvrir le formulaire d'édition de profil
+            this.showHome();
+            if ((window as any).PONG && (window as any).PONG.showEditProfile) {
+                const currentUsername = (window as any).currentUsername || '';
+                const currentDisplayName = (window as any).currentDisplayName || '';
+                (window as any).PONG.showEditProfile(currentUsername, currentDisplayName);
+            }
         }
     }
 

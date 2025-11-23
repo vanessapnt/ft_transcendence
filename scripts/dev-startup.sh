@@ -29,8 +29,11 @@ SERVICE_NAMES=(
 print_header() {
     echo ""
     echo -e "${BOLD}${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BOLD}${BLUE}║                   🚀 TRANSCENDENCE DEV                       ║${NC}"
+    echo -e "${BOLD}${BLUE}║                                                              ║${NC}"
+    echo -e "${BOLD}${BLUE}║                   🚀 TRANSCENDENCE - DEV 🎮                  ║${NC}"
+    echo -e "${BOLD}${BLUE}║                                                              ║${NC}"
     echo -e "${BOLD}${BLUE}║              Démarrage de l'environnement...                 ║${NC}"
+    echo -e "${BOLD}${BLUE}║                                                              ║${NC}"
     echo -e "${BOLD}${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
@@ -38,49 +41,23 @@ print_header() {
 show_progress_bar() {
     local current=$1
     local total=$2
-    local width=50
-    local percentage=$((current * 100 / total))
-    local filled=$((current * width / total))
-    local empty=$((width - filled))
     
-    printf "\r${YELLOW}[${NC}"
-    printf "%*s" $filled | tr ' ' '#'
-    printf "%*s" $empty | tr ' ' '-'
-    printf "${YELLOW}] %d%% (%d/%d services)${NC}" $percentage $current $total
+    echo -ne "\r${YELLOW}Démarrage: ${NC}"
+    for i in "${!SERVICES[@]}"; do
+        if [ $i -lt $current ]; then
+            echo -ne "✅ "
+        elif [ $i -eq $current ]; then
+            echo -ne "🔄 "
+        else
+            echo -ne "⏳ "
+        fi
+    done
+    echo -ne "($current/$total)${NC}"
 }
 
 show_individual_progress() {
-    local service_states=("$@")
-    
-    echo ""
-    echo -e "${BLUE}📋 État des services :${NC}"
-    echo ""
-    
-    for i in "${!SERVICES[@]}"; do
-        local service_name="${SERVICE_NAMES[$i]}"
-        local status="${service_states[$i]}"
-        local bar_width=30
-        # Efface la ligne avant d'afficher le nouveau statut
-        tput el
-        # Remplace les caractères unicode par des caractères ASCII
-        local filled_bar=$(printf "%*s" $bar_width | tr ' ' '#')
-        local empty_bar=$(printf "%*s" $bar_width | tr ' ' '-')
-        if [ "$status" = "ready" ]; then
-            printf "  %-25s ${GREEN}[%s] READY${NC}\n" "$service_name" "$filled_bar"
-        elif [ "$status" = "starting" ]; then
-            local filled=$((bar_width * 3 / 4))
-            local empty=$((bar_width - filled))
-            local filled_bar=$(printf "%*s" $filled | tr ' ' '#')
-            local empty_bar=$(printf "%*s" $empty | tr ' ' '-')
-            printf "  %-25s ${YELLOW}[%s%s] STARTING${NC}\n" "$service_name" "$filled_bar" "$empty_bar"
-        else
-            local filled=$((bar_width / 4))
-            local empty=$((bar_width - filled))
-            local filled_bar=$(printf "%*s" $filled | tr ' ' '#')
-            local empty_bar=$(printf "%*s" $empty | tr ' ' '-')
-            printf "  %-25s ${RED}[%s%s] WAITING${NC}\n" "$service_name" "$filled_bar" "$empty_bar"
-        fi
-    done
+    # Cette fonction est supprimée - simplification du script
+    return 0
 }
 
 check_service_health() {
@@ -131,42 +108,23 @@ check_service_health() {
 wait_for_services() {
     echo -e "${BLUE}⏳ Attente du démarrage des services...${NC}"
     echo ""
+    
     local ready_count=0
     local max_attempts=60
     local attempt=0
-    local service_states=()
-    local lines_to_overwrite=0
-
-    # Initialiser les états des services
-    for i in "${!SERVICES[@]}"; do
-        service_states[$i]="waiting"
-    done
-
-    # Affichage initial
-    echo -e "${BLUE}⏳ Attente du démarrage des services...${NC}"
-    show_progress_bar 0 ${#SERVICES[@]}
-    show_individual_progress "${service_states[@]}"
-    lines_to_overwrite=$((4 + ${#SERVICES[@]}))
 
     while [ $ready_count -lt ${#SERVICES[@]} ] && [ $attempt -lt $max_attempts ]; do
         ready_count=0
-        # Vérifier chaque service et mettre à jour son état
+        
         for i in "${!SERVICES[@]}"; do
             if check_service_health "${SERVICE_URLS[$i]}" "${SERVICE_NAMES[$i]}"; then
-                service_states[$i]="ready"
                 ((ready_count++))
-            elif [ $attempt -gt 10 ]; then
-                if [ "${service_states[$i]}" != "ready" ]; then
-                    service_states[$i]="starting"
-                fi
             fi
         done
-        # Replacer le curseur en haut de la zone d'affichage
-        tput cuu $lines_to_overwrite
-        tput el
-        echo -e "${BLUE}⏳ Attente du démarrage des services...${NC}"
-        show_progress_bar $ready_count ${#SERVICES[@]}
-        show_individual_progress "${service_states[@]}"
+        
+        local percentage=$((ready_count * 100 / ${#SERVICES[@]}))
+        echo -ne "\r${YELLOW}Progress: ${NC}$percentage% ($ready_count/${#SERVICES[@]} services)"
+        
         if [ $ready_count -lt ${#SERVICES[@]} ]; then
             sleep 2
             ((attempt++))
@@ -175,10 +133,11 @@ wait_for_services() {
 
     echo ""
     echo ""
+    
     if [ $ready_count -eq ${#SERVICES[@]} ]; then
-        echo -e "${GREEN}✅ Tous les services sont prêts !${NC}"
+        echo -e "${GREEN}✅ Tous les services sont démarrés !${NC}"
     else
-        echo -e "${RED}⚠️  Certains services ne sont pas encore prêts (timeout atteint)${NC}"
+        echo -e "${YELLOW}⚠️  Certains services ne sont pas encore prêts${NC}"
     fi
 }
 

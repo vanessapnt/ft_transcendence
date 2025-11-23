@@ -327,6 +327,11 @@ body {
     background: #0066cc;
 }
 
+.edit-profile-form {
+    position: relative;
+    z-index: 150;
+}
+
 .edit-profile-form .edit-avatar-preview {
     width: 80px;
     height: 80px;

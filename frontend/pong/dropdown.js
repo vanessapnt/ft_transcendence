@@ -23,22 +23,19 @@
         });
         // Gérer le clic sur Private Messages
         privateMessagesBtn.addEventListener('click', function () {
+            window.history.pushState({ page: 'chat' }, '', '#chat');
             if (window.toggleChat)
                 window.toggleChat();
             dropdownMenu.classList.remove('show');
         });
         // Gérer le clic sur Edit Profile
         editProfileBtn.addEventListener('click', function () {
+            window.history.pushState({ page: 'edit-profile' }, '', '#edit-profile');
             dropdownMenu.classList.remove('show');
             // Fermer le chat s'il est ouvert
             const chatPanel = document.getElementById('chat-panel');
-            if (chatPanel && chatPanel.style.display === 'flex') {
-                chatPanel.style.display = 'none';
-                // Réafficher les écrans du jeu
-                const screens = document.querySelectorAll('.screen');
-                screens.forEach(screen => {
-                    screen.style.display = 'block';
-                });
+            if (chatPanel && chatPanel.classList.contains('active')) {
+                chatPanel.classList.remove('active');
             }
         });
         // Gérer le clic sur Logout

@@ -27,6 +27,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             this.ws = null;
             this.historyLoaded = new Set(); // Suivi des historiques chargés
             this.blockedUsers = new Set(); // Liste des utilisateurs bloqués
+            this.friendsOnly = false; // Filtrage par amis
+            this.friendsList = new Set(); // Liste des amis
+            this.onlineUsers = new Set(); // Liste des utilisateurs en ligne
             this.reconnectAttempts = 0;
             this.maxReconnectAttempts = 0; // Désactivé - pas de reconnexion automatique
             this.reconnectDelay = 1000; // 1 seconde au début
@@ -49,9 +52,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 this.profileUsername = document.getElementById("profile-modal-username");
                 this.profileAvatar = document.getElementById("profile-modal-avatar");
                 this.setupEventListeners();
+                // Ajouter l'event listener pour le switch Friends Only
+                const friendsToggle = document.getElementById("friends-only-toggle");
+                if (friendsToggle) {
+                    friendsToggle.addEventListener("change", () => {
+                        this.friendsOnly = friendsToggle.checked;
+                        console.log("🔄 Filtre amis:", this.friendsOnly ? "activé" : "désactivé");
+                        this.renderConversationTabs();
+                    });
+                }
                 console.log('✅ Chat DOM initialized');
-                // NE PAS initialiser automatiquement - attendre le login/signup
-                // this.initializeChat();
             });
         }
         // Méthode publique pour initialiser le chat après login
@@ -73,6 +83,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                         if (data.user && data.user.username) {
                             this.username = data.user.username;
                             console.log("✅ Username récupéré:", this.username);
+                            // Charger la liste des amis
+                            yield this.loadFriendsList();
                             // Charger les conversations maintenant qu'on a le username
                             this.loadConversationsFromStorage();
                             // Connecter le WebSocket
@@ -90,6 +102,31 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 catch (e) {
                     console.warn("❌ Erreur lors de la récupération du profil:", e);
                 }
+            });
+        }
+        loadFriendsList() {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const response = yield fetch('/api/friends/list', {
+                        credentials: 'include'
+                    });
+                    if (response.ok) {
+                        const data = yield response.json();
+                        this.friendsList = new Set(data.friends.map((f) => f.username));
+                        console.log("✅ Liste d'amis chargée:", this.friendsList.size, "amis");
+                    }
+                }
+                catch (error) {
+                    console.error("❌ Erreur lors du chargement de la liste d'amis:", error);
+                }
+            });
+        }
+        // Méthode publique pour rafraîchir la liste des amis
+        refreshFriendsList() {
+            return __awaiter(this, void 0, void 0, function* () {
+                yield this.loadFriendsList();
+                this.renderConversationTabs();
+                console.log("🔄 Liste d'amis rafraîchie");
             });
         }
         setupWebSocket() {
@@ -316,6 +353,32 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 this.handleGameEnded(data);
                 return;
             }
+            // Gestion du statut en ligne des utilisateurs
+            if (data.type === "userOnline") {
+                if (data.username) {
+                    this.onlineUsers.add(data.username);
+                    console.log(`🟢 ${data.username} est maintenant en ligne`);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
+            if (data.type === "userOffline") {
+                if (data.username) {
+                    this.onlineUsers.delete(data.username);
+                    console.log(`🔴 ${data.username} est maintenant hors ligne`);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
+            // Liste des utilisateurs en ligne
+            if (data.type === "onlineUsersList") {
+                if (data.users && Array.isArray(data.users)) {
+                    this.onlineUsers = new Set(data.users);
+                    console.log(`📅 Liste des utilisateurs en ligne reçue:`, data.users);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
             const from = data.from;
             const text = data.text;
             if (!from || !text)
@@ -397,6 +460,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             this.renderConversationTabs();
             this.renderCurrentConversation();
             this.updateBlockButton();
+            // Vérifier le statut d'ami et mettre à jour le bouton
+            if (user && window.checkAndUpdateFriendButton) {
+                window.checkAndUpdateFriendButton(user);
+            }
             // Charger automatiquement l'historique si disponible
             if (user && this.ws && this.ws.readyState === WebSocket.OPEN) {
                 this.loadConversationHistory(user);
@@ -432,7 +499,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             if (!this.conversationTabs)
                 return;
             this.conversationTabs.innerHTML = "";
-            Object.keys(this.conversations).forEach((user) => {
+            // Filtrer les conversations selon le switch
+            let users = Object.keys(this.conversations);
+            if (this.friendsOnly) {
+                users = users.filter(user => this.friendsList.has(user));
+            }
+            users.forEach((user) => {
                 const tab = document.createElement("button");
                 tab.classList.add("conversation-tab");
                 if (user === this.currentChatUser)
@@ -446,6 +518,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     avatar.src = '/api/user/avatar/default';
                 };
                 tab.appendChild(avatar);
+                // Créer un conteneur pour l'avatar et l'indicateur de statut
+                const avatarContainer = document.createElement("div");
+                avatarContainer.classList.add("conversation-tab-avatar-container");
+                avatarContainer.style.position = "relative";
+                avatarContainer.style.display = "inline-block";
+                // Ajouter la pastille de statut
+                const statusIndicator = document.createElement("div");
+                statusIndicator.classList.add("status-indicator");
+                // Déterminer le statut en ligne
+                const isOnline = this.onlineUsers && this.onlineUsers.has(user);
+                statusIndicator.classList.add(isOnline ? 'online' : 'offline');
+                avatarContainer.appendChild(avatar);
+                avatarContainer.appendChild(statusIndicator);
+                tab.appendChild(avatarContainer);
                 // Créer un conteneur pour le nom et le badge
                 const contentDiv = document.createElement("div");
                 contentDiv.classList.add("conversation-tab-content");

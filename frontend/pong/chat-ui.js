@@ -1,3 +1,12 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 // Chat UI management functions
 // Fonction pour afficher/cacher le chat
 window.toggleChat = function toggleChat() {
@@ -212,30 +221,39 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     const addFriendBtn = document.getElementById('add-friend-btn');
     if (addFriendBtn) {
-        addFriendBtn.addEventListener('click', async function () {
-            const currentUser = window.getCurrentChatUser();
-            if (!currentUser) {
-                const i18n = window.i18n;
-                alert(i18n ? i18n.t('chat_no_conversation') : 'Aucune conversation sélectionnée');
-                return;
-            }
-            try {
-                const response = await fetch('/api/friends/add', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: currentUser })
-                });
-                const data = await response.json();
-                if (response.ok) {
+        addFriendBtn.addEventListener('click', function () {
+            return __awaiter(this, void 0, void 0, function* () {
+                var _a, _b;
+                const currentUser = window.getCurrentChatUser();
+                if (!currentUser) {
                     const i18n = window.i18n;
-                    alert(i18n ? i18n.t('friend_added_success') : 'Ami ajouté avec succès');
-                } else {
-                    alert(data.error || 'Erreur lors de l\'ajout d\'ami');
+                    alert(i18n ? i18n.t('chat_no_conversation') : 'Aucune conversation sélectionnée');
+                    return;
                 }
-            } catch (error) {
-                console.error('Erreur:', error);
-                alert('Erreur réseau');
-            }
+                try {
+                    const response = yield fetch('/api/friends/add', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: currentUser })
+                    });
+                    const data = yield response.json();
+                    if (response.ok) {
+                        const i18n = window.i18n;
+                        alert(i18n ? i18n.t('friend_added_success', { user: currentUser }) : `${currentUser} a été ajouté en ami`);
+                        // Rafraîchir la liste d'amis
+                        if ((_b = (_a = window.PONG) === null || _a === void 0 ? void 0 : _a.Chat) === null || _b === void 0 ? void 0 : _b.refreshFriendsList) {
+                            yield window.PONG.Chat.refreshFriendsList();
+                        }
+                    }
+                    else {
+                        alert(data.error || 'Erreur lors de l\'ajout d\'ami');
+                    }
+                }
+                catch (error) {
+                    console.error('Erreur:', error);
+                    alert('Erreur réseau');
+                }
+            });
         });
     }
     // Observer les changements dans le titre de la conversation pour réinitialiser le bouton

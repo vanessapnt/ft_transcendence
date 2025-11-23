@@ -81,7 +81,23 @@ app.use('/api/matches', require('./routes/matches'));
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  const fs = require('fs');
+  const path = require('path');
+  const dbPath = path.join(__dirname, 'data', 'transcendence.db');
+
+  let dbTimestamp = null;
+  try {
+    const stats = fs.statSync(dbPath);
+    dbTimestamp = stats.mtime.getTime(); // timestamp en millisecondes
+  } catch (e) {
+    dbTimestamp = null;
+  }
+
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    dbTimestamp: dbTimestamp // timestamp du fichier de la BD
+  });
 });
 
 // 404 handler

@@ -319,6 +319,26 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
         }
         // Méthode publique pour effacer toutes les conversations
+        deleteConversation(user) {
+            if (this.conversations[user]) {
+                delete this.conversations[user];
+                if (this.unreadMessages[user]) {
+                    delete this.unreadMessages[user];
+                }
+                if (this.historyLoaded.has(user)) {
+                    this.historyLoaded.delete(user);
+                }
+                // Si c'est la conversation active, changer
+                if (this.currentChatUser === user) {
+                    this.currentChatUser = null;
+                    this.renderCurrentConversation();
+                }
+                this.saveConversationsToStorage();
+                this.renderConversationTabs();
+                this.updateAvatarNotification();
+                console.log(`🗑️ Conversation avec ${user} supprimée`);
+            }
+        }
         clearAllConversations() {
             this.conversations = {};
             this.currentChatUser = null;
@@ -557,6 +577,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     badge.textContent = unreadCount > 99 ? "99+" : unreadCount.toString();
                     tab.appendChild(badge);
                 }
+                // Ajouter la croix pour supprimer la conversation
+                const deleteBtn = document.createElement("button");
+                deleteBtn.classList.add("conversation-delete-btn");
+                deleteBtn.innerHTML = "✕";
+                deleteBtn.title = `Supprimer la conversation avec ${user}`;
+                deleteBtn.addEventListener("click", (e) => {
+                    e.stopPropagation(); // Empêcher de activer la tab
+                    this.deleteConversation(user);
+                });
+                tab.appendChild(deleteBtn);
                 tab.addEventListener("click", () => {
                     this.setCurrentChatUser(user);
                 });

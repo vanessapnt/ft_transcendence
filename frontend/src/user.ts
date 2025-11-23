@@ -25,6 +25,47 @@
             ? 'http://localhost:8000'
             : '';
 
+    // Vérifier l'intégrité du localStorage comparé à la BD
+    async function checkAndCleanLocalStorage(): Promise<void> {
+        try {
+            const response = await fetch(`${API_BASE_URL}/health`);
+            const data: any = await response.json();
+
+            const storedDbTimestamp = localStorage.getItem('dbTimestamp');
+            const currentDbTimestamp = data.dbTimestamp;
+
+            // Si le timestamp de la BD a changé, vider tout le localStorage du chat
+            if (storedDbTimestamp && storedDbTimestamp !== currentDbTimestamp.toString()) {
+                console.log('🔄 Base de données réinitialisée, nettoyage du localStorage...');
+                // Supprimer toutes les clés de conversations du localStorage
+                const keysToRemove: string[] = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('chat_conversations_')) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                    console.log(`🗑️ Supprimé: ${key}`);
+                });
+            }
+
+            // Toujours mettre à jour le timestamp de la BD dans localStorage
+            if (currentDbTimestamp) {
+                localStorage.setItem('dbTimestamp', currentDbTimestamp.toString());
+            }
+        } catch (e) {
+            console.warn('⚠️ Impossible de vérifier l\'intégrité du localStorage:', e);
+        }
+    }
+
+    // Appeler la vérification au chargement
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', checkAndCleanLocalStorage);
+    } else {
+        checkAndCleanLocalStorage();
+    }
 
     function setUser(username: string, displayName: string | null, userId: number, avatarUrl: string | null): void {
         const userInfo = document.getElementById('user-info');
@@ -70,7 +111,7 @@
         editProfileBtn.onclick = () => showEditProfile(username, displayName || username);
         logoutBtn.onclick = () => logout();
         hideGithubLoginIfConnected();
-        
+
         // Initialiser le chat WebSocket après le login
         if ((window as any).PONG && (window as any).PONG.Chat && (window as any).PONG.Chat.initializeChat) {
             console.log('🚀 Initialisation du chat après login');
@@ -190,7 +231,7 @@
         // Masquer le menu et afficher le formulaire
         menu.style.display = 'none';
         form.style.display = 'block';
-        
+
         // Réinitialiser le formulaire
         form.reset();
         const messageDiv = document.getElementById('signup-message')!;
@@ -200,7 +241,42 @@
         // Setup form submission (only once)
         if (!form.dataset.initialized) {
             form.dataset.initialized = 'true';
-            
+
+            // Setup password requirements display
+            const passwordInput = document.getElementById('signup-password') as HTMLInputElement;
+            const requirementsDiv = document.getElementById('password-requirements') as HTMLElement;
+            const reqLength = document.getElementById('req-length') as HTMLElement;
+
+            if (passwordInput && requirementsDiv && reqLength) {
+                // Remove old listeners to avoid duplicates
+                passwordInput.removeEventListener('focus', null as any);
+                passwordInput.removeEventListener('input', null as any);
+                passwordInput.removeEventListener('blur', null as any);
+
+                passwordInput.addEventListener('focus', () => {
+                    requirementsDiv.style.display = 'block';
+                });
+
+                passwordInput.addEventListener('input', () => {
+                    const password = passwordInput.value;
+                    const isValid = password.length >= 6;
+
+                    if (isValid) {
+                        reqLength.classList.add('met');
+                        reqLength.textContent = '✅ ' + (i18n ? i18n.t('password_req_length') : 'At least 6 characters');
+                    } else {
+                        reqLength.classList.remove('met');
+                        reqLength.textContent = '❌ ' + (i18n ? i18n.t('password_req_length') : 'At least 6 characters');
+                    }
+                });
+
+                passwordInput.addEventListener('blur', () => {
+                    if (!passwordInput.value) {
+                        requirementsDiv.style.display = 'none';
+                    }
+                });
+            }
+
             form.onsubmit = async (e: Event) => {
                 e.preventDefault();
                 const username = (document.getElementById('signup-username') as HTMLInputElement).value.trim();
@@ -252,7 +328,7 @@
                 form.style.display = 'none';
                 menu.style.display = '';
             };
-            
+
             document.getElementById('show-login-from-signup')!.onclick = () => {
                 form.style.display = 'none';
                 showLogin();
@@ -282,7 +358,7 @@
         // Masquer le menu et afficher le formulaire
         menu.style.display = 'none';
         form.style.display = 'block';
-        
+
         // Réinitialiser le formulaire
         form.reset();
         const messageDiv = document.getElementById('login-message')!;
@@ -292,7 +368,7 @@
         // Setup form submission (only once)
         if (!form.dataset.initialized) {
             form.dataset.initialized = 'true';
-            
+
             form.onsubmit = async (e: Event) => {
                 e.preventDefault();
                 console.log('submit login-form');
@@ -355,7 +431,7 @@
                 form.style.display = 'none';
                 menu.style.display = '';
             };
-            
+
             document.getElementById('show-signup-from-login')!.onclick = () => {
                 form.style.display = 'none';
                 showSignup();
@@ -377,7 +453,7 @@
         const fileInput = document.getElementById('edit-avatar-input') as HTMLInputElement;
         const filenameSpan = document.getElementById('edit-avatar-filename') as HTMLSpanElement;
         const messageDiv = document.getElementById('edit-profile-message') as HTMLDivElement;
-        
+
         if (avatarPreview) avatarPreview.src = getAvatarUrl(currentAvatarUrl);
         if (usernameDisplay) usernameDisplay.value = currentUsername;
         if (displayNameInput) displayNameInput.value = currentDisplayName;
@@ -390,7 +466,7 @@
         const currentLang = i18n ? i18n.getCurrentLanguage() : 'en';
         let selectedLanguage = currentLang;
         const langButtons = form.querySelectorAll('.lang-option');
-        
+
         langButtons.forEach(btn => {
             const button = btn as HTMLButtonElement;
             if (button.dataset.lang === currentLang) {
@@ -433,10 +509,10 @@
         // Handle form submission
         form.onsubmit = async (e: Event) => {
             e.preventDefault();
-            
+
             const display_name = displayNameInput?.value.trim();
             if (!messageDiv) return;
-            
+
             const avatarFile = fileInput?.files?.[0];
             let updateOk = true;
             let dataAvatar: ApiResponse | undefined = undefined;
@@ -475,7 +551,7 @@
                     });
                     dataAvatar = await resAvatar.json();
 
-                    if (resAvatar.ok && (dataAvatar.avatar_url || dataAvatar.avatar_path || 
+                    if (resAvatar.ok && (dataAvatar.avatar_url || dataAvatar.avatar_path ||
                         (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path)))) {
                         const avatarImg = document.getElementById('avatar-img') as HTMLImageElement;
                         const newAvatarUrl = getAvatarUrl(
@@ -484,7 +560,7 @@
                         );
                         if (avatarImg) avatarImg.src = newAvatarUrl;
                         if (avatarPreview) avatarPreview.src = newAvatarUrl;
-                        (window as any).currentAvatarUrl = dataAvatar.avatar_url || dataAvatar.avatar_path || 
+                        (window as any).currentAvatarUrl = dataAvatar.avatar_url || dataAvatar.avatar_path ||
                             (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path));
                     } else {
                         updateOk = false;
@@ -496,18 +572,18 @@
                 if (updateOk) {
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = i18n ? i18n.t('edit_profile_success') : 'Profile updated!';
-                    
+
                     // Change language if it was updated
                     if (selectedLanguage !== currentLang && (window as any).changeLang) {
                         await (window as any).changeLang(selectedLanguage);
                     }
-                    
+
                     const finalAvatar = (dataAvatar?.user?.avatar_path || dataAvatar?.user?.avatar_url) ||
                         (dataAvatar?.avatar_path || dataAvatar?.avatar_url) ||
                         (window as any).currentAvatarUrl;
 
                     setUser(currentUsername, display_name, (window as any).currentUserId, finalAvatar);
-                    
+
                     // Close form after short delay
                     setTimeout(() => {
                         window.history.back();

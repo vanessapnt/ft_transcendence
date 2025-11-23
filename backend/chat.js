@@ -106,7 +106,7 @@ function setupChat(server) {
 
           const welcomeMsg = t('welcome', clientData.language, { user: clientData.displayName });
           console.log(`📨 Envoi message de bienvenue en ${clientData.language}:`, welcomeMsg);
-          
+
           socket.send(
             JSON.stringify({
               from: "Serveur",
@@ -306,13 +306,13 @@ function setupChat(server) {
         // 5️⃣ Notification de fin de partie
         if (data.type === "gameEnded" && data.to) {
           const fromUser = clientData.username;
-          
+
           // Envoyer la notification à tous les onglets de l'utilisateur cible
           sendToAllUserSockets(data.to, {
             type: "gameEnded",
             from: fromUser
           });
-          
+
           console.log(`🏁 Notification de fin de partie envoyée de ${fromUser} à ${data.to}`);
           return;
         }
@@ -495,19 +495,16 @@ function setupChat(server) {
             });
 
             if (history.length === 0) {
-              socket.send(
-                JSON.stringify({
-                  from: "Serveur",
-                  text: t('no_history', clientData.language, { user: targetUser.display_name || data.target }),
-                })
-              );
+              // Ne pas envoyer de message du serveur si l'historique est vide
+              // Les messages locaux suffisent pour l'utilisateur
+              console.log(`ℹ️ Aucun historique serveur pour ${data.target}`);
             } else {
               socket.send(
                 JSON.stringify({
                   from: "Serveur",
-                  text: t('history_with', clientData.language, { 
-                    user: targetUser.display_name || data.target, 
-                    count: history.length 
+                  text: t('history_with', clientData.language, {
+                    user: targetUser.display_name || data.target,
+                    count: history.length
                   }),
                 })
               );

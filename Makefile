@@ -99,6 +99,13 @@ clean:
 	-docker rm -f elasticsearch-prod elasticsearch-dev kibana-prod kibana-dev logstash-prod logstash-dev filebeat-prod filebeat-dev prometheus-prod prometheus-dev grafana-prod grafana-dev nginx-prod nginx-dev backend-prod backend-dev frontend-prod frontend-dev node-exporter-prod node-exporter-dev 2>/dev/null || true
 	@echo "🗑️ Suppression de tous les conteneurs restants du projet..."
 	-docker ps -aq --filter "name=elasticsearch" --filter "name=kibana" --filter "name=logstash" --filter "name=filebeat" --filter "name=prometheus" --filter "name=grafana" --filter "name=nginx" --filter "name=backend" --filter "name=frontend" --filter "name=node-exporter" --filter "name=testtrans" | xargs -r docker rm -f 2>/dev/null || true
+	@echo "🗑️ Suppression de la base de données et des données stockées..."
+	@rm -f backend/instance/transcendence.db
+	@rm -rf backend/data/*
+	@echo "🗑️ Suppression des avatars (sauf default)..."
+	@if [ -f backend/avatars/default_avatar.png ]; then mv backend/avatars/default_avatar.png /tmp/default_avatar_backup.png; fi
+	@rm -f backend/avatars/*
+	@if [ -f /tmp/default_avatar_backup.png ]; then mv /tmp/default_avatar_backup.png backend/avatars/default_avatar.png; fi
 	@echo "🧹 Nettoyage du système Docker..."
 	docker system prune -f
 	@echo "✨ Nettoyage terminé !"

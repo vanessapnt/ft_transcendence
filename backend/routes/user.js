@@ -236,20 +236,20 @@ router.delete('/avatar', requireAuth, (req, res) => {
 router.get('/avatar/:username', (req, res) => {
   try {
     const { username } = req.params;
-    
+
     const getDefaultAvatar = () => {
       // Use default_avatar.png
       const defaultAvatarPath = path.join(__dirname, '../avatars/default_avatar.png');
       if (fs.existsSync(defaultAvatarPath)) {
         return res.sendFile(defaultAvatarPath);
       }
-      
+
       // Fallback to default.png if default_avatar.png doesn't exist
       const defaultPngPath = path.join(__dirname, '../avatars/default.png');
       if (fs.existsSync(defaultPngPath)) {
         return res.sendFile(defaultPngPath);
       }
-      
+
       // Generate a simple SVG avatar as last resort
       const defaultSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="50" fill="#00ff00"/>
@@ -259,12 +259,12 @@ router.get('/avatar/:username', (req, res) => {
       res.setHeader('Content-Type', 'image/svg+xml');
       return res.send(defaultSvg);
     };
-    
+
     // Handle default avatar request
     if (username === 'default') {
       return getDefaultAvatar();
     }
-    
+
     // Get user by username
     const user = statements.getUserByUsername.get(username);
     if (!user || !user.avatar_path) {

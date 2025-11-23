@@ -364,47 +364,27 @@
     }
 
     function showEditProfile(currentUsername: string, currentDisplayName: string): void {
-        if (document.getElementById('edit-profile-form')) return;
-
-        const menu = document.querySelector('.menu-buttons') as HTMLElement;
-        if (menu) menu.style.display = 'none';
-
-        const homeView = document.getElementById('home-view');
-        if (!homeView) return;
+        const form = document.getElementById('edit-profile-form') as HTMLFormElement | null;
+        if (!form) return;
 
         const currentAvatarUrl = (window as any).currentAvatarUrl;
         const i18n = (window as any).i18n;
 
-        const form = document.createElement('form');
-        form.id = 'edit-profile-form';
-        form.className = 'auth-form edit-profile-form';
-        form.innerHTML = `
-        <h2 data-i18n-key="edit_profile_title">${i18n ? i18n.t('edit_profile_title') : 'Edit Profile'}</h2>
-        <img id="edit-avatar-img" src="${getAvatarUrl(currentAvatarUrl)}" alt="Avatar" class="edit-avatar-preview">
-        <label data-i18n-key="edit_profile_avatar">${i18n ? i18n.t('edit_profile_avatar') : 'Avatar'}</label>
-        <div class="file-input-wrapper">
-            <input type="file" id="edit-avatar" accept="image/*" style="display: none;">
-            <button type="button" id="edit-avatar-btn" class="file-input-btn" data-i18n-key="edit_profile_choose_file">${i18n ? i18n.t('edit_profile_choose_file') : 'Choose file'}</button>
-            <span id="edit-avatar-filename" class="file-input-name" data-i18n-key="edit_profile_no_file">${i18n ? i18n.t('edit_profile_no_file') : 'No file selected'}</span>
-        </div>
-        <label data-i18n-key="edit_profile_username">${i18n ? i18n.t('edit_profile_username') : 'Username (not editable)'}</label>
-        <input type="text" value="${escapeHtml(currentUsername)}" disabled class="disabled-input">
-        <label data-i18n-key="edit_profile_displayname">${i18n ? i18n.t('edit_profile_displayname') : 'Display Name'}</label>
-        <input type="text" id="edit-displayname" value="${escapeHtml(currentDisplayName)}" required>
-        <label data-i18n-key="edit_profile_language">${i18n ? i18n.t('edit_profile_language') : 'Preferred Language'}</label>
-        <div class="language-selector">
-            <button type="button" class="lang-option" data-lang="en">English</button>
-            <button type="button" class="lang-option" data-lang="fr">Français</button>
-            <button type="button" class="lang-option" data-lang="es">Español</button>
-        </div>
-        <button type="submit" class="auth-submit-btn" data-i18n-key="edit_profile_save">${i18n ? i18n.t('edit_profile_save') : 'Save'}</button>
-        <button type="button" id="cancel-edit-profile" class="auth-cancel-btn" data-i18n-key="edit_profile_cancel">${i18n ? i18n.t('edit_profile_cancel') : 'Cancel'}</button>
-        <div id="edit-profile-message" class="auth-message"></div>
-    `;
-        homeView.appendChild(form);
-        form.querySelector('.auth-submit-btn')?.addEventListener('click', () => {
-            console.log('Save button clicked');
-        });
+        // Pre-fill form with current values
+        const avatarPreview = document.getElementById('edit-avatar-preview') as HTMLImageElement;
+        const usernameDisplay = document.getElementById('edit-username-display') as HTMLInputElement;
+        const displayNameInput = document.getElementById('edit-display-name') as HTMLInputElement;
+        const fileInput = document.getElementById('edit-avatar-input') as HTMLInputElement;
+        const filenameSpan = document.getElementById('edit-avatar-filename') as HTMLSpanElement;
+        const messageDiv = document.getElementById('edit-profile-message') as HTMLDivElement;
+        
+        if (avatarPreview) avatarPreview.src = getAvatarUrl(currentAvatarUrl);
+        if (usernameDisplay) usernameDisplay.value = currentUsername;
+        if (displayNameInput) displayNameInput.value = currentDisplayName;
+        if (messageDiv) messageDiv.textContent = '';
+
+        // Show form
+        form.style.display = 'block';
 
         // Handle language selector
         const currentLang = i18n ? i18n.getCurrentLanguage() : 'en';
@@ -423,34 +403,41 @@
             };
         });
 
-        // Handle custom file input
-        const fileInput = document.getElementById('edit-avatar') as HTMLInputElement;
-        const fileButton = document.getElementById('edit-avatar-btn') as HTMLButtonElement;
-        const fileNameSpan = document.getElementById('edit-avatar-filename') as HTMLSpanElement;
+        // Handle file input
+        if (fileInput && filenameSpan) {
+            fileInput.onchange = () => {
+                if (fileInput.files && fileInput.files.length > 0) {
+                    filenameSpan.textContent = fileInput.files[0].name;
+                    // Preview the selected image
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        if (avatarPreview && e.target?.result) {
+                            avatarPreview.src = e.target.result as string;
+                        }
+                    };
+                    reader.readAsDataURL(fileInput.files[0]);
+                } else {
+                    filenameSpan.textContent = i18n ? i18n.t('no_file_chosen') : 'No file chosen';
+                }
+            };
+        }
 
-        fileButton.onclick = () => {
-            fileInput.click();
-        };
+        // Handle cancel button
+        const cancelBtn = document.getElementById('cancel-edit-profile');
+        if (cancelBtn) {
+            cancelBtn.onclick = () => {
+                window.history.back();
+            };
+        }
 
-        fileInput.onchange = () => {
-            if (fileInput.files && fileInput.files.length > 0) {
-                fileNameSpan.textContent = fileInput.files[0].name;
-            } else {
-                fileNameSpan.textContent = i18n ? i18n.t('edit_profile_no_file') : 'No file selected';
-            }
-        };
-
-        document.getElementById('cancel-edit-profile')!.onclick = () => {
-            form.remove();
-            if (menu) menu.style.display = '';
-        };
-
+        // Handle form submission
         form.onsubmit = async (e: Event) => {
             e.preventDefault();
-            console.log('onsubmit called');
-            const display_name = (document.getElementById('edit-displayname') as HTMLInputElement).value.trim();
-            const messageDiv = document.getElementById('edit-profile-message')!;
-            const avatarFile = (document.getElementById('edit-avatar') as HTMLInputElement).files?.[0];
+            
+            const display_name = displayNameInput?.value.trim();
+            if (!messageDiv) return;
+            
+            const avatarFile = fileInput?.files?.[0];
             let updateOk = true;
             let dataAvatar: ApiResponse | undefined = undefined;
             messageDiv.textContent = '';
@@ -462,59 +449,47 @@
             }
 
             try {
-                // Correction : utiliser la bonne route backend
-                if (display_name) {
-                    const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include', // Ajouté pour envoyer les cookies de session
-                        body: JSON.stringify({ display_name, preferred_language: selectedLanguage })
-                    });
-                    const data: ApiResponse = await res.json();
+                // Update profile (display name and language)
+                const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ display_name, preferred_language: selectedLanguage })
+                });
+                const data: ApiResponse = await res.json();
 
-                    if (!res.ok) {
-                        updateOk = false;
-                        console.log('PUT /api/user/profile failed', data);
-                        messageDiv.className = 'auth-message error';
-                        messageDiv.textContent = data.error || (i18n ? i18n.t('edit_profile_error_failed') : 'Update failed');
-                    }
+                if (!res.ok) {
+                    updateOk = false;
+                    messageDiv.className = 'auth-message error';
+                    messageDiv.textContent = data.error || (i18n ? i18n.t('edit_profile_error_failed') : 'Update failed');
                 }
 
+                // Update avatar if provided
                 if (avatarFile && updateOk) {
-                    console.log('Sending POST /api/user/avatar');
                     const formData = new FormData();
                     formData.append('avatar', avatarFile);
-                    // Correction : route avatar
                     const resAvatar = await fetch(`${API_BASE_URL}/api/user/avatar`, {
                         method: 'POST',
                         body: formData,
-                        credentials: 'include' // Ajouté pour envoyer les cookies de session
+                        credentials: 'include'
                     });
                     dataAvatar = await resAvatar.json();
 
-                    if (
-                        resAvatar.ok &&
-                        (
-                            (dataAvatar.avatar_url) ||
-                            (dataAvatar.avatar_path) ||
-                            (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path))
-                        )
-                    ) {
+                    if (resAvatar.ok && (dataAvatar.avatar_url || dataAvatar.avatar_path || 
+                        (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path)))) {
                         const avatarImg = document.getElementById('avatar-img') as HTMLImageElement;
-                        const editAvatarImg = document.getElementById('edit-avatar-img') as HTMLImageElement;
                         const newAvatarUrl = getAvatarUrl(
-                            dataAvatar.avatar_url ||
-                            dataAvatar.avatar_path ||
+                            dataAvatar.avatar_url || dataAvatar.avatar_path ||
                             (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path))
                         );
-                        avatarImg.src = newAvatarUrl;
-                        editAvatarImg.src = newAvatarUrl;
-                        (window as any).currentAvatarUrl = dataAvatar.avatar_url || dataAvatar.avatar_path || (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path));
+                        if (avatarImg) avatarImg.src = newAvatarUrl;
+                        if (avatarPreview) avatarPreview.src = newAvatarUrl;
+                        (window as any).currentAvatarUrl = dataAvatar.avatar_url || dataAvatar.avatar_path || 
+                            (dataAvatar.user && (dataAvatar.user.avatar_url || dataAvatar.user.avatar_path));
                     } else {
                         updateOk = false;
-                        console.log('POST /api/user/avatar failed', dataAvatar);
                         messageDiv.className = 'auth-message error';
-                        messageDiv.textContent = dataAvatar && dataAvatar.error || (i18n ? i18n.t('edit_profile_error_avatar') : 'Avatar upload failed');
+                        messageDiv.textContent = dataAvatar?.error || (i18n ? i18n.t('edit_profile_error_avatar') : 'Avatar upload failed');
                     }
                 }
 
@@ -522,26 +497,21 @@
                     messageDiv.className = 'auth-message success';
                     messageDiv.textContent = i18n ? i18n.t('edit_profile_success') : 'Profile updated!';
                     
-                    // Close form first
-                    form.remove();
-                    if (menu) menu.style.display = '';
-                    
-                    // Then change language if it was updated
+                    // Change language if it was updated
                     if (selectedLanguage !== currentLang && (window as any).changeLang) {
                         await (window as any).changeLang(selectedLanguage);
                     }
                     
-                    const finalAvatar =
-                        (dataAvatar && dataAvatar.user && (dataAvatar.user.avatar_path || dataAvatar.user.avatar_url))
-                        || (dataAvatar && (dataAvatar.avatar_path || dataAvatar.avatar_url))
-                        || (window as any).currentAvatarUrl;
+                    const finalAvatar = (dataAvatar?.user?.avatar_path || dataAvatar?.user?.avatar_url) ||
+                        (dataAvatar?.avatar_path || dataAvatar?.avatar_url) ||
+                        (window as any).currentAvatarUrl;
 
-                    setUser(
-                        currentUsername,
-                        display_name,
-                        (window as any).currentUserId,
-                        finalAvatar
-                    );
+                    setUser(currentUsername, display_name, (window as any).currentUserId, finalAvatar);
+                    
+                    // Close form after short delay
+                    setTimeout(() => {
+                        window.history.back();
+                    }, 1000);
                 }
             } catch (err) {
                 messageDiv.className = 'auth-message error';
@@ -549,7 +519,6 @@
                 console.error('Edit profile error:', err);
             }
         };
-
     }
 
     // // Au chargement de la page, déconnexion automatique PUIS récupération du profil (dev only)

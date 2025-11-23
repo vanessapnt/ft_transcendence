@@ -57,12 +57,10 @@
                 <button class="login-btn" onclick="showLogin()" data-i18n-key="login">LOGIN</button>
             </div>
             <div class="oauth-buttons-row">
-                <button id="github-login-btn" onclick="PONG.oauthLogin()" class="github-btn"
-                    data-i18n-key="login_github">
+                <button id="github-login-btn" onclick="PONG.oauthLogin()" class="github-btn" data-i18n-key="login_github">
                     Login with GitHub
                 </button>
-                <button id="google-login-btn" onclick="PONG.oauthGoogleLogin()" class="google-btn"
-                    data-i18n-key="login_google">
+                <button id="google-login-btn" onclick="PONG.oauthGoogleLogin()" class="google-btn" data-i18n-key="login_google">
                     Login with Google
                 </button>
             </div>
@@ -71,37 +69,51 @@
         <!-- Formulaires d'authentification (cachés par défaut, à l'intérieur du home-view) -->
         <form id="signup-form" class="auth-form" style="display: none;">
             <h2 data-i18n-key="signup_form_title">Sign Up</h2>
-            <input type="text" id="signup-username" data-i18n-placeholder="signup_username_placeholder"
-                placeholder="Username" required>
-            <input type="email" id="signup-email" data-i18n-placeholder="signup_email_placeholder" placeholder="Email"
-                required>
-            <input type="password" id="signup-password" data-i18n-placeholder="signup_password_placeholder"
-                placeholder="Password" required>
-            <input type="text" id="signup-displayname" data-i18n-placeholder="signup_displayname_placeholder"
-                placeholder="Display Name" required>
+            <input type="text" id="signup-username" data-i18n-placeholder="signup_username_placeholder" placeholder="Username" required>
+            <input type="email" id="signup-email" data-i18n-placeholder="signup_email_placeholder" placeholder="Email" required>
+            <input type="password" id="signup-password" data-i18n-placeholder="signup_password_placeholder" placeholder="Password" required>
+            <input type="text" id="signup-displayname" data-i18n-placeholder="signup_displayname_placeholder" placeholder="Display Name" required>
             <div class="auth-btn-row">
                 <button type="submit" class="auth-submit-btn" data-i18n-key="signup_submit">Register</button>
-                <button type="button" id="show-login-from-signup" class="auth-switch-btn"
-                    data-i18n-key="already_have_account">Login</button>
+                <button type="button" id="show-login-from-signup" class="auth-switch-btn" data-i18n-key="already_have_account">Login</button>
             </div>
-            <button type="button" id="cancel-signup" class="auth-cancel-btn"
-                data-i18n-key="signup_cancel">Cancel</button>
+            <button type="button" id="cancel-signup" class="auth-cancel-btn" data-i18n-key="signup_cancel">Cancel</button>
             <div id="signup-message" class="auth-message"></div>
         </form>
 
         <form id="login-form" class="auth-form" style="display: none;">
             <h2 data-i18n-key="login_form_title">Login</h2>
-            <input type="text" id="login-username" data-i18n-placeholder="login_username_placeholder"
-                placeholder="Username or Email" required>
-            <input type="password" id="login-password" data-i18n-placeholder="login_password_placeholder"
-                placeholder="Password" required>
+            <input type="text" id="login-username" data-i18n-placeholder="login_username_placeholder" placeholder="Username or Email" required>
+            <input type="password" id="login-password" data-i18n-placeholder="login_password_placeholder" placeholder="Password" required>
             <div class="auth-btn-row">
                 <button type="submit" class="auth-submit-btn" data-i18n-key="login_submit">Login</button>
-                <button type="button" id="show-signup-from-login" class="auth-switch-btn"
-                    data-i18n-key="no_account_signup">Sign Up</button>
+                <button type="button" id="show-signup-from-login" class="auth-switch-btn" data-i18n-key="no_account_signup">Sign Up</button>
             </div>
             <button type="button" id="cancel-login" class="auth-cancel-btn" data-i18n-key="login_cancel">Cancel</button>
             <div id="login-message" class="auth-message"></div>
+        </form>
+
+        <form id="edit-profile-form" class="auth-form edit-profile-form" style="display: none;">
+            <h2 data-i18n-key="edit_profile_title">Edit Profile</h2>
+            <img id="edit-avatar-preview" class="edit-avatar-preview" src="/avatars/default_avatar.png" alt="Avatar Preview">
+            <div class="file-input-wrapper">
+                <label for="edit-avatar-input" class="file-input-btn" data-i18n-key="choose_avatar">Choose Avatar</label>
+                <input type="file" id="edit-avatar-input" accept="image/*" style="display: none;">
+                <span id="edit-avatar-filename" class="file-input-name" data-i18n-key="no_file_chosen">No file chosen</span>
+            </div>
+            <label data-i18n-key="edit_profile_username">Username (not editable)</label>
+            <input type="text" id="edit-username-display" disabled class="disabled-input">
+            <label data-i18n-key="edit_profile_displayname">Display Name</label>
+            <input type="text" id="edit-display-name" data-i18n-placeholder="edit_display_name_placeholder" placeholder="Display Name">
+            <label data-i18n-key="edit_profile_language">Preferred Language</label>
+            <div class="language-selector">
+                <button type="button" class="lang-option" data-lang="en">EN</button>
+                <button type="button" class="lang-option" data-lang="fr">FR</button>
+                <button type="button" class="lang-option" data-lang="es">ES</button>
+            </div>
+            <button type="submit" class="auth-submit-btn" data-i18n-key="save_changes">Save Changes</button>
+            <button type="button" id="cancel-edit-profile" class="auth-cancel-btn" data-i18n-key="cancel">Cancel</button>
+            <div id="edit-profile-message" class="auth-message"></div>
         </form>
     </div>
 
@@ -130,8 +142,7 @@
                 <button onclick="PONG.Tournament.createTournament(4)" data-i18n-key="4_players">4 Players</button>
                 <button onclick="PONG.Tournament.createTournament(8)" data-i18n-key="8_players">8 Players</button>
             </div>
-            <button class="menu-button back-btn" onclick="PONG.Nav.showHome()" data-i18n-key="back">BACK TO
-                MENU</button>
+            <button class="menu-button back-btn" onclick="PONG.Nav.showHome()" data-i18n-key="back">BACK TO MENU</button>
         </div>
 
         <div id="tournament-setup" class="tournament-section">
@@ -163,13 +174,11 @@
                     </button>
                 </div>
 
-                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;"
-                    data-i18n-key="current_standings">Current
+                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;" data-i18n-key="current_standings">Current
                     Standings:</h3>
                 <div class="tournament-standings" id="standings-container"></div>
 
-                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;"
-                    data-i18n-key="match_results">Match
+                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;" data-i18n-key="match_results">Match
                     Results:</h3>
                 <div class="tournament-results" id="matches-container"></div>
             </div>
@@ -192,37 +201,28 @@
     </div>
 
     <div id="chat-panel">
-        <h2 data-i18n-key="private_messages">💬 Messages privés</h2>
+        <h2 data-i18n-key="chat_title">💬 Messages privés</h2>
         <div id="chat-container">
             <div id="chat-main">
                 <div id="chat-content">
                     <div id="conversations-sidebar">
-                        <div id="conversations-header">
-                            <h3 data-i18n-key="conversations">Conversations</h3>
-                            <label class="switch-container">
-                                <input type="checkbox" id="friends-only-toggle">
-                                <span class="switch-slider"></span>
-                                <span class="switch-label" data-i18n-key="friends_only">Friends only</span>
-                            </label>
-                        </div>
+                        <h3 data-i18n-key="chat_conversations">Conversations</h3>
                         <div id="conversation-tabs"></div>
                     </div>
                     <div id="chat-right">
                         <div id="chat-header">
-                            <div id="current-chat" data-i18n-key="no_conversation_selected">Aucune conversation
-                                sélectionnée</div>
+                            <div id="current-chat" data-i18n-key="chat_no_conversation">Aucune conversation sélectionnée</div>
                             <div id="chat-actions">
-                                <button id="add-friend-btn" data-i18n-key="add_friend" title="Ajouter en ami">Add
-                                    Friend</button>
-                                <button id="invite-btn" title="Inviter à jouer">/invite</button>
-                                <button id="block-btn" title="Bloquer l'utilisateur">/block</button>
+                                <button id="invite-btn" data-i18n-key="chat_btn_invite" data-i18n-title="chat_btn_invite_title" title="Inviter à jouer">Inviter</button>
+                                <button id="block-btn" data-i18n-key="chat_btn_block" data-i18n-title="chat_btn_block_title" title="Bloquer l'utilisateur">Bloquer</button>
                             </div>
                         </div>
                         <div id="chatbox"></div>
                         <div id="controls">
-                            <input type="text" id="msg" data-i18n-key="type_message_placeholder"
+                            <input type="text" id="msg"
+                                data-i18n-placeholder="chat_placeholder"
                                 placeholder="Tape ton message (ou /dm pseudo ton message pour démarrer, /block, /unblock, /invite)..." />
-                            <button id="send" data-i18n-key="send">Envoyer</button>
+                            <button id="send" data-i18n-key="chat_send">Envoyer</button>
                         </div>
                     </div>
                 </div>
@@ -269,8 +269,7 @@
     <div id="game-in-progress-overlay" class="overlay">
         <div class="overlay-content">
             <h2 data-i18n-key="game_in_progress_title">🎮 PARTIE EN COURS</h2>
-            <p><span id="opponent-name"></span> <span data-i18n-key="game_in_progress_playing">joue
-                    actuellement...</span></p>
+            <p><span id="opponent-name"></span> <span data-i18n-key="game_in_progress_playing">joue actuellement...</span></p>
             <div class="loading-dots">
                 <span>.</span><span>.</span><span>.</span>
             </div>

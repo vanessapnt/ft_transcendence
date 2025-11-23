@@ -27,8 +27,25 @@ class Navigation
 
             this.bindGameModeBtns();
             this.setupBrowserNavigation();
+            
+            // Initialiser l'état de l'historique pour la page courante
+            const hash = window.location.hash;
+            if (!window.history.state) {
+                // Pas d'état dans l'historique, on l'initialise
+                if (!hash || hash === '' || hash === '#' || hash === '#home') {
+                    window.history.replaceState({ page: 'home' }, '', '#home');
+                    console.log('📍 État initial (home) créé avec replaceState:', { length: window.history.length });
+                } else {
+                    // Autre hash présent, initialiser son état
+                    const page = hash.substring(1);
+                    window.history.replaceState({ page }, '', hash);
+                    console.log('📍 État initial créé pour:', page, { length: window.history.length });
+                }
+            }
+            
             this.handleRouteChange();
             console.log('✅ Navigation initialized');
+            console.log('📚 History length:', window.history.length, 'State:', window.history.state);
         });
     }
 
@@ -54,24 +71,32 @@ class Navigation
     showHome(): void
     {
         this.showScreen('home-view');
-        window.history.pushState({ page: 'home' }, '', '#home');
+        // Ne pas ajouter à l'historique si on est déjà sur home (évite les doublons)
+        if (window.location.hash !== '#home') {
+            window.history.pushState({ page: 'home' }, '', '#home');
+            console.log('📍 Home ajouté à l\'historique. Length:', window.history.length);
+        }
         
         // pour l'appel depuis pause overlay
         this.hidePauseOverlay();
         this.stopGames();
     }
 
-    showModeSelection(): void
+    showModeSelection(addToHistory: boolean = true): void
     {
         this.showScreen('mode-selection');
-        window.history.pushState({ page: 'mode' }, '', '#mode');
+        if (addToHistory) {
+            window.history.pushState({ page: 'mode' }, '', '#mode');
+            console.log('📍 Mode selection ajouté à l\'historique. Length:', window.history.length);
+        }
         // ajoute l'état mode à l'historique pour la flèche back + met à jour l'URL sans recharger la page
     }
 
     showGame(): void
     {
         this.showScreen('game-view');
-        window.history.pushState({ page: 'game' }, '', '#game');
+        // On remplace l'état actuel sans créer un nouvel historique
+        window.history.replaceState({ page: 'game' }, '', '#game');
     }
 
     showTournament(): void
@@ -144,7 +169,8 @@ class Navigation
     private setupBrowserNavigation(): void
     {
         //popstate : pop() sur la pile d'historique (back/forward)
-        window.addEventListener('popstate', () => {
+        window.addEventListener('popstate', (event) => {
+            console.log('⬅️ Bouton retour cliqué. State:', event.state, 'Length:', window.history.length, 'Hash:', window.location.hash);
             this.stopGames(); // Arrête les jeux en cours lors de la navigation (sinon vitesse de balle * 2 à chaque relance jeu car 2 boucles update actives)
             this.handleRouteChange();
         });
@@ -176,13 +202,17 @@ class Navigation
         }
         
         if (hash === '#home' || hash === '') {
-            this.showHome();
+            // Afficher home sans ajouter à l'historique (déjà fait dans init)
+            this.showScreen('home-view');
+            this.hidePauseOverlay();
+            this.stopGames();
         } else if (hash === '#game') {
-            this.showGame();
+            // Rediriger vers mode si on essaie d'accéder au jeu via l'historique
+            window.location.hash = '#mode';
         } else if (hash === '#tournament') {
             this.showTournament();
         } else if (hash === '#mode') {
-            this.showModeSelection();
+            this.showModeSelection(false); // false = ne pas ajouter à l'historique (navigation via back)
         } else if (hash === '#chat') {
             // Ouvrir le chat
             if ((window as any).toggleChat) {

@@ -48,6 +48,7 @@
         private friendsOnly: boolean = false; // Filtrage par amis
         private friendsList: Set<string> = new Set(); // Liste des amis
         private onlineUsers: Set<string> = new Set(); // Liste des utilisateurs en ligne
+        private previousScreen: string | null = null; // Écran actif avant l'overlay game in progress
 
         constructor() {
             this.init();
@@ -949,14 +950,27 @@
             );
 
             if (accept) {
+                // Sauvegarder l'écran actuellement actif
+                const chatPanel = document.getElementById('chat-panel');
+                if (chatPanel && chatPanel.classList.contains('active')) {
+                    this.previousScreen = 'chat';
+                } else {
+                    const activeScreen = document.querySelector('.screen.active');
+                    if (activeScreen) {
+                        this.previousScreen = activeScreen.id;
+                    } else {
+                        this.previousScreen = 'home-view';
+                    }
+                }
+                console.log('💾 Écran sauvegardé avant le jeu:', this.previousScreen);
+
                 // Afficher un message
                 const i18n = (window as any).i18n;
                 this.addSystemMessage(i18n ? i18n.t('chat_launching_game') : "🎮 Lancement du jeu Pong...");
 
                 // Fermer le chat panel
-                const chatPanel = document.getElementById('chat-panel');
                 if (chatPanel) {
-                    chatPanel.style.display = 'none';
+                    chatPanel.classList.remove('active');
                 }
 
                 // Lancer le jeu directement (comme dans le tournoi)
@@ -1009,7 +1023,13 @@
             // Cacher le chat s'il est ouvert
             const chatPanel = document.getElementById('chat-panel');
             if (chatPanel) {
-                chatPanel.style.display = 'none';
+                chatPanel.classList.remove('active');
+            }
+
+            // Fermer le panel edit-profile s'il est ouvert
+            const editProfilePanel = document.getElementById('edit-profile-panel');
+            if (editProfilePanel && editProfilePanel.classList.contains('active')) {
+                editProfilePanel.classList.remove('active');
             }
 
             // Cacher tous les overlays/modals SAUF game-in-progress-overlay
@@ -1024,9 +1044,6 @@
             const signupForm = document.getElementById('signup-form') as HTMLElement;
             const loginForm = document.getElementById('login-form') as HTMLElement;
             const editProfileForm = document.getElementById('edit-profile-form') as HTMLElement;
-            if (signupForm) signupForm.style.display = 'none';
-            if (loginForm) loginForm.style.display = 'none';
-            if (editProfileForm) editProfileForm.style.display = 'none';
 
             const pong = (window as any).PONG;
             if (pong?.PongGame) {
@@ -1083,10 +1100,32 @@
                         dropdownMenu.classList.remove('show'); // Fermer le dropdown s'il était ouvert
                     }
 
-                    // Retourner au menu principal
-                    if (pong.Nav) {
+                    // Retourner à l'écran précédent
+                    if (this.previousScreen === 'chat') {
+                        const chatPanel = document.getElementById('chat-panel');
+                        if (chatPanel) {
+                            chatPanel.classList.add('active');
+                            console.log('✅ Chat réaffiché après le jeu');
+                            // Mettre à jour l'URL
+                            window.history.pushState({ page: 'chat' }, '', '#chat');
+                        }
+                    } else if (this.previousScreen && pong.Nav) {
+                        const screen = document.getElementById(this.previousScreen);
+                        if (screen) {
+                            screen.classList.add('active');
+                            console.log('✅ Écran réaffiché après le jeu:', this.previousScreen);
+                            // Mettre à jour l'URL
+                            const screenName = this.previousScreen.replace('-view', '').replace('mode-selection', 'mode');
+                            window.history.pushState({ page: screenName }, '', `#${screenName}`);
+                        } else if (pong.Nav) {
+                            pong.Nav.showHome();
+                        }
+                    } else if (pong.Nav) {
                         pong.Nav.showHome();
                     }
+                    
+                    // Réinitialiser la sauvegarde
+                    this.previousScreen = null;
 
                     // Fermer le profile panel et le vider
                     const profilePanel = document.getElementById('profile-panel') as HTMLElement;
@@ -1115,7 +1154,7 @@
         }
 
         private handleGameEnded(data: ChatData): void {
-            console.log("🏁 Partie terminée, retour au chat");
+            console.log("🏁 Partie terminée, retour à l'écran précédent");
             // Cacher complètement l'overlay "Partie en cours"
             const gameInProgressOverlay = document.getElementById('game-in-progress-overlay') as HTMLElement;
             if (gameInProgressOverlay) {
@@ -1123,16 +1162,61 @@
                 console.log('✅ Overlay caché');
             }
 
-            // Réafficher le chat
-            const chatPanel = document.getElementById('chat-panel') as HTMLElement;
-            if (chatPanel) {
-                chatPanel.classList.add('active');
-                console.log('✅ Chat réaffiché');
+            // Réafficher les éléments d'interface utilisateur
+            const avatarContainer = document.getElementById('avatar-container');
+            const langSelector = document.getElementById('lang-selector-container');
+            const userInfo = document.getElementById('user-info');
+            if (avatarContainer) avatarContainer.style.display = '';
+            if (langSelector) langSelector.style.display = '';
+            if (userInfo) userInfo.style.display = '';
+
+            // Restaurer l'écran précédent
+            if (this.previousScreen === 'chat') {
+                const chatPanel = document.getElementById('chat-panel') as HTMLElement;
+                if (chatPanel) {
+                    chatPanel.classList.add('active');
+                    console.log('✅ Chat réaffiché');
+                    // Mettre à jour l'URL
+                    window.history.pushState({ page: 'chat' }, '', '#chat');
+                }
+            } else if (this.previousScreen) {
+                const screen = document.getElementById(this.previousScreen);
+                if (screen) {
+                    screen.classList.add('active');
+                    console.log('✅ Écran réaffiché:', this.previousScreen);
+                    // Mettre à jour l'URL
+                    const screenName = this.previousScreen.replace('-view', '').replace('mode-selection', 'mode');
+                    window.history.pushState({ page: screenName }, '', `#${screenName}`);
+                }
+            } else {
+                // Par défaut, retour à home
+                const pong = (window as any).PONG;
+                if (pong && pong.Nav) {
+                    pong.Nav.showHome();
+                    console.log('✅ Retour à home (par défaut)');
+                }
             }
+            
+            // Réinitialiser la sauvegarde
+            this.previousScreen = null;
         }
 
         private showGameInProgress(opponentName: string): void {
             console.log('🎮 Affichage overlay "Partie en cours" pour', opponentName);
+
+            // Sauvegarder l'écran actuellement actif
+            const chatPanel = document.getElementById('chat-panel');
+            if (chatPanel && chatPanel.classList.contains('active')) {
+                this.previousScreen = 'chat';
+            } else {
+                const activeScreen = document.querySelector('.screen.active');
+                if (activeScreen) {
+                    this.previousScreen = activeScreen.id;
+                } else {
+                    this.previousScreen = 'home-view';
+                }
+            }
+            console.log('💾 Écran sauvegardé:', this.previousScreen);
 
             // Cacher tous les screens
             document.querySelectorAll('.screen').forEach(screen => {
@@ -1140,7 +1224,6 @@
             });
 
             // Cacher le chat
-            const chatPanel = document.getElementById('chat-panel');
             if (chatPanel) {
                 chatPanel.classList.remove('active');
             }

@@ -154,7 +154,7 @@ class Navigation
     {
         const hash = window.location.hash;
         const chatPanel = document.getElementById('chat-panel');
-        const editProfileForm = document.getElementById('edit-profile-form') as HTMLElement;
+        const editProfilePanel = document.getElementById('edit-profile-panel') as HTMLElement;
         
         // Fermer le chat si on n'est pas sur #chat
         if (hash !== '#chat' && chatPanel && chatPanel.classList.contains('active')) {
@@ -170,15 +170,9 @@ class Navigation
             }
         }
         
-        // Fermer le formulaire edit profile si on n'est pas sur #edit-profile
-        if (hash !== '#edit-profile' && editProfileForm && editProfileForm.style.display !== 'none') {
-            editProfileForm.style.display = 'none';
-            // S'assurer qu'un screen soit actif
-            const hasActiveScreen = Array.from(document.querySelectorAll('.screen')).some(s => s.classList.contains('active'));
-            if (!hasActiveScreen) {
-                const homeView = document.getElementById('home-view');
-                if (homeView) homeView.classList.add('active');
-            }
+        // Fermer le panel edit profile si on n'est pas sur #edit-profile
+        if (hash !== '#edit-profile' && editProfilePanel && editProfilePanel.classList.contains('active')) {
+            editProfilePanel.classList.remove('active');
         }
         
         if (hash === '#home' || hash === '') {
@@ -197,8 +191,7 @@ class Navigation
                 }
             }
         } else if (hash === '#edit-profile') {
-            // Ouvrir le formulaire d'édition de profil
-            this.showHome();
+            // Ouvrir le panel d'édition de profil
             if ((window as any).PONG && (window as any).PONG.showEditProfile) {
                 const currentUsername = (window as any).currentUsername || '';
                 const currentDisplayName = (window as any).currentDisplayName || '';

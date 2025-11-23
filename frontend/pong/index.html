@@ -111,34 +111,6 @@
             <button type="button" id="cancel-login" class="auth-cancel-btn" data-i18n-key="login_cancel">Cancel</button>
             <div id="login-message" class="auth-message"></div>
         </form>
-
-        <form id="edit-profile-form" class="auth-form edit-profile-form" style="display: none;">
-            <h2 data-i18n-key="edit_profile_title">Edit Profile</h2>
-            <img id="edit-avatar-preview" class="edit-avatar-preview" src="/avatars/default_avatar.png"
-                alt="Avatar Preview">
-            <div class="file-input-wrapper">
-                <label for="edit-avatar-input" class="file-input-btn" data-i18n-key="choose_avatar">Choose
-                    Avatar</label>
-                <input type="file" id="edit-avatar-input" accept="image/*" style="display: none;">
-                <span id="edit-avatar-filename" class="file-input-name" data-i18n-key="no_file_chosen">No file
-                    chosen</span>
-            </div>
-            <label data-i18n-key="edit_profile_username">Username (not editable)</label>
-            <input type="text" id="edit-username-display" disabled class="disabled-input">
-            <label data-i18n-key="edit_profile_displayname">Display Name</label>
-            <input type="text" id="edit-display-name" data-i18n-placeholder="edit_display_name_placeholder"
-                placeholder="Display Name">
-            <label data-i18n-key="edit_profile_language">Preferred Language</label>
-            <div class="language-selector">
-                <button type="button" class="lang-option" data-lang="en">EN</button>
-                <button type="button" class="lang-option" data-lang="fr">FR</button>
-                <button type="button" class="lang-option" data-lang="es">ES</button>
-            </div>
-            <button type="submit" class="auth-submit-btn" data-i18n-key="save_changes">Save Changes</button>
-            <button type="button" id="cancel-edit-profile" class="auth-cancel-btn"
-                data-i18n-key="cancel">Cancel</button>
-            <div id="edit-profile-message" class="auth-message"></div>
-        </form>
     </div>
 
     <div id="mode-selection" class="screen">
@@ -225,6 +197,36 @@
                 </button>
             </div>
         </div>
+    </div>
+
+    <div id="edit-profile-panel">
+        <form id="edit-profile-form" class="auth-form edit-profile-form">
+            <h2 data-i18n-key="edit_profile_title">Edit Profile</h2>
+            <img id="edit-avatar-preview" class="edit-avatar-preview" src="/avatars/default_avatar.png"
+                alt="Avatar Preview">
+            <div class="file-input-wrapper">
+                <label for="edit-avatar-input" class="file-input-btn" data-i18n-key="choose_avatar">Choose
+                    Avatar</label>
+                <input type="file" id="edit-avatar-input" accept="image/*" style="display: none;">
+                <span id="edit-avatar-filename" class="file-input-name" data-i18n-key="no_file_chosen">No file
+                    chosen</span>
+            </div>
+            <label data-i18n-key="edit_profile_username">Username (not editable)</label>
+            <input type="text" id="edit-username-display" disabled class="disabled-input">
+            <label data-i18n-key="edit_profile_displayname">Display Name</label>
+            <input type="text" id="edit-display-name" data-i18n-placeholder="edit_display_name_placeholder"
+                placeholder="Display Name">
+            <label data-i18n-key="edit_profile_language">Preferred Language</label>
+            <div class="language-selector">
+                <button type="button" class="lang-option" data-lang="en">EN</button>
+                <button type="button" class="lang-option" data-lang="fr">FR</button>
+                <button type="button" class="lang-option" data-lang="es">ES</button>
+            </div>
+            <button type="submit" class="auth-submit-btn" data-i18n-key="save_changes">Save Changes</button>
+            <button type="button" id="cancel-edit-profile" class="auth-cancel-btn"
+                data-i18n-key="cancel">Cancel</button>
+            <div id="edit-profile-message" class="auth-message"></div>
+        </form>
     </div>
 
     <div id="chat-panel">

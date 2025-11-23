@@ -330,30 +330,6 @@ body {
     background: #0066cc;
 }
 
-.password-requirements {
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid #666;
-    border-radius: 5px;
-    padding: 10px;
-    margin: 10px 0;
-    color: #00ff00;
-    font-size: 0.75rem;
-}
-
-.password-requirements ul {
-    list-style: none;
-    padding: 0;
-}
-
-.password-requirements li {
-    padding: 3px 0;
-    transition: color 0.3s ease;
-}
-
-.password-requirements li.met {
-    color: #00ff00 !important;
-}
-
 .edit-profile-form {
     position: relative;
     z-index: 150;
@@ -971,6 +947,29 @@ button:active {
     display: flex;
 }
 
+/* Edit Profile Panel - similar to chat-panel */
+#edit-profile-panel {
+    font-family: 'Press Start 2P', cursive;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 80px;
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - 80px);
+    background: #000;
+    padding: 20px;
+    border: none;
+    box-shadow: none;
+    z-index: 300;
+}
+
+#edit-profile-panel.active {
+    display: flex;
+}
+
 #chat-container {
     display: flex;
     width: 95%;
@@ -1131,7 +1130,7 @@ button:active {
     transition: all 0.3s ease;
 }
 
-.switch-container input[type="checkbox"]:checked+.switch-slider {
+.switch-container input[type="checkbox"]:checked + .switch-slider {
     background: #00ff00;
 }
 
@@ -1147,7 +1146,7 @@ button:active {
     transition: all 0.3s ease;
 }
 
-.switch-container input[type="checkbox"]:checked+.switch-slider::after {
+.switch-container input[type="checkbox"]:checked + .switch-slider::after {
     left: 22px;
     background: #000;
 }
@@ -1282,29 +1281,6 @@ button:active {
     text-align: center;
     box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
     flex-shrink: 0;
-}
-
-/* Bouton pour supprimer une conversation */
-.conversation-delete-btn {
-    background: none;
-    border: none;
-    color: #ff0000;
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 0 5px;
-    margin-left: auto;
-    opacity: 0;
-    transition: opacity 0.2s, color 0.2s;
-    flex-shrink: 0;
-}
-
-.conversation-tab:hover .conversation-delete-btn {
-    opacity: 1;
-}
-
-.conversation-delete-btn:hover {
-    color: #ff6666;
-    text-shadow: 0 0 5px #ff0000;
 }
 
 #chatbox {

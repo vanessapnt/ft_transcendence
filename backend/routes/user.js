@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { statements } = require('../database');
+const logger = require('../logger');
 
 const router = express.Router();
 
@@ -63,14 +64,18 @@ router.get('/profile', requireAuth, (req, res) => {
   console.log('Session at /profile:', req.session);
   console.log('User at /profile:', req.user);
   try {
-    const user = statements.getUserById.get(req.session.userId);
+    const userId = req.session.userId;
+    logger.info('User profile access', { userId });
+    const user = statements.getUserById.get(userId);
     if (!user) {
+      logger.warn('User profile not found', { userId });
       return res.status(404).json({ error: 'User not found' });
     }
 
     const { password_hash, ...userData } = user;
     res.json({ user: userData });
   } catch (error) {
+    logger.error('Get profile error', { error: error.message, stack: error.stack });
     console.error('Get profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -80,14 +85,17 @@ router.get('/profile', requireAuth, (req, res) => {
 router.get('/profile/:username', (req, res) => {
   try {
     const { username } = req.params;
+    logger.info('Profile lookup by username', { username });
     const user = statements.getUserByUsername.get(username);
     if (!user) {
+      logger.warn('User not found by username', { username });
       return res.status(404).json({ error: 'User not found' });
     }
 
     const { password_hash, oauth_id, oauth_provider, ...userData } = user;
     res.json({ user: userData });
   } catch (error) {
+    logger.error('Get user by username error', { username: req.params.username, error: error.message });
     console.error('Get user by username error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -98,6 +106,8 @@ router.put('/profile', requireAuth, (req, res) => {
   try {
     const { username, email, display_name, preferred_language } = req.body;
     const userId = req.session.userId;
+
+    logger.info('Profile update attempt', { userId, username, email, display_name, preferred_language });
 
     // Validate input
     const errors = [];
@@ -115,6 +125,7 @@ router.put('/profile', requireAuth, (req, res) => {
     }
 
     if (errors.length > 0) {
+      logger.warn('Profile update validation failed', { userId, errors });
       return res.status(400).json({ errors });
     }
 
@@ -152,12 +163,14 @@ router.put('/profile', requireAuth, (req, res) => {
     // Return updated user
     const updatedUser = statements.getUserById.get(userId);
     const { password_hash, ...userData } = updatedUser;
+    logger.info('Profile updated successfully', { userId, newUsername, newEmail, newDisplayName, newLanguage: preferred_language });
     res.json({
       message: 'Profile updated successfully',
       user: userData
     });
 
   } catch (error) {
+    logger.error('Update profile error', { userId: req.session.userId, error: error.message });
     console.error('Update profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -167,11 +180,13 @@ router.put('/profile', requireAuth, (req, res) => {
 router.post('/avatar', requireAuth, upload.single('avatar'), (req, res) => {
   try {
     if (!req.file) {
+      logger.warn('Avatar upload failed: no file uploaded', { userId: req.session.userId });
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     const userId = req.session.userId;
     const avatarPath = req.file.filename;
+    logger.info('Avatar upload started', { userId, filename: req.file.filename, size: req.file.size });
 
     // Delete old avatar if exists
     const currentUser = statements.getUserById.get(userId);
@@ -188,12 +203,14 @@ router.post('/avatar', requireAuth, upload.single('avatar'), (req, res) => {
     // Return updated user
     const updatedUser = statements.getUserById.get(userId);
     const { password_hash, ...userData } = updatedUser;
+    logger.info('Avatar uploaded successfully', { userId, avatarPath });
     res.json({
       message: 'Avatar uploaded successfully',
       user: userData
     });
 
   } catch (error) {
+    logger.error('Avatar upload error', { userId: req.session.userId, error: error.message });
     console.error('Avatar upload error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -203,9 +220,11 @@ router.post('/avatar', requireAuth, upload.single('avatar'), (req, res) => {
 router.delete('/avatar', requireAuth, (req, res) => {
   try {
     const userId = req.session.userId;
+    logger.info('Avatar deletion attempt', { userId });
     const user = statements.getUserById.get(userId);
 
     if (!user.avatar_path) {
+      logger.warn('Avatar deletion failed: no avatar exists', { userId });
       return res.status(404).json({ error: 'No avatar to delete' });
     }
 
@@ -221,12 +240,14 @@ router.delete('/avatar', requireAuth, (req, res) => {
     // Return updated user
     const updatedUser = statements.getUserById.get(userId);
     const { password_hash, ...userData } = updatedUser;
+    logger.info('Avatar deleted successfully', { userId, deletedFile: user.avatar_path });
     res.json({
       message: 'Avatar deleted successfully',
       user: userData
     });
 
   } catch (error) {
+    logger.error('Avatar delete error', { userId: req.session.userId, error: error.message });
     console.error('Avatar delete error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -236,6 +257,7 @@ router.delete('/avatar', requireAuth, (req, res) => {
 router.get('/avatar/:username', (req, res) => {
   try {
     const { username } = req.params;
+    logger.info('Avatar requested', { username });
 
     const getDefaultAvatar = () => {
       // Use default_avatar.png

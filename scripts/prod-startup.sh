@@ -88,13 +88,41 @@ show_service_links() {
 	echo -e "${PURPLE}└─────────────────────────────────────────────────────────────┘${NC}"
 	echo ""
 	
-	# Section COMMANDES UTILES
-	echo -e "${BOLD}${YELLOW}📋 COMMANDES UTILES${NC}"
+	# Section MONITORING & LOGS
+	echo -e "${BOLD}${YELLOW}📊 MONITORING & LOGS${NC}"
 	echo -e "${YELLOW}┌─────────────────────────────────────────────────────────────┐${NC}"
+	
+	local es_status="🟢 ONLINE"
+	if ! curl -s --max-time 2 http://127.0.0.1:9200 >/dev/null 2>&1; then
+		es_status="🔴 OFFLINE"
+	fi
+	printf "${NC}│ %-17s │ ${BOLD}Elasticsearch${NC}%-26s │\n" "$es_status" ""
+	printf "${NC}│ 🔗 http://127.0.0.1:9200${NC}%-12s │\n" ""
+	
+	local kibana_status="🟢 ONLINE"
+	if ! curl -s --max-time 2 http://127.0.0.1:5601 >/dev/null 2>&1; then
+		kibana_status="🔴 OFFLINE"
+	fi
+	printf "${NC}│ %-17s │ ${BOLD}Kibana${NC}%-33s │\n" "$kibana_status" ""
+	printf "${NC}│ 🔗 http://127.0.0.1:5601${NC}%-12s │\n" ""
+	
+	local grafana_status="🟢 ONLINE"
+	if ! curl -s --max-time 2 http://127.0.0.1:3001 >/dev/null 2>&1; then
+		grafana_status="🔴 OFFLINE"
+	fi
+	printf "${NC}│ %-17s │ ${BOLD}Grafana${NC}%-32s │\n" "$grafana_status" ""
+	printf "${NC}│ 🔗 http://127.0.0.1:3001${NC}%-12s │\n" ""
+	
+	echo -e "${YELLOW}└─────────────────────────────────────────────────────────────┘${NC}"
+	echo ""
+	
+	# Section COMMANDES UTILES
+	echo -e "${BOLD}${BLUE}📋 COMMANDES UTILES${NC}"
+	echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
 	printf "${NC}│ 📊 Logs en temps réel   │ ${BOLD}make logs${NC}%-23s │\n" ""
 	printf "${NC}│ 🛑 Arrêter les services │ ${BOLD}make stop${NC}%-23s │\n" ""
 	printf "${NC}│ 🧹 Nettoyer & redémarrer│ ${BOLD}make clean${NC}%-22s │\n" ""
-	echo -e "${YELLOW}└─────────────────────────────────────────────────────────────┘${NC}"
+	echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
 	echo ""
 	
 	# Footer

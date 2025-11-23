@@ -10,12 +10,16 @@ require('dotenv').config();
 
 const { statements } = require('./database');
 const { setupChat } = require('./chat');
+const logger = require('./logger');
+const { metricsMiddleware, register } = require('./metrics');
 
 const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 8000;
 
 // Middleware
+app.use(metricsMiddleware);
+
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -81,6 +85,7 @@ app.use('/api/matches', require('./routes/matches'));
 
 // Health check
 app.get('/health', (req, res) => {
+  logger.info('Health check requested');
   const fs = require('fs');
   const path = require('path');
   const dbPath = path.join(__dirname, 'data', 'transcendence.db');
@@ -100,14 +105,31 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Endpoint Prometheus metrics
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    const metrics = await register.metrics();
+    res.end(metrics);
+  } catch (error) {
+    logger.error('Metrics endpoint error', { error: error.message });
+    res.status(500).end('Metrics error');
+  }
+});
+
 // 404 handler
 app.use('*', (req, res) => {
+  logger.warn('Route not found', { path: req.path, method: req.method });
   res.status(404).json({ error: 'Route not found' });
 });
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error('Unhandled error', { 
+    error: err.message, 
+    stack: err.stack,
+    path: req.path
+  });
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
@@ -118,6 +140,7 @@ const server = http.createServer(app);
 setupChat(server);
 
 server.listen(PORT, () => {
+  logger.info(`Backend server running on port ${PORT}`);
   console.log(`🚀 Backend server running on port ${PORT}`);
 });
 

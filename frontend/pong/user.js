@@ -61,21 +61,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         var _a;
         // Cacher le chat s'il est ouvert
         const chatPanel = document.getElementById('chat-panel');
-        if (chatPanel && chatPanel.style.display !== 'none') {
+        if (chatPanel && chatPanel.classList.contains('active')) {
             // Utiliser la fonction toggleChat si elle existe
             if (typeof window.toggleChat === 'function') {
                 window.toggleChat();
             }
             else {
                 // Sinon cacher manuellement et restaurer les écrans
-                chatPanel.style.display = 'none';
-                const screens = document.querySelectorAll('.screen');
-                const privateMessagesBtn = document.getElementById('private-messages-btn');
-                screens.forEach(screen => {
-                    screen.style.display = '';
-                });
-                if (privateMessagesBtn) {
-                    privateMessagesBtn.textContent = 'Private Messages';
+                chatPanel.classList.remove('active');
+                const homeView = document.getElementById('home-view');
+                if (homeView) {
+                    homeView.classList.add('active');
                 }
             }
         }

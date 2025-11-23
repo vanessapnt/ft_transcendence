@@ -3,10 +3,13 @@
     document.addEventListener('DOMContentLoaded', function () {
         const avatarWrapper = document.getElementById('avatar-wrapper');
         const dropdownMenu = document.getElementById('user-dropdown-menu');
+        const profileBtn = document.getElementById('profile-btn');
         const privateMessagesBtn = document.getElementById('private-messages-btn');
         const editProfileBtn = document.getElementById('edit-profile-btn');
         const logoutBtn = document.getElementById('logout-btn');
-        if (!avatarWrapper || !dropdownMenu || !privateMessagesBtn || !editProfileBtn || !logoutBtn) {
+        const profilePanel = document.getElementById('profile-panel');
+        const profilePanelClose = document.getElementById('profile-panel-close');
+        if (!avatarWrapper || !dropdownMenu || !profileBtn || !privateMessagesBtn || !editProfileBtn || !logoutBtn) {
             console.error('❌ Dropdown menu elements not found');
             return;
         }
@@ -21,6 +24,28 @@
                 dropdownMenu.classList.remove('show');
             }
         });
+        // Gérer le clic sur Profile
+        profileBtn.addEventListener('click', function () {
+            if (profilePanel) {
+                profilePanel.classList.add('active');
+                dropdownMenu.classList.remove('show');
+                // Charger les infos du profil
+                if (window.loadUserProfile) {
+                    window.loadUserProfile();
+                }
+            }
+        });
+        // Fermer le profile panel
+        if (profilePanelClose && profilePanel) {
+            profilePanelClose.addEventListener('click', function () {
+                profilePanel.classList.remove('active');
+            });
+            profilePanel.addEventListener('click', function (e) {
+                if (e.target === profilePanel) {
+                    profilePanel.classList.remove('active');
+                }
+            });
+        }
         // Gérer le clic sur Private Messages
         privateMessagesBtn.addEventListener('click', function () {
             if (window.toggleChat)

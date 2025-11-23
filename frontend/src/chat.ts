@@ -504,9 +504,19 @@
 
             if (this.currentChatLabel) {
                 const i18n = (window as any).i18n;
-                this.currentChatLabel.textContent = user
+                this.currentChatLabel.innerHTML = user
                     ? (i18n ? i18n.t('chat_conversation_with', { user }) : `Conversation avec ${user}`)
                     : (i18n ? i18n.t('chat_no_conversation') : "Aucune conversation sélectionnée");
+                
+                // Ajouter un click handler sur le label pour afficher le profil
+                if (user && this.currentChatLabel) {
+                    this.currentChatLabel.style.cursor = 'pointer';
+                    this.currentChatLabel.addEventListener('click', () => {
+                        if ((window as any).showUserProfile) {
+                            (window as any).showUserProfile(user);
+                        }
+                    });
+                }
             }
             this.renderConversationTabs();
             this.renderCurrentConversation();
@@ -994,6 +1004,24 @@
                 // Définir un callback pour la fin du match (retour au menu)
                 pong.PongGame.setCallback((winner: string) => {
                     console.log('🏆 Winner:', winner);
+                    
+                    // Sauvegarder le match dans la base de données
+                    const opponentUsername = player1 === this.username ? player2 : player1;
+                    fetch('/api/matches/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            player2_username: opponentUsername,
+                            winner_username: winner,
+                            player1_score: 1,
+                            player2_score: 0,
+                            match_type: 'invitation'
+                        })
+                    })
+                        .then(res => res.json())
+                        .then(data => console.log('✅ Match sauvegardé:', data))
+                        .catch(err => console.error('❌ Erreur sauvegarde match:', err));
+                    
                     // Arrêter le jeu
                     if (pong.PongGame) {
                         pong.PongGame.stop();
@@ -1026,6 +1054,15 @@
                     // Retourner au menu principal
                     if (pong.Nav) {
                         pong.Nav.showHome();
+                    }
+
+                    // Fermer le profile panel et le vider
+                    const profilePanel = document.getElementById('profile-panel') as HTMLElement;
+                    if (profilePanel) {
+                        profilePanel.classList.remove('active');
+                    }
+                    if ((window as any).clearProfilePanel) {
+                        (window as any).clearProfilePanel();
                     }
                 });
 
@@ -1167,7 +1204,16 @@
             } else {
                 const nameSpan = document.createElement("span");
                 nameSpan.classList.add("chat-username");
+                nameSpan.style.cursor = 'pointer';
+                nameSpan.style.textDecoration = 'underline';
                 nameSpan.textContent = from + ": ";
+                
+                // Ajouter un click handler pour afficher le profil
+                nameSpan.addEventListener('click', () => {
+                    if ((window as any).showUserProfile) {
+                        (window as any).showUserProfile(from);
+                    }
+                });
 
                 const textSpan = document.createElement("span");
                 textSpan.textContent = text;

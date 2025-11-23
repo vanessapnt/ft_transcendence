@@ -250,6 +250,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Fonction pour afficher le profil d'un utilisateur au clic
+    (window as any).showUserProfile = function(username: string) {
+        if ((window as any).loadOtherUserProfile) {
+            (window as any).loadOtherUserProfile(username);
+        }
+    };
+
     // Observer les changements dans le titre de la conversation pour réinitialiser le bouton
     const observer = new MutationObserver(function (mutations) {
         mutations.forEach(function (mutation) {

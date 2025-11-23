@@ -77,6 +77,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/oauth', require('./routes/oauth'));
 app.use('/api/friends', require('./routes/friends'));
+app.use('/api/matches', require('./routes/matches'));
 
 // Health check
 app.get('/health', (req, res) => {

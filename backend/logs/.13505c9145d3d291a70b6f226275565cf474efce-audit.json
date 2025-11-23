@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/app/logs/.13505c9145d3d291a70b6f226275565cf474efce-audit.json",
+    "files": [
+        {
+            "date": 1763924295938,
+            "name": "/app/logs/transcendence-2025-11-23.log",
+            "hash": "2595f2d6e2f62753e3afaf4219af4c09bc213538e2ae4fca24b33ae827be656b"
+        }
+    ],
+    "hashType": "sha256"
+}

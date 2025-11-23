@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { statements } = require('../database');
+const logger = require('../logger');
 
 const router = express.Router();
 
@@ -27,6 +28,8 @@ const validateUserInput = (username, email, password) => {
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password, display_name } = req.body;
+    
+    logger.info('Register attempt', { username, email });
 
     // Validate input
     const errors = validateUserInput(username, email, password);
@@ -72,6 +75,8 @@ router.post('/register', async (req, res) => {
     // Set session
     req.session.userId = user.id;
     req.session.lang = user.preferred_language || preferredLang;
+    
+    logger.info('User registered successfully', { userId: user.id, username, email });
 
     // Return user data (without password)
     const { password_hash, ...userData } = user;
@@ -88,29 +93,35 @@ router.post('/register', async (req, res) => {
 
 // Login
 router.post('/login', async (req, res) => {
-  console.log('POST /api/auth/login', req.body);
   try {
     const { username, password } = req.body;
+    
+    logger.info('Login attempt', { username });
 
     if (!username || !password) {
+      logger.warn('Login failed: missing credentials', { username });
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
     // Find user
     const user = statements.getUserByUsername.get(username);
     if (!user || !user.password_hash) {
+      logger.warn('Login failed: user not found', { username });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Check password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
+      logger.warn('Login failed: invalid password', { userId: user.id, username });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Set session
     req.session.userId = user.id;
     req.session.lang = user.preferred_language || 'en';
+    
+    logger.info('User logged in', { userId: user.id, username });
 
     // Return user data
     const { password_hash, ...userData } = user;

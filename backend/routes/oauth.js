@@ -3,6 +3,7 @@ const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { statements } = require('../database');
+const logger = require('../logger');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
@@ -15,6 +16,7 @@ async function downloadAvatar(url, userId, provider, currentUser = null) {
   if (!url) return null;
 
   try {
+    logger.info('Avatar download started', { userId, provider });
     // For Google, increase image size from s96-c to s400-c for better quality
     if (provider === 'google' && url.includes('googleusercontent.com')) {
       url = url.replace(/=s\d+-c/, '=s400-c');
@@ -97,12 +99,14 @@ passport.use(new GitHubStrategy({
 },
   async (accessToken, refreshToken, profile, done) => {
     try {
+      logger.info('GitHub OAuth attempt', { githubId: profile.id, username: profile.username });
       // Check if user already exists with this GitHub ID
       let user = statements.getUserByOAuth.get('github', profile.id);
 
       const avatarUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
 
       if (user) {
+        logger.info('Existing GitHub user logged in', { userId: user.id, username: user.username, githubId: profile.id });
         // Download and save avatar locally
         const localAvatarPath = await downloadAvatar(avatarUrl, user.id, 'github', user);
 
@@ -122,6 +126,7 @@ passport.use(new GitHubStrategy({
       if (profile.emails && profile.emails.length > 0) {
         user = statements.getUserByEmail.get(profile.emails[0].value);
         if (user) {
+          logger.info('GitHub user linked to existing email', { userId: user.id, email: profile.emails[0].value, githubId: profile.id });
           // Download and save avatar locally
           const localAvatarPath = await downloadAvatar(avatarUrl, user.id, 'github', user);
 
@@ -143,6 +148,7 @@ passport.use(new GitHubStrategy({
       const email = profile.emails && profile.emails.length > 0 ?
         profile.emails[0].value : `${profile.id}@github.local`;
 
+      logger.info('Creating new GitHub user', { username, email, githubId: profile.id });
       const result = statements.createUser.run(
         username,
         email,
@@ -164,9 +170,11 @@ passport.use(new GitHubStrategy({
       );
 
       user = statements.getUserById.get(result.lastInsertRowid);
+      logger.info('New GitHub user created successfully', { userId: result.lastInsertRowid, username });
       return done(null, user);
 
     } catch (error) {
+      logger.error('GitHub OAuth error', { error: error.message, stack: error.stack });
       console.error('GitHub OAuth error:', error);
       return done(error, null);
     }
@@ -181,12 +189,14 @@ passport.use(new GoogleStrategy({
 },
   async (accessToken, refreshToken, profile, done) => {
     try {
+      logger.info('Google OAuth attempt', { googleId: profile.id, displayName: profile.displayName });
       // Check if user already exists with this Google ID
       let user = statements.getUserByOAuth.get('google', profile.id);
 
       const avatarUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
 
       if (user) {
+        logger.info('Existing Google user logged in', { userId: user.id, username: user.username, googleId: profile.id });
         // Download and save avatar locally
         const localAvatarPath = await downloadAvatar(avatarUrl, user.id, 'google', user);
 
@@ -206,6 +216,7 @@ passport.use(new GoogleStrategy({
       if (profile.emails && profile.emails.length > 0) {
         user = statements.getUserByEmail.get(profile.emails[0].value);
         if (user) {
+          logger.info('Google user linked to existing email', { userId: user.id, email: profile.emails[0].value, googleId: profile.id });
           // Download and save avatar locally
           const localAvatarPath = await downloadAvatar(avatarUrl, user.id, 'google', user);
 
@@ -227,6 +238,7 @@ passport.use(new GoogleStrategy({
       const email = profile.emails && profile.emails.length > 0 ?
         profile.emails[0].value : `${profile.id}@google.local`;
 
+      logger.info('Creating new Google user', { username, email, googleId: profile.id });
       const result = statements.createUser.run(
         username,
         email,
@@ -248,9 +260,11 @@ passport.use(new GoogleStrategy({
       );
 
       user = statements.getUserById.get(result.lastInsertRowid);
+      logger.info('New Google user created successfully', { userId: result.lastInsertRowid, username });
       return done(null, user);
 
     } catch (error) {
+      logger.error('Google OAuth error', { error: error.message, stack: error.stack });
       console.error('Google OAuth error:', error);
       return done(error, null);
     }
@@ -270,6 +284,7 @@ router.get('/login/google',
 router.get('/callback/github',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
+    logger.info('GitHub OAuth callback - user authenticated', { userId: req.user?.id, username: req.user?.username });
     console.log('✅ Authenticated user:', req.user);
     // Redirection dynamique selon l'environnement
     const frontendUrl = process.env.FRONTEND_URL || 'https://localhost:8443';
@@ -280,6 +295,7 @@ router.get('/callback/github',
 router.get('/callback/google',
   passport.authenticate('google', { failureRedirect: '/login' }),
   (req, res) => {
+    logger.info('Google OAuth callback - user authenticated', { userId: req.user?.id, username: req.user?.username });
     const frontendUrl = process.env.FRONTEND_URL || 'https://localhost:8443';
     res.redirect(frontendUrl);
   }
@@ -287,16 +303,21 @@ router.get('/callback/google',
 
 // Logout from OAuth (same as regular logout)
 router.post('/logout', (req, res) => {
+  const userId = req.user?.id;
+  logger.info('Logout attempt', { userId });
   req.logout((err) => {
     if (err) {
+      logger.error('OAuth logout error', { userId, error: err.message });
       console.error('OAuth logout error:', err);
       return res.status(500).json({ error: 'Could not log out' });
     }
     req.session.destroy((err) => {
       if (err) {
+        logger.error('Session destroy error', { userId, error: err.message });
         console.error('Session destroy error:', err);
         return res.status(500).json({ error: 'Could not destroy session' });
       }
+      logger.info('User logged out successfully', { userId });
       res.clearCookie('connect.sid');
       res.json({ message: 'Logged out successfully' });
     });

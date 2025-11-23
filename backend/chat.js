@@ -2,6 +2,7 @@
 const WebSocket = require("ws");
 const { statements } = require("./database");
 const { t } = require("./translations");
+const logger = require("./logger");
 
 /**
  * Attache le chat WebSocket à un serveur HTTP existant.
@@ -10,6 +11,8 @@ const { t } = require("./translations");
 function setupChat(server) {
   // On crée un WebSocket Server monté sur le même serveur HTTP (sur /chat)
   const wss = new WebSocket.Server({ server, path: "/chat" });
+  
+  logger.info('WebSocket chat server initialized');
 
   // socket => { username, displayName, userId, blocked: Set }
   const clients = new Map();
@@ -96,12 +99,11 @@ function setupChat(server) {
           // Utiliser la langue envoyée par le client (langue actuelle du site) ou celle de la DB
           clientData.language = data.language || user.preferred_language || 'en';
 
-          console.log("✅ Utilisateur connecté:", {
+          logger.info('User connected to chat', {
+            userId: user.id,
             username: clientData.username,
             displayName: clientData.displayName,
-            language: clientData.language,
-            preferredLanguageFromDB: user.preferred_language,
-            totalConnected: clients.size
+            language: clientData.language
           });
 
           const welcomeMsg = t('welcome', clientData.language, { user: clientData.displayName });
@@ -328,6 +330,12 @@ function setupChat(server) {
         if (data.type === "dm" && data.to && data.text) {
           const fromUser = clientData.username;
           const fromDisplayName = clientData.displayName;
+          
+          logger.info('Chat message sent', {
+            from: fromUser,
+            to: data.to,
+            messageLength: data.text.length
+          });
 
           // ✅ Vérifier que l'utilisateur destinataire existe dans la base de données
           const targetUser = statements.getUserByUsername.get(data.to);

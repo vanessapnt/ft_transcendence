@@ -5,21 +5,15 @@
 
 # Commandes par défaut
 help:
-	@echo "╔════════════════════════════════════════════════════════╗"
-	@echo "║     🎮 Transcendence - Commandes disponibles 🎮         ║"
-	@echo "╠════════════════════════════════════════════════════════╣"
-	@echo "║  make dev              → Mode développement            ║"
-	@echo "║  make dev-verbose      → Mode dev avec logs détaillés  ║"
-	@echo "║  make prod             → Lancer en mode production     ║"
-	@echo "║  make stop             → Arrêter les services          ║"
-	@echo "║  make build            → Rebuilder les images          ║"
-	@echo "║  make clean            → Nettoyer tout (volumes inclus)║"
-	@echo "║  make logs             → Afficher les logs             ║"
-	@echo "║  make links            → Afficher tous les liens       ║"
-	@echo "║  make serve-pong       → Servir frontend/pong (jeu)    ║"
-	@echo "║  make serve-pong-dev   → Watch .ts + live-reload (dev) ║"
-	@echo "║  make reset-db    → Supprimer la DB et relancer        ║"
-	@echo "╚════════════════════════════════════════════════════════╝"
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║        🎮 Transcendence - Commandes disponibles 🎮          ║"
+	@echo "╠════════════════════════════════════════════════════════════╣"
+	@echo "║  make dev              → Mode développement              ║"
+	@echo "║  make prod             → Lancer en mode production       ║"
+	@echo "║  make stop             → Arrêter les services            ║"
+	@echo "║  make clean            → Nettoyer tout (BD + volumes)    ║"
+	@echo "║  make logs             → Afficher les logs               ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
 
 # Mode développement
 dev-verbose: ## 🚀 Lance l'environnement de développement avec logs détaillés
@@ -46,7 +40,6 @@ while kill -0 $$DC_PID 2>/dev/null; do\
 done;\
 wait $$DC_PID || true'
 	@echo ""
-	@echo "⏳ Initialisation en cours..."
 	@./scripts/dev-startup.sh
 
 # Mode production
@@ -55,6 +48,7 @@ prod:
 	@bash ./scripts/fix-elk-perms.sh
 	@bash ./scripts/ensure-ssl.sh
 	@docker compose -f docker-compose.prod.yml up -d --build
+	@echo ""
 	@bash ./scripts/prod-startup.sh
 
 # # Logs production
@@ -76,7 +70,8 @@ stop:
 reset-db: ## 🗑️ Supprime la base de données et relance le dev
 	@echo "🗑️ Suppression de la base de données..."
 	@docker compose -f docker-compose.dev.yml down -v
-	@rm -f backend/instance/transcendence.db
+	@rm -f backend/data/transcendence.db
+	@rm -rf backend/data/*
 	@mkdir -p backend/avatars
 	@if [ -f backend/avatars/default_avatar.png ]; then mv backend/avatars/default_avatar.png /tmp/default_avatar_backup.png; fi
 	@rm -f backend/avatars/*
@@ -100,7 +95,7 @@ clean:
 	@echo "🗑️ Suppression de tous les conteneurs restants du projet..."
 	-docker ps -aq --filter "name=elasticsearch" --filter "name=kibana" --filter "name=logstash" --filter "name=filebeat" --filter "name=prometheus" --filter "name=grafana" --filter "name=nginx" --filter "name=backend" --filter "name=frontend" --filter "name=node-exporter" --filter "name=testtrans" | xargs -r docker rm -f 2>/dev/null || true
 	@echo "🗑️ Suppression de la base de données et des données stockées..."
-	@rm -f backend/instance/transcendence.db
+	@rm -f backend/data/transcendence.db
 	@rm -rf backend/data/*
 	@echo "🗑️ Suppression des avatars (sauf default)..."
 	@if [ -f backend/avatars/default_avatar.png ]; then mv backend/avatars/default_avatar.png /tmp/default_avatar_backup.png; fi

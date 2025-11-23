@@ -217,6 +217,39 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    const addFriendBtn = document.getElementById('add-friend-btn') as HTMLButtonElement;
+    if (addFriendBtn) {
+        addFriendBtn.addEventListener('click', async function () {
+            const currentUser = (window as any).getCurrentChatUser();
+            if (!currentUser) {
+                const i18n = (window as any).i18n;
+                alert(i18n ? i18n.t('chat_no_conversation') : 'Aucune conversation sélectionnée');
+                return;
+            }
+            try {
+                const response = await fetch('/api/friends/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    const i18n = (window as any).i18n;
+                    alert(i18n ? i18n.t('friend_added_success', { user: currentUser }) : `${currentUser} a été ajouté en ami`);
+                    // Rafraîchir la liste d'amis
+                    if ((window as any).PONG?.Chat?.refreshFriendsList) {
+                        await (window as any).PONG.Chat.refreshFriendsList();
+                    }
+                } else {
+                    alert(data.error || 'Erreur lors de l\'ajout d\'ami');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur réseau');
+            }
+        });
+    }
+
     // Observer les changements dans le titre de la conversation pour réinitialiser le bouton
     const observer = new MutationObserver(function (mutations) {
         mutations.forEach(function (mutation) {

@@ -76,6 +76,7 @@ app.use('/api/i18n', i18nRoute);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/oauth', require('./routes/oauth'));
+app.use('/api/friends', require('./routes/friends'));
 
 // Health check
 app.get('/health', (req, res) => {

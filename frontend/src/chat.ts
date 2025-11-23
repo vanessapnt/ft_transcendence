@@ -20,6 +20,7 @@
         to?: string;
         username?: string;
         target?: string;
+        users?: string[]; // Liste d'utilisateurs (ex. onlineUsersList)
         accepted?: boolean;
         isHistory?: boolean; // Pour les messages d'historique
         timestamp?: string; // Pour les messages d'historique
@@ -44,6 +45,9 @@
         private ws: WebSocket | null = null;
         private historyLoaded: Set<string> = new Set(); // Suivi des historiques chargés
         public blockedUsers: Set<string> = new Set(); // Liste des utilisateurs bloqués
+        private friendsOnly: boolean = false; // Filtrage par amis
+        private friendsList: Set<string> = new Set(); // Liste des amis
+        private onlineUsers: Set<string> = new Set(); // Liste des utilisateurs en ligne
 
         constructor() {
             this.init();
@@ -62,19 +66,29 @@
                 this.profileName = document.getElementById("profile-modal-name");
                 this.profileUsername = document.getElementById("profile-modal-username");
                 this.profileAvatar = document.getElementById("profile-modal-avatar") as HTMLImageElement;
-                
+
                 this.setupEventListeners();
+
+
+
+                // Ajouter l'event listener pour le switch Friends Only
+                const friendsToggle = document.getElementById("friends-only-toggle") as HTMLInputElement;
+                if (friendsToggle) {
+                    friendsToggle.addEventListener("change", () => {
+                        this.friendsOnly = friendsToggle.checked;
+                        console.log("🔄 Filtre amis:", this.friendsOnly ? "activé" : "désactivé");
+                        this.renderConversationTabs();
+                    });
+                }
+
                 console.log('✅ Chat DOM initialized');
-                
-                // NE PAS initialiser automatiquement - attendre le login/signup
-                // this.initializeChat();
             });
         }
 
         // Méthode publique pour initialiser le chat après login
         public async initializeChat(): Promise<void> {
             console.log("🎯 Initialisation du chat après login...");
-            
+
             if (!this.chatBox || !this.messageInput || !this.btnSend) {
                 console.error("❌ Éléments DOM du chat non chargés");
                 return;
@@ -91,6 +105,8 @@
                     if (data.user && data.user.username) {
                         this.username = data.user.username;
                         console.log("✅ Username récupéré:", this.username);
+                        // Charger la liste des amis
+                        await this.loadFriendsList();
                         // Charger les conversations maintenant qu'on a le username
                         this.loadConversationsFromStorage();
                         // Connecter le WebSocket
@@ -105,6 +121,29 @@
             } catch (e) {
                 console.warn("❌ Erreur lors de la récupération du profil:", e);
             }
+        }
+
+        private async loadFriendsList(): Promise<void> {
+            try {
+                const response = await fetch('/api/friends/list', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    this.friendsList = new Set(data.friends.map((f: any) => f.username));
+                    console.log("✅ Liste d'amis chargée:", this.friendsList.size, "amis");
+                }
+            } catch (error) {
+                console.error("❌ Erreur lors du chargement de la liste d'amis:", error);
+            }
+        }
+
+
+        // Méthode publique pour rafraîchir la liste des amis
+        public async refreshFriendsList(): Promise<void> {
+            await this.loadFriendsList();
+            this.renderConversationTabs();
+            console.log("🔄 Liste d'amis rafraîchie");
         }
 
         private reconnectAttempts = 0;
@@ -170,10 +209,10 @@
                     const i18n = (window as any).i18n;
                     const currentLanguage = i18n ? i18n.getCurrentLanguage() : 'en';
                     console.log("🔐 Envoi du login:", this.username, "langue:", currentLanguage);
-                    this.ws.send(JSON.stringify({ 
-                        type: "login", 
+                    this.ws.send(JSON.stringify({
+                        type: "login",
                         username: this.username,
-                        language: currentLanguage 
+                        language: currentLanguage
                     }));
                     // Message de bienvenue désactivé
                 }
@@ -260,7 +299,7 @@
             this.unreadMessages = {}; // Vider les messages non lus
             this.blockedUsers.clear(); // Vider la liste des utilisateurs bloqués
             this.currentChatUser = null;
-            
+
             // Mettre à jour l'interface
             this.renderConversationTabs();
             this.updateAvatarNotification();
@@ -356,6 +395,33 @@
                 return;
             }
 
+            // Gestion du statut en ligne des utilisateurs
+            if (data.type === "userOnline") {
+                if (data.username) {
+                    this.onlineUsers.add(data.username);
+                    console.log(`🟢 ${data.username} est maintenant en ligne`);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
+            if (data.type === "userOffline") {
+                if (data.username) {
+                    this.onlineUsers.delete(data.username);
+                    console.log(`🔴 ${data.username} est maintenant hors ligne`);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
+            // Liste des utilisateurs en ligne
+            if (data.type === "onlineUsersList") {
+                if (data.users && Array.isArray(data.users)) {
+                    this.onlineUsers = new Set(data.users);
+                    console.log(`📅 Liste des utilisateurs en ligne reçue:`, data.users);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
+
             const from = data.from;
             const text = data.text;
 
@@ -429,13 +495,13 @@
 
         private setCurrentChatUser(user: string | null): void {
             this.currentChatUser = user;
-            
+
             // Réinitialiser les messages non lus pour cet utilisateur
             if (user && this.unreadMessages[user]) {
                 this.unreadMessages[user] = 0;
                 this.updateAvatarNotification();
             }
-            
+
             if (this.currentChatLabel) {
                 const i18n = (window as any).i18n;
                 this.currentChatLabel.textContent = user
@@ -445,6 +511,12 @@
             this.renderConversationTabs();
             this.renderCurrentConversation();
             this.updateBlockButton();
+
+
+            // Vérifier le statut d'ami et mettre à jour le bouton
+            if (user && (window as any).checkAndUpdateFriendButton) {
+                (window as any).checkAndUpdateFriendButton(user);
+            }
 
             // Charger automatiquement l'historique si disponible
             if (user && this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -457,7 +529,7 @@
             if (!blockBtn) return;
 
             const i18n = (window as any).i18n;
-            
+
             if (this.currentChatUser && this.blockedUsers.has(this.currentChatUser)) {
                 blockBtn.textContent = i18n ? i18n.t('chat_btn_unblock') : 'Débloquer';
                 blockBtn.title = i18n ? i18n.t('chat_btn_unblock_title') : 'Débloquer l\'utilisateur';
@@ -484,11 +556,19 @@
         private renderConversationTabs(): void {
             if (!this.conversationTabs) return;
             this.conversationTabs.innerHTML = "";
-            Object.keys(this.conversations).forEach((user) => {
+
+
+            // Filtrer les conversations selon le switch
+            let users = Object.keys(this.conversations);
+            if (this.friendsOnly) {
+                users = users.filter(user => this.friendsList.has(user));
+            }
+
+            users.forEach((user) => {
                 const tab = document.createElement("button");
                 tab.classList.add("conversation-tab");
                 if (user === this.currentChatUser) tab.classList.add("active");
-                
+
                 // Ajouter l'avatar de l'utilisateur
                 const avatar = document.createElement("img");
                 avatar.classList.add("conversation-tab-avatar");
@@ -497,19 +577,40 @@
                 avatar.onerror = () => {
                     avatar.src = '/api/user/avatar/default';
                 };
+
                 tab.appendChild(avatar);
-                
+
+
+                // Créer un conteneur pour l'avatar et l'indicateur de statut
+                const avatarContainer = document.createElement("div");
+                avatarContainer.classList.add("conversation-tab-avatar-container");
+                avatarContainer.style.position = "relative";
+                avatarContainer.style.display = "inline-block";
+
+                // Ajouter la pastille de statut
+                const statusIndicator = document.createElement("div");
+                statusIndicator.classList.add("status-indicator");
+
+                // Déterminer le statut en ligne
+                const isOnline = this.onlineUsers && this.onlineUsers.has(user);
+                statusIndicator.classList.add(isOnline ? 'online' : 'offline');
+
+                avatarContainer.appendChild(avatar);
+                avatarContainer.appendChild(statusIndicator);
+
+                tab.appendChild(avatarContainer);
+
                 // Créer un conteneur pour le nom et le badge
                 const contentDiv = document.createElement("div");
                 contentDiv.classList.add("conversation-tab-content");
-                
+
                 const username = document.createElement("span");
                 username.classList.add("conversation-tab-username");
                 username.textContent = user;
                 contentDiv.appendChild(username);
-                
+
                 tab.appendChild(contentDiv);
-                
+
                 // Ajouter le badge de notification si des messages non lus
                 const unreadCount = this.unreadMessages[user] || 0;
                 if (unreadCount > 0) {
@@ -518,7 +619,7 @@
                     badge.textContent = unreadCount > 99 ? "99+" : unreadCount.toString();
                     tab.appendChild(badge);
                 }
-                
+
                 tab.addEventListener("click", () => {
                     this.setCurrentChatUser(user);
                 });
@@ -561,7 +662,7 @@
             // Ne sélectionner automatiquement que si c'est déjà la conversation active ou si le chat est visible
             const chatPanel = document.getElementById('chat-panel');
             const isChatVisible = chatPanel && chatPanel.style.display !== 'none';
-            
+
             if (!this.currentChatUser && isChatVisible) {
                 // Première conversation ET chat visible → on la sélectionne automatiquement
                 this.setCurrentChatUser(otherUser);
@@ -575,19 +676,19 @@
 
         private addHistoryMessageToConversation(otherUser: string, from: string, text: string, mine: boolean = false, timestamp?: string): void {
             this.ensureConversation(otherUser);
-            
+
             // Vérifier si ce message existe déjà pour éviter les doublons
-            const exists = this.conversations[otherUser].some(msg => 
-                msg.from === from && 
-                msg.text === text && 
+            const exists = this.conversations[otherUser].some(msg =>
+                msg.from === from &&
+                msg.text === text &&
                 msg.mine === mine
             );
-            
+
             if (exists) {
                 console.log("⚠️ Message d'historique déjà présent, ignoré:", { from, text });
                 return;
             }
-            
+
             // Ajouter le message d'historique au début de la conversation (plus ancien d'abord)
             this.conversations[otherUser].unshift({ from, text, mine, timestamp, isHistory: true });
             this.saveConversationsToStorage(); // Sauvegarder après ajout de l'historique
@@ -784,7 +885,7 @@
             console.log("🎮 Invitation reçue:", data);
             const from = data.from; // username de l'inviteur
             const fromDisplayName = data.fromDisplayName || from;
-            
+
             if (!from || !this.ws) {
                 console.log("❌ Données manquantes pour l'invitation:", { from, ws: !!this.ws });
                 return;
@@ -819,7 +920,7 @@
                 // Lancer le jeu directement (comme dans le tournoi)
                 setTimeout(() => {
                     this.launchInvitedGame(from, this.username || 'Player');
-                    
+
                     // Donner le focus au document pour que les touches fonctionnent
                     setTimeout(() => {
                         const board = document.getElementById('board') as HTMLCanvasElement;
@@ -839,13 +940,13 @@
         private launchInvitedGame(player1: string, player2: string): void {
             console.log('🎮 launchInvitedGame appelé:', { player1, player2 });
             const gameView = document.getElementById('game-view');
-            
+
             // Désactiver tous les écrans
             const screens = document.querySelectorAll('.screen');
             screens.forEach(screen => {
                 (screen as HTMLElement).classList.remove('active');
             });
-            
+
             // Activer la vue de jeu
             if (gameView) {
                 gameView.classList.add('active');
@@ -853,22 +954,22 @@
             } else {
                 console.error('❌ game-view introuvable !');
             }
-            
+
             // Cacher les éléments d'interface utilisateur (avatar, boutons de langue, info utilisateur)
             const avatarContainer = document.getElementById('avatar-container');
             const langSelector = document.getElementById('lang-selector-container');
             const userInfo = document.getElementById('user-info');
-            
+
             if (avatarContainer) avatarContainer.style.display = 'none';
             if (langSelector) langSelector.style.display = 'none';
             if (userInfo) userInfo.style.display = 'none';
-            
+
             // Cacher le chat s'il est ouvert
             const chatPanel = document.getElementById('chat-panel');
             if (chatPanel) {
                 chatPanel.style.display = 'none';
             }
-            
+
             // Cacher tous les overlays/modals SAUF game-in-progress-overlay
             const overlays = document.querySelectorAll('.overlay');
             overlays.forEach(overlay => {
@@ -876,7 +977,7 @@
                     (overlay as HTMLElement).style.display = 'none';
                 }
             });
-            
+
             // Cacher tous les formulaires qui pourraient être ouverts
             const signupForm = document.getElementById('signup-form') as HTMLElement;
             const loginForm = document.getElementById('login-form') as HTMLElement;
@@ -884,12 +985,12 @@
             if (signupForm) signupForm.style.display = 'none';
             if (loginForm) loginForm.style.display = 'none';
             if (editProfileForm) editProfileForm.style.display = 'none';
-            
+
             const pong = (window as any).PONG;
             if (pong?.PongGame) {
                 // Configurer les noms des joueurs
                 pong.PongGame.setPlayerNames(player1, player2);
-                
+
                 // Définir un callback pour la fin du match (retour au menu)
                 pong.PongGame.setCallback((winner: string) => {
                     console.log('🏆 Winner:', winner);
@@ -897,7 +998,7 @@
                     if (pong.PongGame) {
                         pong.PongGame.stop();
                     }
-                    
+
                     // Notifier l'autre joueur que la partie est terminée
                     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
                         // player1 est celui qui a envoyé l'invitation (celui qui attend)
@@ -907,13 +1008,13 @@
                             to: waitingPlayer
                         }));
                     }
-                    
+
                     // Réafficher les éléments d'interface utilisateur
                     const avatarContainer = document.getElementById('avatar-container');
                     const langSelector = document.getElementById('lang-selector-container');
                     const userInfo = document.getElementById('user-info');
                     const dropdownMenu = document.getElementById('user-dropdown-menu');
-                    
+
                     if (avatarContainer) avatarContainer.style.display = '';
                     if (langSelector) langSelector.style.display = '';
                     if (userInfo) userInfo.style.display = '';
@@ -921,16 +1022,16 @@
                         dropdownMenu.style.display = '';
                         dropdownMenu.classList.remove('show'); // Fermer le dropdown s'il était ouvert
                     }
-                    
+
                     // Retourner au menu principal
                     if (pong.Nav) {
                         pong.Nav.showHome();
                     }
                 });
-                
+
                 // Démarrer le jeu
                 pong.PongGame.start();
-                
+
                 // Donner le focus pour que les touches fonctionnent
                 setTimeout(() => {
                     const board = document.getElementById('board') as HTMLCanvasElement;
@@ -952,7 +1053,7 @@
                 gameInProgressOverlay.classList.remove('active');
                 console.log('✅ Overlay caché');
             }
-            
+
             // Réafficher le chat
             const chatPanel = document.getElementById('chat-panel') as HTMLElement;
             if (chatPanel) {
@@ -963,22 +1064,22 @@
 
         private showGameInProgress(opponentName: string): void {
             console.log('🎮 Affichage overlay "Partie en cours" pour', opponentName);
-            
+
             // Cacher tous les screens
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.remove('active');
             });
-            
+
             // Cacher le chat
             const chatPanel = document.getElementById('chat-panel');
             if (chatPanel) {
                 chatPanel.classList.remove('active');
             }
-            
+
             // Afficher l'overlay "Partie en cours"
             const gameInProgressOverlay = document.getElementById('game-in-progress-overlay') as HTMLElement;
             const opponentNameSpan = document.getElementById('opponent-name');
-            
+
             if (gameInProgressOverlay && opponentNameSpan) {
                 opponentNameSpan.textContent = opponentName;
                 gameInProgressOverlay.classList.add('active');
@@ -1094,11 +1195,11 @@
             for (const user in this.unreadMessages) {
                 totalUnread += this.unreadMessages[user];
             }
-            
+
             // Utiliser le badge statique
             const badge = document.getElementById('avatar-notification-badge');
             if (!badge) return;
-            
+
             if (totalUnread > 0) {
                 badge.textContent = totalUnread > 99 ? '99+' : totalUnread.toString();
                 badge.style.display = 'flex';

@@ -120,6 +120,22 @@
     }
 
     function logout(): void {
+        // Call backend logout endpoint to destroy server-side session and instruct browser to clear cookie
+        (async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (!res.ok) {
+                    console.warn('[Logout] API returned non-OK status:', res.status);
+                } else {
+                    console.log('[Logout] API success');
+                }
+            } catch (err) {
+                console.warn('[Logout] fetch error:', err);
+            }
+        })();
         // Cacher le chat s'il est ouvert
         const chatPanel = document.getElementById('chat-panel');
         if (chatPanel && chatPanel.classList.contains('active')) {

@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Fonction pour afficher le profil d'un utilisateur au clic
-    (window as any).showUserProfile = function(username: string) {
+    (window as any).showUserProfile = function (username: string) {
         if ((window as any).loadOtherUserProfile) {
             (window as any).loadOtherUserProfile(username);
         }

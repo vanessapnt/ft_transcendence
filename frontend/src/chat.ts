@@ -359,6 +359,27 @@
         }
 
         // Méthode publique pour effacer toutes les conversations
+        public deleteConversation(user: string): void {
+            if (this.conversations[user]) {
+                delete this.conversations[user];
+                if (this.unreadMessages[user]) {
+                    delete this.unreadMessages[user];
+                }
+                if (this.historyLoaded.has(user)) {
+                    this.historyLoaded.delete(user);
+                }
+                // Si c'est la conversation active, changer
+                if (this.currentChatUser === user) {
+                    this.currentChatUser = null;
+                    this.renderCurrentConversation();
+                }
+                this.saveConversationsToStorage();
+                this.renderConversationTabs();
+                this.updateAvatarNotification();
+                console.log(`🗑️ Conversation avec ${user} supprimée`);
+            }
+        }
+
         public clearAllConversations(): void {
             this.conversations = {};
             this.currentChatUser = null;
@@ -507,7 +528,7 @@
                 this.currentChatLabel.innerHTML = user
                     ? (i18n ? i18n.t('chat_conversation_with', { user }) : `Conversation avec ${user}`)
                     : (i18n ? i18n.t('chat_no_conversation') : "Aucune conversation sélectionnée");
-                
+
                 // Ajouter un click handler sur le label pour afficher le profil
                 if (user && this.currentChatLabel) {
                     this.currentChatLabel.style.cursor = 'pointer';
@@ -629,6 +650,17 @@
                     badge.textContent = unreadCount > 99 ? "99+" : unreadCount.toString();
                     tab.appendChild(badge);
                 }
+
+                // Ajouter la croix pour supprimer la conversation
+                const deleteBtn = document.createElement("button");
+                deleteBtn.classList.add("conversation-delete-btn");
+                deleteBtn.innerHTML = "✕";
+                deleteBtn.title = `Supprimer la conversation avec ${user}`;
+                deleteBtn.addEventListener("click", (e) => {
+                    e.stopPropagation(); // Empêcher de activer la tab
+                    this.deleteConversation(user);
+                });
+                tab.appendChild(deleteBtn);
 
                 tab.addEventListener("click", () => {
                     this.setCurrentChatUser(user);
@@ -1004,7 +1036,7 @@
                 // Définir un callback pour la fin du match (retour au menu)
                 pong.PongGame.setCallback((winner: string) => {
                     console.log('🏆 Winner:', winner);
-                    
+
                     // Sauvegarder le match dans la base de données
                     const opponentUsername = player1 === this.username ? player2 : player1;
                     fetch('/api/matches/save', {
@@ -1021,7 +1053,7 @@
                         .then(res => res.json())
                         .then(data => console.log('✅ Match sauvegardé:', data))
                         .catch(err => console.error('❌ Erreur sauvegarde match:', err));
-                    
+
                     // Arrêter le jeu
                     if (pong.PongGame) {
                         pong.PongGame.stop();
@@ -1207,7 +1239,7 @@
                 nameSpan.style.cursor = 'pointer';
                 nameSpan.style.textDecoration = 'underline';
                 nameSpan.textContent = from + ": ";
-                
+
                 // Ajouter un click handler pour afficher le profil
                 nameSpan.addEventListener('click', () => {
                     if ((window as any).showUserProfile) {

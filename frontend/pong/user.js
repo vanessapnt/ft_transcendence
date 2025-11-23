@@ -11,6 +11,47 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     const API_BASE_URL = window.location.hostname === 'localhost' && window.location.port === '3000'
         ? 'http://localhost:8000'
         : '';
+    // Vérifier l'intégrité du localStorage comparé à la BD
+    function checkAndCleanLocalStorage() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const response = yield fetch(`${API_BASE_URL}/health`);
+                const data = yield response.json();
+                const storedDbTimestamp = localStorage.getItem('dbTimestamp');
+                const currentDbTimestamp = data.dbTimestamp;
+                // Si le timestamp de la BD a changé, vider tout le localStorage du chat
+                if (storedDbTimestamp && storedDbTimestamp !== currentDbTimestamp.toString()) {
+                    console.log('🔄 Base de données réinitialisée, nettoyage du localStorage...');
+                    // Supprimer toutes les clés de conversations du localStorage
+                    const keysToRemove = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith('chat_conversations_')) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                    keysToRemove.forEach(key => {
+                        localStorage.removeItem(key);
+                        console.log(`🗑️ Supprimé: ${key}`);
+                    });
+                }
+                // Toujours mettre à jour le timestamp de la BD dans localStorage
+                if (currentDbTimestamp) {
+                    localStorage.setItem('dbTimestamp', currentDbTimestamp.toString());
+                }
+            }
+            catch (e) {
+                console.warn('⚠️ Impossible de vérifier l\'intégrité du localStorage:', e);
+            }
+        });
+    }
+    // Appeler la vérification au chargement
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', checkAndCleanLocalStorage);
+    }
+    else {
+        checkAndCleanLocalStorage();
+    }
     function setUser(username, displayName, userId, avatarUrl) {
         const userInfo = document.getElementById('user-info');
         const usernameLabel = document.getElementById('username-label');
@@ -178,6 +219,36 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         // Setup form submission (only once)
         if (!form.dataset.initialized) {
             form.dataset.initialized = 'true';
+            // Setup password requirements display
+            const passwordInput = document.getElementById('signup-password');
+            const requirementsDiv = document.getElementById('password-requirements');
+            const reqLength = document.getElementById('req-length');
+            if (passwordInput && requirementsDiv && reqLength) {
+                // Remove old listeners to avoid duplicates
+                passwordInput.removeEventListener('focus', null);
+                passwordInput.removeEventListener('input', null);
+                passwordInput.removeEventListener('blur', null);
+                passwordInput.addEventListener('focus', () => {
+                    requirementsDiv.style.display = 'block';
+                });
+                passwordInput.addEventListener('input', () => {
+                    const password = passwordInput.value;
+                    const isValid = password.length >= 6;
+                    if (isValid) {
+                        reqLength.classList.add('met');
+                        reqLength.textContent = '✅ ' + (i18n ? i18n.t('password_req_length') : 'At least 6 characters');
+                    }
+                    else {
+                        reqLength.classList.remove('met');
+                        reqLength.textContent = '❌ ' + (i18n ? i18n.t('password_req_length') : 'At least 6 characters');
+                    }
+                });
+                passwordInput.addEventListener('blur', () => {
+                    if (!passwordInput.value) {
+                        requirementsDiv.style.display = 'none';
+                    }
+                });
+            }
             form.onsubmit = (e) => __awaiter(this, void 0, void 0, function* () {
                 e.preventDefault();
                 const username = document.getElementById('signup-username').value.trim();

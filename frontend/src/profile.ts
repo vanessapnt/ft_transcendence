@@ -132,7 +132,7 @@
                 const response = await fetch(`/api/matches/user/${userId}`, {
                     credentials: 'include'
                 });
-                
+
                 if (!response.ok) {
                     const emptyMessage = document.createElement('div');
                     emptyMessage.className = 'match-empty';
@@ -173,19 +173,19 @@
 
             matches.forEach((match: any) => {
                 const matchItem = document.createElement('div');
-                
+
                 // Déterminer l'adversaire et le résultat
                 const isPlayer1 = match.player1_id === userId;
                 const opponentUsername = isPlayer1 ? match.player2_username : match.player1_username;
                 const opponentName = isPlayer1 ? match.player2_display_name || match.player2_username : match.player1_display_name || match.player1_username;
-                
+
                 let result = 'draw';
                 if (match.winner_id === userId) {
                     result = 'win';
                 } else if (match.winner_id && match.winner_id !== userId) {
                     result = 'loss';
                 }
-                
+
                 matchItem.className = `match-history-item ${result}`;
 
                 const opponent = document.createElement('div');

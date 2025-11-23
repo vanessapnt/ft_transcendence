@@ -8,7 +8,7 @@
     if (chatPanel && button) {
         const i18n = (window as any).i18n;
         const menuText = button.querySelector('.menu-text');
-        
+
         if (!chatPanel.classList.contains('active')) {
             // Afficher le chat et cacher le jeu/menus
             chatPanel.classList.add('active');
@@ -249,6 +249,13 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // Fonction pour afficher le profil d'un utilisateur au clic
+    (window as any).showUserProfile = function(username: string) {
+        if ((window as any).loadOtherUserProfile) {
+            (window as any).loadOtherUserProfile(username);
+        }
+    };
 
     // Observer les changements dans le titre de la conversation pour réinitialiser le bouton
     const observer = new MutationObserver(function (mutations) {

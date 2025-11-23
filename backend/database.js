@@ -70,6 +70,23 @@ const createTables = () => {
     )
   `);
 
+  // Matches table for storing game history
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS matches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      player1_id INTEGER NOT NULL,
+      player2_id INTEGER NOT NULL,
+      winner_id INTEGER,
+      player1_score INTEGER DEFAULT 0,
+      player2_score INTEGER DEFAULT 0,
+      match_type TEXT DEFAULT 'duel',
+      played_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (player1_id) REFERENCES users(id),
+      FOREIGN KEY (player2_id) REFERENCES users(id),
+      FOREIGN KEY (winner_id) REFERENCES users(id)
+    )
+  `);
+
   console.log('✅ Database tables created/verified');
 };
 
@@ -183,6 +200,36 @@ const statements = {
     JOIN users u ON f.friend_id = u.id
     WHERE f.user_id = ?
     GROUP BY u.id
+  `),
+
+  // Match operations
+  saveMatch: db.prepare(`
+    INSERT INTO matches (player1_id, player2_id, winner_id, player1_score, player2_score, match_type)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `),
+
+  getUserMatches: db.prepare(`
+    SELECT m.*,
+           u1.username as player1_username, u1.display_name as player1_display_name,
+           u2.username as player2_username, u2.display_name as player2_display_name,
+           uw.username as winner_username
+    FROM matches m
+    JOIN users u1 ON m.player1_id = u1.id
+    JOIN users u2 ON m.player2_id = u2.id
+    LEFT JOIN users uw ON m.winner_id = uw.id
+    WHERE m.player1_id = ? OR m.player2_id = ?
+    ORDER BY m.played_at DESC
+    LIMIT 50
+  `),
+
+  getUserMatchStats: db.prepare(`
+    SELECT 
+      COUNT(*) as total_matches,
+      SUM(CASE WHEN winner_id = ? THEN 1 ELSE 0 END) as wins,
+      SUM(CASE WHEN winner_id IS NULL THEN 1 ELSE 0 END) as draws,
+      SUM(CASE WHEN winner_id != ? AND winner_id IS NOT NULL THEN 1 ELSE 0 END) as losses
+    FROM matches
+    WHERE player1_id = ? OR player2_id = ?
   `)
 };
 

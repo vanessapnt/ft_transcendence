@@ -76,6 +76,23 @@ router.get('/profile', requireAuth, (req, res) => {
   }
 });
 
+// Get user profile by username
+router.get('/profile/:username', (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = statements.getUserByUsername.get(username);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { password_hash, oauth_id, oauth_provider, ...userData } = user;
+    res.json({ user: userData });
+  } catch (error) {
+    console.error('Get user by username error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Update user profile
 router.put('/profile', requireAuth, (req, res) => {
   try {

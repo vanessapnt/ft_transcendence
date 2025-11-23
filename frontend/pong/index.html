@@ -28,6 +28,10 @@
             <span id="avatar-notification-badge" class="notification-badge" style="display: none;"></span>
         </div>
         <div id="user-dropdown-menu" class="dropdown-menu">
+            <button id="profile-btn" data-i18n-key="profile">
+                <span class="menu-icon">👤</span>
+                <span class="menu-text">Profile</span>
+            </button>
             <button id="private-messages-btn" data-i18n-key="private_messages">
                 <span class="menu-icon">💬</span>
                 <span class="menu-text">Private Messages</span>
@@ -226,6 +230,24 @@
         </div>
     </div>
 
+    <!-- Profile Panel (user profile) -->
+    <div id="profile-panel" class="profile-panel">
+        <button id="profile-panel-close" class="profile-panel-close">✕</button>
+        <div class="profile-panel-content">
+            <div class="profile-header">
+                <img id="profile-panel-avatar" src="/avatars/default_avatar.png" alt="Avatar" class="profile-avatar">
+                <div class="profile-info">
+                    <h2 id="profile-panel-name"></h2>
+                    <p id="profile-panel-username"></p>
+                </div>
+            </div>
+            <div class="profile-section">
+                <h3 data-i18n-key="match_history">MATCH HISTORY</h3>
+                <div id="profile-match-history" class="match-history-container"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal profil joueur (ouvert depuis le chat) -->
     <div id="profile-modal" class="overlay">
         <div class="overlay-content">
@@ -258,6 +280,7 @@
     <script src="i18n.js" defer></script>
     <script src="lang.js" defer></script>
     <script src="dropdown.js" defer></script>
+    <script src="profile.js" defer></script>
     <script src="pong.js" defer></script>
     <script src="pongAI.js" defer></script>
     <script src="tournament.js" defer></script>

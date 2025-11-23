@@ -173,6 +173,9 @@ class Navigation
         // Fermer le formulaire edit profile si on n'est pas sur #edit-profile
         if (hash !== '#edit-profile' && editProfileForm && editProfileForm.style.display !== 'none') {
             editProfileForm.style.display = 'none';
+            // Remettre le menu visible
+            const menu = document.querySelector('.menu-buttons') as HTMLElement;
+            if (menu) menu.style.display = '';
             // S'assurer qu'un screen soit actif
             const hasActiveScreen = Array.from(document.querySelectorAll('.screen')).some(s => s.classList.contains('active'));
             if (!hasActiveScreen) {

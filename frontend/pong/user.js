@@ -410,6 +410,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             return;
         const currentAvatarUrl = window.currentAvatarUrl;
         const i18n = window.i18n;
+        // Hide menu buttons
+        const menu = document.querySelector('.menu-buttons');
+        if (menu)
+            menu.style.display = 'none';
         // Pre-fill form with current values
         const avatarPreview = document.getElementById('edit-avatar-preview');
         const usernameDisplay = document.getElementById('edit-username-display');

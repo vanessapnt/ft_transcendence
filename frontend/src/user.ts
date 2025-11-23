@@ -446,6 +446,10 @@
         const currentAvatarUrl = (window as any).currentAvatarUrl;
         const i18n = (window as any).i18n;
 
+        // Hide menu buttons
+        const menu = document.querySelector('.menu-buttons') as HTMLElement;
+        if (menu) menu.style.display = 'none';
+
         // Pre-fill form with current values
         const avatarPreview = document.getElementById('edit-avatar-preview') as HTMLImageElement;
         const usernameDisplay = document.getElementById('edit-username-display') as HTMLInputElement;

@@ -206,13 +206,21 @@
             <div id="chat-main">
                 <div id="chat-content">
                     <div id="conversations-sidebar">
-                        <h3 data-i18n-key="chat_conversations">Conversations</h3>
+                        <div id="conversations-header">
+                            <h3 data-i18n-key="chat_conversations">Conversations</h3>
+                            <label class="switch-container">
+                                <input type="checkbox" id="friends-only-toggle">
+                                <span class="switch-slider"></span>
+                                <span class="switch-label" data-i18n-key="friends_only">Friends only</span>
+                            </label>
+                        </div>
                         <div id="conversation-tabs"></div>
                     </div>
                     <div id="chat-right">
                         <div id="chat-header">
                             <div id="current-chat" data-i18n-key="chat_no_conversation">Aucune conversation sélectionnée</div>
                             <div id="chat-actions">
+                                <button id="add-friend-btn" data-i18n-key="add_friend" title="Ajouter en ami">Add Friend</button>
                                 <button id="invite-btn" data-i18n-key="chat_btn_invite" data-i18n-title="chat_btn_invite_title" title="Inviter à jouer">Inviter</button>
                                 <button id="block-btn" data-i18n-key="chat_btn_block" data-i18n-title="chat_btn_block_title" title="Bloquer l'utilisateur">Bloquer</button>
                             </div>

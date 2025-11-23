@@ -225,7 +225,7 @@
         }
     }
 
-    function showSignup(): void {
+    function showSignup(addToHistory: boolean = true): void {
         const form = document.getElementById('signup-form') as HTMLFormElement;
         const menu = document.querySelector('.menu-buttons') as HTMLElement;
         if (!form || !menu) return;
@@ -242,6 +242,12 @@
             });
             // Activer home-view
             homeView.classList.add('active');
+        }
+
+        // Ajouter à l'historique seulement si demandé
+        if (addToHistory) {
+            window.history.pushState({ page: 'signup' }, '', '#signup');
+            console.log('📍 Signup ajouté à l\'historique. URL:', window.location.href);
         }
 
         // Masquer le menu et afficher le formulaire
@@ -352,7 +358,7 @@
         }
     }
 
-    function showLogin(): void {
+    function showLogin(addToHistory: boolean = true): void {
         const form = document.getElementById('login-form') as HTMLFormElement;
         const menu = document.querySelector('.menu-buttons') as HTMLElement;
         if (!form || !menu) return;
@@ -369,6 +375,12 @@
             });
             // Activer home-view
             homeView.classList.add('active');
+        }
+
+        // Ajouter à l'historique seulement si demandé
+        if (addToHistory) {
+            window.history.pushState({ page: 'login' }, '', '#login');
+            console.log('📍 Login ajouté à l\'historique. URL:', window.location.href);
         }
 
         // Masquer le menu et afficher le formulaire

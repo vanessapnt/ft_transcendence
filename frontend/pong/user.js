@@ -405,15 +405,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         }
     }
     function showEditProfile(currentUsername, currentDisplayName) {
+        const panel = document.getElementById('edit-profile-panel');
         const form = document.getElementById('edit-profile-form');
-        if (!form)
+        if (!panel || !form)
             return;
         const currentAvatarUrl = window.currentAvatarUrl;
         const i18n = window.i18n;
-        // Hide menu buttons
-        const menu = document.querySelector('.menu-buttons');
-        if (menu)
-            menu.style.display = 'none';
         // Pre-fill form with current values
         const avatarPreview = document.getElementById('edit-avatar-preview');
         const usernameDisplay = document.getElementById('edit-username-display');
@@ -429,8 +426,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             displayNameInput.value = currentDisplayName;
         if (messageDiv)
             messageDiv.textContent = '';
-        // Show form
-        form.style.display = 'block';
+        // Show panel
+        panel.classList.add('active');
         // Handle language selector
         const currentLang = i18n ? i18n.getCurrentLanguage() : 'en';
         let selectedLanguage = currentLang;

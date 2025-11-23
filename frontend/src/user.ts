@@ -440,15 +440,12 @@
     }
 
     function showEditProfile(currentUsername: string, currentDisplayName: string): void {
+        const panel = document.getElementById('edit-profile-panel') as HTMLElement | null;
         const form = document.getElementById('edit-profile-form') as HTMLFormElement | null;
-        if (!form) return;
+        if (!panel || !form) return;
 
         const currentAvatarUrl = (window as any).currentAvatarUrl;
         const i18n = (window as any).i18n;
-
-        // Hide menu buttons
-        const menu = document.querySelector('.menu-buttons') as HTMLElement;
-        if (menu) menu.style.display = 'none';
 
         // Pre-fill form with current values
         const avatarPreview = document.getElementById('edit-avatar-preview') as HTMLImageElement;
@@ -463,8 +460,8 @@
         if (displayNameInput) displayNameInput.value = currentDisplayName;
         if (messageDiv) messageDiv.textContent = '';
 
-        // Show form
-        form.style.display = 'block';
+        // Show panel
+        panel.classList.add('active');
 
         // Handle language selector
         const currentLang = i18n ? i18n.getCurrentLanguage() : 'en';

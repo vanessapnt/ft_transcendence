@@ -947,6 +947,29 @@ button:active {
     display: flex;
 }
 
+/* Edit Profile Panel - similar to chat-panel */
+#edit-profile-panel {
+    font-family: 'Press Start 2P', cursive;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 80px;
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - 80px);
+    background: #000;
+    padding: 20px;
+    border: none;
+    box-shadow: none;
+    z-index: 300;
+}
+
+#edit-profile-panel.active {
+    display: flex;
+}
+
 #chat-container {
     display: flex;
     width: 95%;

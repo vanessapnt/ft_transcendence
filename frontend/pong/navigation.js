@@ -116,7 +116,7 @@
         handleRouteChange() {
             const hash = window.location.hash;
             const chatPanel = document.getElementById('chat-panel');
-            const editProfileForm = document.getElementById('edit-profile-form');
+            const editProfilePanel = document.getElementById('edit-profile-panel');
             // Fermer le chat si on n'est pas sur #chat
             if (hash !== '#chat' && chatPanel && chatPanel.classList.contains('active')) {
                 chatPanel.classList.remove('active');
@@ -130,20 +130,9 @@
                     }
                 }
             }
-            // Fermer le formulaire edit profile si on n'est pas sur #edit-profile
-            if (hash !== '#edit-profile' && editProfileForm && editProfileForm.style.display !== 'none') {
-                editProfileForm.style.display = 'none';
-                // Remettre le menu visible
-                const menu = document.querySelector('.menu-buttons');
-                if (menu)
-                    menu.style.display = '';
-                // S'assurer qu'un screen soit actif
-                const hasActiveScreen = Array.from(document.querySelectorAll('.screen')).some(s => s.classList.contains('active'));
-                if (!hasActiveScreen) {
-                    const homeView = document.getElementById('home-view');
-                    if (homeView)
-                        homeView.classList.add('active');
-                }
+            // Fermer le panel edit profile si on n'est pas sur #edit-profile
+            if (hash !== '#edit-profile' && editProfilePanel && editProfilePanel.classList.contains('active')) {
+                editProfilePanel.classList.remove('active');
             }
             if (hash === '#home' || hash === '') {
                 this.showHome();
@@ -166,8 +155,7 @@
                 }
             }
             else if (hash === '#edit-profile') {
-                // Ouvrir le formulaire d'édition de profil
-                this.showHome();
+                // Ouvrir le panel d'édition de profil
                 if (window.PONG && window.PONG.showEditProfile) {
                     const currentUsername = window.currentUsername || '';
                     const currentDisplayName = window.currentDisplayName || '';

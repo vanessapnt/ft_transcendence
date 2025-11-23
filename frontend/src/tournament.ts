@@ -174,6 +174,13 @@ class Tournament
     private showWinner(): void {
         const i18n = (window as any).i18n;
         if (this.players.length === 0) return;
+        
+        // S'assurer que le game-view est désactivé et tournament-view est activé
+        const gameView = document.getElementById('game-view');
+        const tournamentView = document.getElementById('tournament-view');
+        if (gameView) gameView.classList.remove('active');
+        if (tournamentView) tournamentView.classList.add('active');
+        
         let winner = this.players[0];
         for (const p of this.players) if (p.wins > winner.wins) winner = p;
         const winnerName = document.getElementById('winner-name');

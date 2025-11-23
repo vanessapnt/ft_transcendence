@@ -35,9 +35,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             loginBtn.style.display = 'none';
         if (signupBtn)
             signupBtn.style.display = 'none';
-        // Créer le bouton Private Messages dynamiquement
+        // Créer/afficher le bouton Private Messages dynamiquement
         if (window.createPrivateMessagesButton) {
             window.createPrivateMessagesButton();
+        }
+        // Double vérification - s'assurer que le bouton est visible
+        if (privateMessagesBtn) {
+            privateMessagesBtn.style.display = 'flex';
         }
         const menu = document.querySelector('.menu-buttons');
         if (menu)
@@ -58,7 +62,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         }
     }
     function logout() {
-        var _a;
         // Cacher le chat s'il est ouvert
         const chatPanel = document.getElementById('chat-panel');
         if (chatPanel && chatPanel.style.display !== 'none') {
@@ -75,7 +78,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     screen.style.display = '';
                 });
                 if (privateMessagesBtn) {
-                    privateMessagesBtn.textContent = 'Private Messages';
+                    const menuText = privateMessagesBtn.querySelector('.menu-text');
+                    if (menuText && window.i18n) {
+                        menuText.textContent = window.i18n.t('private_messages');
+                    }
+                    else if (menuText) {
+                        menuText.textContent = '💬 Private Messages';
+                    }
                 }
             }
         }
@@ -100,13 +109,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         window.currentAvatarUrl = null;
         window.currentUsername = null;
         window.currentDisplayName = null;
-        // Restaurer la langue du navigateur en supprimant la langue préférée de l'utilisateur
-        localStorage.removeItem('preferred_language');
-        const browserLang = ((_a = navigator.language) === null || _a === void 0 ? void 0 : _a.split('-')[0]) || 'en';
-        if (window.changeLang) {
-            window.changeLang(browserLang);
-            console.log(`🌐 Langue restaurée à celle du navigateur: ${browserLang}`);
-        }
         console.log('✅ User logged out');
         hideGithubLoginIfConnected();
     }
@@ -155,165 +157,183 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         }
     }
     function showSignup() {
-        const form = document.getElementById('signup-form');
-        const menu = document.querySelector('.menu-buttons');
-        if (!form || !menu)
+        var _a;
+        if (document.getElementById('signup-form'))
             return;
-        const i18n = window.i18n;
-        // Masquer le menu et afficher le formulaire
+        const menu = document.querySelector('.menu-buttons');
+        if (!menu)
+            return;
+        // Masquer le menu
         menu.style.display = 'none';
-        form.style.display = 'block';
-        // Réinitialiser le formulaire
-        form.reset();
-        const messageDiv = document.getElementById('signup-message');
-        messageDiv.textContent = '';
-        messageDiv.className = 'auth-message';
-        // Setup form submission (only once)
-        if (!form.dataset.initialized) {
-            form.dataset.initialized = 'true';
-            form.onsubmit = (e) => __awaiter(this, void 0, void 0, function* () {
-                e.preventDefault();
-                const username = document.getElementById('signup-username').value.trim();
-                const email = document.getElementById('signup-email').value.trim();
-                const password = document.getElementById('signup-password').value;
-                const display_name = document.getElementById('signup-displayname').value.trim();
-                const messageDiv = document.getElementById('signup-message');
-                messageDiv.textContent = '';
-                if (!username || !email || !password || !display_name) {
-                    messageDiv.className = 'auth-message error';
-                    messageDiv.textContent = i18n ? i18n.t('signup_error_required') : 'All fields are required';
-                    return;
-                }
+        // Créer le formulaire
+        const form = document.createElement('form');
+        form.id = 'signup-form';
+        form.className = 'auth-form';
+        form.innerHTML = `
+        <h2>Sign Up</h2>
+        <input type="text" id="signup-username" placeholder="Username" required>
+        <input type="email" id="signup-email" placeholder="Email" required>
+        <input type="password" id="signup-password" placeholder="Password" required>
+        <input type="text" id="signup-displayname" placeholder="Display Name" required>
+        <div class="auth-btn-row">
+            <button type="submit" class="auth-submit-btn">Register</button>
+            <button type="button" id="show-login" class="auth-switch-btn">Login</button>
+        </div>
+        <button type="button" id="cancel-signup" class="auth-cancel-btn">Cancel</button>
+        <div id="signup-message" class="auth-message"></div>
+    `;
+        (_a = menu.parentElement) === null || _a === void 0 ? void 0 : _a.appendChild(form);
+        form.onsubmit = (e) => __awaiter(this, void 0, void 0, function* () {
+            e.preventDefault();
+            const username = document.getElementById('signup-username').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const display_name = document.getElementById('signup-displayname').value.trim();
+            const messageDiv = document.getElementById('signup-message');
+            messageDiv.textContent = '';
+            if (!username || !email || !password || !display_name) {
+                messageDiv.className = 'auth-message error';
+                messageDiv.textContent = 'All fields are required';
+                return;
+            }
+            try {
+                const res = yield fetch(`${API_BASE_URL}/api/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, email, password, display_name })
+                });
+                const text = yield res.text();
+                let data;
                 try {
-                    const res = yield fetch(`${API_BASE_URL}/api/auth/register`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ username, email, password, display_name })
-                    });
-                    const text = yield res.text();
-                    let data;
-                    try {
-                        data = JSON.parse(text);
-                    }
-                    catch (err) {
-                        data = { error: 'Invalid JSON from backend' };
-                    }
-                    const user = data.user;
-                    if (res.ok && user && user.username && user.display_name && user.id) {
-                        messageDiv.className = 'auth-message success';
-                        messageDiv.textContent = i18n ? i18n.t('signup_success') : 'Registration successful!';
-                        setUser(user.username, user.display_name, user.id, user.avatar_path || '/avatars/default_avatar.png');
-                        form.style.display = 'none';
-                        menu.style.display = '';
-                    }
-                    else {
-                        messageDiv.className = 'auth-message error';
-                        messageDiv.textContent = data.error || data.message || (i18n ? i18n.t('signup_error_failed') : 'Registration failed');
-                    }
+                    data = JSON.parse(text);
                 }
                 catch (err) {
-                    messageDiv.className = 'auth-message error';
-                    messageDiv.textContent = i18n ? i18n.t('signup_error_server') : 'Server error: unable to connect';
-                    console.error('Signup error:', err);
+                    data = { error: 'Invalid JSON from backend' };
                 }
-            });
-            document.getElementById('cancel-signup').onclick = () => {
-                form.style.display = 'none';
-                menu.style.display = '';
-            };
-            document.getElementById('show-login-from-signup').onclick = () => {
-                form.style.display = 'none';
-                showLogin();
-            };
-        }
+                const user = data.user;
+                if (res.ok && user && user.username && user.display_name && user.id) {
+                    messageDiv.className = 'auth-message success';
+                    messageDiv.textContent = 'Registration successful!';
+                    setUser(user.username, user.display_name, user.id, user.avatar_path || '/avatars/default_avatar.png');
+                    form.remove();
+                    menu.style.display = '';
+                }
+                else {
+                    messageDiv.className = 'auth-message error';
+                    messageDiv.textContent = data.error || data.message || 'Registration failed';
+                }
+            }
+            catch (err) {
+                messageDiv.className = 'auth-message error';
+                messageDiv.textContent = 'Server error: unable to connect';
+                console.error('Signup error:', err);
+            }
+        });
+        document.getElementById('cancel-signup').onclick = () => {
+            form.remove();
+            menu.style.display = '';
+        };
+        document.getElementById('show-login').onclick = () => {
+            form.remove();
+            menu.style.display = '';
+            showLogin();
+        };
     }
     function showLogin() {
-        const form = document.getElementById('login-form');
-        const menu = document.querySelector('.menu-buttons');
-        if (!form || !menu)
+        var _a;
+        if (document.getElementById('login-form'))
             return;
-        const i18n = window.i18n;
-        // Masquer le menu et afficher le formulaire
+        const menu = document.querySelector('.menu-buttons');
+        if (!menu)
+            return;
+        // Masquer le menu
         menu.style.display = 'none';
-        form.style.display = 'block';
-        // Réinitialiser le formulaire
-        form.reset();
-        const messageDiv = document.getElementById('login-message');
-        messageDiv.textContent = '';
-        messageDiv.className = 'auth-message';
-        // Setup form submission (only once)
-        if (!form.dataset.initialized) {
-            form.dataset.initialized = 'true';
-            form.onsubmit = (e) => __awaiter(this, void 0, void 0, function* () {
-                e.preventDefault();
-                console.log('submit login-form');
-                const usernameInput = document.getElementById('login-username');
-                const passwordInput = document.getElementById('login-password');
-                const messageDiv = document.getElementById('login-message');
-                if (!usernameInput || !passwordInput || !messageDiv) {
-                    console.error('Login form elements not found');
-                    return;
+        // <button type="submit" class="auth-submit-btn">Login</button>
+        // Créer le formulaire
+        const form = document.createElement('form');
+        form.id = 'login-form';
+        form.className = 'auth-form';
+        form.innerHTML = `
+        <h2 data-i18n-key="login_form_title">Login</h2>
+        <input type="text" id="login-username" placeholder="Username" required>
+        <input type="password" id="login-password" placeholder="Password" required>
+        <div class="auth-btn-row">
+            <button type="submit" data-i18n-key="login_submit">Login</button>
+            <button type="button" id="show-signup-from-login" class="auth-switch-btn">Sign Up</button>
+        </div>
+        <button type="button" id="cancel-login" class="auth-cancel-btn">Cancel</button>
+        <div id="login-message" class="auth-message"></div>
+    `;
+        (_a = menu.parentElement) === null || _a === void 0 ? void 0 : _a.appendChild(form);
+        form.onsubmit = (e) => __awaiter(this, void 0, void 0, function* () {
+            e.preventDefault();
+            console.log('submit edit-profile-form');
+            const usernameInput = document.getElementById('login-username');
+            const passwordInput = document.getElementById('login-password');
+            const messageDiv = document.getElementById('login-message');
+            if (!usernameInput || !passwordInput || !messageDiv) {
+                console.error('Login form elements not found');
+                return;
+            }
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            messageDiv.textContent = '';
+            if (!username || !password) {
+                messageDiv.className = 'auth-message error';
+                messageDiv.textContent = 'Username and password are required';
+                return;
+            }
+            try {
+                const res = yield fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+                const data = yield res.json();
+                const user = data.user;
+                if (res.ok && user.username && user.display_name && user.id) {
+                    messageDiv.className = 'auth-message success';
+                    messageDiv.textContent = 'Login successful!';
+                    setUser(user.username, user.display_name, user.id, user.avatar_path || user.avatar_url || '/avatars/default_avatar.png');
+                    form.style.display = 'none';
+                    const userInfo = document.getElementById('user-info');
+                    if (userInfo)
+                        userInfo.style.display = 'block';
                 }
-                const username = usernameInput.value.trim();
-                const password = passwordInput.value;
-                messageDiv.textContent = '';
-                if (!username || !password) {
+                else {
                     messageDiv.className = 'auth-message error';
-                    messageDiv.textContent = i18n ? i18n.t('login_error_required') : 'Username and password are required';
-                    return;
-                }
-                try {
-                    const res = yield fetch(`${API_BASE_URL}/api/auth/login`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ username, password })
-                    });
-                    const data = yield res.json();
-                    const user = data.user;
-                    if (res.ok && user.username && user.display_name && user.id) {
-                        messageDiv.className = 'auth-message success';
-                        messageDiv.textContent = i18n ? i18n.t('login_success') : 'Login successful!';
-                        setUser(user.username, user.display_name, user.id, user.avatar_path || user.avatar_url || '/avatars/default_avatar.png');
-                        form.style.display = 'none';
-                        menu.style.display = '';
-                        const userInfo = document.getElementById('user-info');
-                        if (userInfo)
-                            userInfo.style.display = 'block';
-                    }
-                    else {
-                        messageDiv.className = 'auth-message error';
-                        let reason = data.error || data.message || '';
-                        if (!reason) {
-                            if (res.status === 401) {
-                                reason = i18n ? i18n.t('login_error_invalid') : 'Invalid username or password.';
-                            }
-                            else if (res.status === 404) {
-                                reason = i18n ? i18n.t('login_error_notfound') : 'User not found.';
-                            }
-                            else {
-                                reason = i18n ? i18n.t('login_error_failed') : 'Login failed (unknown error)';
-                            }
+                    let reason = data.error || data.message || '';
+                    if (!reason) {
+                        if (res.status === 401) {
+                            reason = 'Invalid username or password.';
                         }
-                        messageDiv.textContent = reason;
+                        else if (res.status === 404) {
+                            reason = 'User not found.';
+                        }
+                        else {
+                            reason = 'Login failed (unknown error)';
+                        }
                     }
+                    messageDiv.textContent = reason;
                 }
-                catch (err) {
-                    messageDiv.className = 'auth-message error';
-                    messageDiv.textContent = i18n ? i18n.t('login_error_server') : 'Server error: unable to connect';
-                    console.error('Login error:', err);
-                }
-            });
-            document.getElementById('cancel-login').onclick = () => {
-                form.style.display = 'none';
-                menu.style.display = '';
-            };
-            document.getElementById('show-signup-from-login').onclick = () => {
-                form.style.display = 'none';
-                showSignup();
-            };
-        }
+            }
+            catch (err) {
+                messageDiv.className = 'auth-message error';
+                messageDiv.textContent = 'Server error: unable to connect';
+                console.error('Login error:', err);
+            }
+        });
+        document.getElementById('cancel-login').onclick = () => {
+            form.remove();
+            menu.style.display = '';
+        };
+        document.getElementById('show-signup-from-login').onclick = () => {
+            form.remove();
+            menu.style.display = '';
+            showSignup();
+        };
     }
     function showEditProfile(currentUsername, currentDisplayName) {
         var _a;
@@ -322,75 +342,54 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         const menu = document.querySelector('.menu-buttons');
         if (menu)
             menu.style.display = 'none';
+        const chatPanel = document.getElementById('chat-panel');
+        const wasChatVisible = chatPanel && chatPanel.style.display !== 'none';
+        if (chatPanel)
+            chatPanel.style.display = 'none';
         const homeView = document.getElementById('home-view');
         if (!homeView)
             return;
         const currentAvatarUrl = window.currentAvatarUrl;
-        const i18n = window.i18n;
         const form = document.createElement('form');
         form.id = 'edit-profile-form';
         form.className = 'auth-form edit-profile-form';
         form.innerHTML = `
-        <h2 data-i18n-key="edit_profile_title">${i18n ? i18n.t('edit_profile_title') : 'Edit Profile'}</h2>
+        <h2>Edit Profile</h2>
         <img id="edit-avatar-img" src="${getAvatarUrl(currentAvatarUrl)}" alt="Avatar" class="edit-avatar-preview">
-        <label data-i18n-key="edit_profile_avatar">${i18n ? i18n.t('edit_profile_avatar') : 'Avatar'}</label>
-        <div class="file-input-wrapper">
-            <input type="file" id="edit-avatar" accept="image/*" style="display: none;">
-            <button type="button" id="edit-avatar-btn" class="file-input-btn" data-i18n-key="edit_profile_choose_file">${i18n ? i18n.t('edit_profile_choose_file') : 'Choose file'}</button>
-            <span id="edit-avatar-filename" class="file-input-name" data-i18n-key="edit_profile_no_file">${i18n ? i18n.t('edit_profile_no_file') : 'No file selected'}</span>
-        </div>
-        <label data-i18n-key="edit_profile_username">${i18n ? i18n.t('edit_profile_username') : 'Username (not editable)'}</label>
+        <label>Avatar</label>
+        <input type="file" id="edit-avatar" accept="image/*">
+        <label>Username (non modifiable)</label>
         <input type="text" value="${escapeHtml(currentUsername)}" disabled class="disabled-input">
-        <label data-i18n-key="edit_profile_displayname">${i18n ? i18n.t('edit_profile_displayname') : 'Display Name'}</label>
+        <label>Display Name</label>
         <input type="text" id="edit-displayname" value="${escapeHtml(currentDisplayName)}" required>
-        <label data-i18n-key="edit_profile_language">${i18n ? i18n.t('edit_profile_language') : 'Preferred Language'}</label>
-        <div class="language-selector">
-            <button type="button" class="lang-option" data-lang="en">English</button>
-            <button type="button" class="lang-option" data-lang="fr">Français</button>
-            <button type="button" class="lang-option" data-lang="es">Español</button>
-        </div>
-        <button type="submit" class="auth-submit-btn" data-i18n-key="edit_profile_save">${i18n ? i18n.t('edit_profile_save') : 'Save'}</button>
-        <button type="button" id="cancel-edit-profile" class="auth-cancel-btn" data-i18n-key="edit_profile_cancel">${i18n ? i18n.t('edit_profile_cancel') : 'Cancel'}</button>
+        <button type="submit" class="auth-submit-btn">Save</button>
+        <button type="button" id="cancel-edit-profile" class="auth-cancel-btn">Cancel</button>
         <div id="edit-profile-message" class="auth-message"></div>
     `;
         homeView.appendChild(form);
         (_a = form.querySelector('.auth-submit-btn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
             console.log('Save button clicked');
         });
-        // Handle language selector
-        const currentLang = i18n ? i18n.getCurrentLanguage() : 'en';
-        let selectedLanguage = currentLang;
-        const langButtons = form.querySelectorAll('.lang-option');
-        langButtons.forEach(btn => {
-            const button = btn;
-            if (button.dataset.lang === currentLang) {
-                button.classList.add('active');
-            }
-            button.onclick = () => {
-                langButtons.forEach(b => b.classList.remove('active'));
-                button.classList.add('active');
-                selectedLanguage = button.dataset.lang || 'en';
-            };
-        });
-        // Handle custom file input
-        const fileInput = document.getElementById('edit-avatar');
-        const fileButton = document.getElementById('edit-avatar-btn');
-        const fileNameSpan = document.getElementById('edit-avatar-filename');
-        fileButton.onclick = () => {
-            fileInput.click();
-        };
-        fileInput.onchange = () => {
-            if (fileInput.files && fileInput.files.length > 0) {
-                fileNameSpan.textContent = fileInput.files[0].name;
-            }
-            else {
-                fileNameSpan.textContent = i18n ? i18n.t('edit_profile_no_file') : 'No file selected';
-            }
-        };
         document.getElementById('cancel-edit-profile').onclick = () => {
             form.remove();
             if (menu)
                 menu.style.display = '';
+            if (wasChatVisible && chatPanel) {
+                chatPanel.style.display = '';
+            }
+            else {
+                // Restaurer correctement l'écran actif si le chat n'était pas visible
+                const screens = document.querySelectorAll('.screen');
+                screens.forEach(screen => {
+                    const screenEl = screen;
+                    if (screenEl.classList.contains('active')) {
+                        screenEl.style.display = 'flex';
+                    }
+                    else {
+                        screenEl.style.display = 'none';
+                    }
+                });
+            }
         };
         form.onsubmit = (e) => __awaiter(this, void 0, void 0, function* () {
             var _a;
@@ -404,7 +403,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             messageDiv.textContent = '';
             if (!display_name) {
                 messageDiv.className = 'auth-message error';
-                messageDiv.textContent = i18n ? i18n.t('edit_profile_error_required') : 'Display name is required';
+                messageDiv.textContent = 'Display name is required';
                 return;
             }
             try {
@@ -414,14 +413,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include', // Ajouté pour envoyer les cookies de session
-                        body: JSON.stringify({ display_name, preferred_language: selectedLanguage })
+                        body: JSON.stringify({ display_name })
                     });
                     const data = yield res.json();
                     if (!res.ok) {
                         updateOk = false;
                         console.log('PUT /api/user/profile failed', data);
                         messageDiv.className = 'auth-message error';
-                        messageDiv.textContent = data.error || (i18n ? i18n.t('edit_profile_error_failed') : 'Update failed');
+                        messageDiv.textContent = data.error || 'Update failed';
                     }
                 }
                 if (avatarFile && updateOk) {
@@ -452,19 +451,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                         updateOk = false;
                         console.log('POST /api/user/avatar failed', dataAvatar);
                         messageDiv.className = 'auth-message error';
-                        messageDiv.textContent = dataAvatar && dataAvatar.error || (i18n ? i18n.t('edit_profile_error_avatar') : 'Avatar upload failed');
+                        messageDiv.textContent = dataAvatar && dataAvatar.error || 'Avatar upload failed';
                     }
                 }
                 if (updateOk) {
                     messageDiv.className = 'auth-message success';
-                    messageDiv.textContent = i18n ? i18n.t('edit_profile_success') : 'Profile updated!';
-                    // Close form first
+                    messageDiv.textContent = 'Profile updated!';
                     form.remove();
                     if (menu)
                         menu.style.display = '';
-                    // Then change language if it was updated
-                    if (selectedLanguage !== currentLang && window.changeLang) {
-                        yield window.changeLang(selectedLanguage);
+                    if (wasChatVisible && chatPanel) {
+                        chatPanel.style.display = '';
+                    }
+                    else {
+                        // Restaurer correctement l'écran actif si le chat n'était pas visible
+                        const screens = document.querySelectorAll('.screen');
+                        screens.forEach(screen => {
+                            const screenEl = screen;
+                            if (screenEl.classList.contains('active')) {
+                                screenEl.style.display = 'flex';
+                            }
+                            else {
+                                screenEl.style.display = 'none';
+                            }
+                        });
                     }
                     const finalAvatar = (dataAvatar && dataAvatar.user && (dataAvatar.user.avatar_path || dataAvatar.user.avatar_url))
                         || (dataAvatar && (dataAvatar.avatar_path || dataAvatar.avatar_url))
@@ -474,7 +484,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
             catch (err) {
                 messageDiv.className = 'auth-message error';
-                messageDiv.textContent = i18n ? i18n.t('edit_profile_error_server') : 'Server error';
+                messageDiv.textContent = 'Server error';
                 console.error('Edit profile error:', err);
             }
         });

@@ -25,22 +25,90 @@
     <div id="avatar-container">
         <div id="avatar-wrapper">
             <img id="avatar-img" src="/avatars/default_avatar.png" alt="Avatar">
-            <span id="avatar-notification-badge" class="notification-badge" style="display: none;"></span>
         </div>
         <div id="user-dropdown-menu" class="dropdown-menu">
             <button id="private-messages-btn" data-i18n-key="private_messages">
-                <span class="menu-icon">💬</span>
-                <span class="menu-text">Private Messages</span>
+                <span class="menu-text">💬 Private Messages</span>
             </button>
             <button id="edit-profile-btn" data-i18n-key="edit_profile">
-                <span class="menu-icon">✏️</span>
-                <span class="menu-text">Edit Profile</span>
+                <span class="menu-text">✏️ Edit Profile</span>
             </button>
             <button id="logout-btn" data-i18n-key="logout">
-                <span class="menu-icon">🚪</span>
-                <span class="menu-text">Logout</span>
+                <span class="menu-text">🚪 Logout</span>
             </button>
         </div>
+        <script>
+            // Script pour gérer le menu déroulant de l'avatar
+            (function () {
+                const avatarWrapper = document.getElementById('avatar-wrapper');
+                const dropdownMenu = document.getElementById('user-dropdown-menu');
+                const privateMessagesBtn = document.getElementById('private-messages-btn');
+                const editProfileBtn = document.getElementById('edit-profile-btn');
+                const logoutBtn = document.getElementById('logout-btn');
+
+                // Toggle du menu au clic sur l'avatar
+                avatarWrapper.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    dropdownMenu.classList.toggle('show');
+                });
+
+                // Fermer le menu si on clique ailleurs
+                document.addEventListener('click', function (e) {
+                    if (!avatarWrapper.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+
+                // Gérer le clic sur Private Messages
+                privateMessagesBtn.addEventListener('click', function () {
+                    if (window.toggleChat) toggleChat();
+                    dropdownMenu.classList.remove('show');
+                });
+
+                // Gérer le clic sur Edit Profile
+                editProfileBtn.addEventListener('click', function () {
+                    dropdownMenu.classList.remove('show');
+                    // Fermer le chat s'il est ouvert
+                    const chatPanel = document.getElementById('chat-panel');
+                    if (chatPanel && chatPanel.style.display === 'flex') {
+                        chatPanel.style.display = 'none';
+                        // Réafficher les écrans du jeu correctement
+                        const screens = document.querySelectorAll('.screen');
+                        screens.forEach(screen => {
+                            if (screen.classList.contains('active')) {
+                                screen.style.display = 'flex';
+                            } else {
+                                screen.style.display = 'none';
+                            }
+                        });
+                    }
+                });
+
+                // Gérer le clic sur Logout
+                logoutBtn.addEventListener('click', function () {
+                    dropdownMenu.classList.remove('show');
+                });
+
+                // Fonctions pour compatibilité avec l'ancien code
+                window.createPrivateMessagesButton = function () {
+                    privateMessagesBtn.style.display = 'flex';
+                    console.log('✅ Bouton Private Messages affiché dans le menu');
+                    return privateMessagesBtn;
+                };
+
+                window.removePrivateMessagesButton = function () {
+                    privateMessagesBtn.style.display = 'none';
+                    console.log('🗑️ Bouton Private Messages caché dans le menu');
+                };
+
+                // Pour compatibilité avec l'ancien code
+                window.forceShowPrivateMessagesButton = window.createPrivateMessagesButton;
+                window.forceHidePrivateMessagesButton = window.removePrivateMessagesButton;
+
+                // Cacher Private Messages par défaut
+                privateMessagesBtn.style.display = 'none';
+            })();
+        </script>
     </div>
 
     <div id="home-view" class="screen active">
@@ -53,42 +121,17 @@
                 <button class="login-btn" onclick="showLogin()" data-i18n-key="login">LOGIN</button>
             </div>
             <div class="oauth-buttons-row">
-                <button id="github-login-btn" onclick="PONG.oauthLogin()" class="github-btn" data-i18n-key="login_github">
+                <button id="github-login-btn" onclick="PONG.oauthLogin()" class="github-btn"
+                    data-i18n-key="login_github">
                     Login with GitHub
                 </button>
-                <button id="google-login-btn" onclick="PONG.oauthGoogleLogin()" class="google-btn" data-i18n-key="login_google">
+                <button id="google-login-btn" onclick="PONG.oauthGoogleLogin()" class="google-btn"
+                    data-i18n-key="login_google">
                     Login with Google
                 </button>
             </div>
         </div>
     </div>
-
-    <!-- Formulaires d'authentification statiques (cachés par défaut) -->
-    <form id="signup-form" class="auth-form" style="display: none;">
-        <h2 data-i18n-key="signup_form_title">Sign Up</h2>
-        <input type="text" id="signup-username" data-i18n-placeholder="signup_username_placeholder" placeholder="Username" required>
-        <input type="email" id="signup-email" data-i18n-placeholder="signup_email_placeholder" placeholder="Email" required>
-        <input type="password" id="signup-password" data-i18n-placeholder="signup_password_placeholder" placeholder="Password" required>
-        <input type="text" id="signup-displayname" data-i18n-placeholder="signup_displayname_placeholder" placeholder="Display Name" required>
-        <div class="auth-btn-row">
-            <button type="submit" class="auth-submit-btn" data-i18n-key="signup_submit">Register</button>
-            <button type="button" id="show-login-from-signup" class="auth-switch-btn" data-i18n-key="already_have_account">Login</button>
-        </div>
-        <button type="button" id="cancel-signup" class="auth-cancel-btn" data-i18n-key="signup_cancel">Cancel</button>
-        <div id="signup-message" class="auth-message"></div>
-    </form>
-
-    <form id="login-form" class="auth-form" style="display: none;">
-        <h2 data-i18n-key="login_form_title">Login</h2>
-        <input type="text" id="login-username" data-i18n-placeholder="login_username_placeholder" placeholder="Username or Email" required>
-        <input type="password" id="login-password" data-i18n-placeholder="login_password_placeholder" placeholder="Password" required>
-        <div class="auth-btn-row">
-            <button type="submit" class="auth-submit-btn" data-i18n-key="login_submit">Login</button>
-            <button type="button" id="show-signup-from-login" class="auth-switch-btn" data-i18n-key="no_account_signup">Sign Up</button>
-        </div>
-        <button type="button" id="cancel-login" class="auth-cancel-btn" data-i18n-key="login_cancel">Cancel</button>
-        <div id="login-message" class="auth-message"></div>
-    </form>
 
     <div id="mode-selection" class="screen">
         <h1 data-i18n-key="select_mode">SELECT MODE</h1>
@@ -103,7 +146,7 @@
 
     <div id="game-view" class="screen">
         <div class="pause-hint" data-i18n-key="pause_hint">Press SPACE to pause</div>
-        <canvas id="board" tabindex="0"></canvas>
+        <canvas id="board"></canvas>
         <button class="menu-button" onclick="PONG.Nav.showHome()" data-i18n-key="menu">MENU</button>
     </div>
 
@@ -115,7 +158,8 @@
                 <button onclick="PONG.Tournament.createTournament(4)" data-i18n-key="4_players">4 Players</button>
                 <button onclick="PONG.Tournament.createTournament(8)" data-i18n-key="8_players">8 Players</button>
             </div>
-            <button class="menu-button back-btn" onclick="PONG.Nav.showHome()" data-i18n-key="back">BACK TO MENU</button>
+            <button class="menu-button back-btn" onclick="PONG.Nav.showHome()" data-i18n-key="back">BACK TO
+                MENU</button>
         </div>
 
         <div id="tournament-setup" class="tournament-section">
@@ -126,7 +170,7 @@
 
         <div id="tournament-status" class="tournament-section">
             <div class="tournament-container">
-                <h1 data-i18n-key="tournament_status">TOURNAMENT STATUS</h1>
+                <h1>TOURNAMENT STATUS</h1>
 
                 <div class="tournament-next-match">
                     <h2 id="next-match-title">NEXT MATCH</h2>
@@ -139,19 +183,19 @@
                 </div>
 
                 <div class="tournament-buttons">
-                    <button id="start-next-match-btn" class="tournament-btn-start" data-i18n-key="start_match">
+                    <button id="start-next-match-btn" class="tournament-btn-start">
                         START MATCH
                     </button>
-                    <button id="quit-tournament-btn" class="tournament-btn-quit" data-i18n-key="quit_tournament">
+                    <button id="quit-tournament-btn" class="tournament-btn-quit">
                         QUIT TOURNAMENT
                     </button>
                 </div>
 
-                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;" data-i18n-key="current_standings">Current
+                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;">Current
                     Standings:</h3>
                 <div class="tournament-standings" id="standings-container"></div>
 
-                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;" data-i18n-key="match_results">Match
+                <h3 style="text-align: center; color: #00ff00; text-shadow: 0 0 10px #00ff00; margin-top: 30px;">Match
                     Results:</h3>
                 <div class="tournament-results" id="matches-container"></div>
             </div>
@@ -160,14 +204,14 @@
 
     <div id="tournament-winner" class="tournament-section">
         <div class="tournament-winner">
-            <h1 data-i18n-key="tournament_complete">🏆 TOURNAMENT COMPLETE 🏆</h1>
-            <h2><span data-i18n-key="tournament_winner_label">WINNER:</span> <span id="winner-name"></span></h2>
+            <h1>🏆 TOURNAMENT COMPLETE 🏆</h1>
+            <h2>WINNER: <span id="winner-name"></span></h2>
             <p class="winner-score" id="winner-score">0 victories</p>
 
-            <h3 data-i18n-key="final_standings">Final Standings:</h3>
+            <h3>Final Standings:</h3>
             <div class="final-standings" id="final-standings-container"></div>
 
-            <button id="back-to-menu-btn" class="tournament-back-btn" data-i18n-key="back_to_menu">
+            <button id="back-to-menu-btn" class="tournament-back-btn">
                 BACK TO MENU
             </button>
         </div>
@@ -175,28 +219,37 @@
     </div>
 
     <div id="chat-panel">
-        <h2 data-i18n-key="chat_title">💬 Messages privés</h2>
+        <h2 data-i18n-key="private_messages">💬 Messages privés</h2>
         <div id="chat-container">
             <div id="chat-main">
                 <div id="chat-content">
                     <div id="conversations-sidebar">
-                        <h3 data-i18n-key="chat_conversations">Conversations</h3>
+                        <div id="conversations-header">
+                            <h3 data-i18n-key="conversations">Conversations</h3>
+                            <label class="switch-container">
+                                <input type="checkbox" id="friends-only-toggle">
+                                <span class="switch-slider"></span>
+                                <span class="switch-label" data-i18n-key="friends_only">Friends only</span>
+                            </label>
+                        </div>
                         <div id="conversation-tabs"></div>
                     </div>
                     <div id="chat-right">
                         <div id="chat-header">
-                            <div id="current-chat" data-i18n-key="chat_no_conversation">Aucune conversation sélectionnée</div>
+                            <div id="current-chat" data-i18n-key="no_conversation_selected">Aucune conversation
+                                sélectionnée</div>
                             <div id="chat-actions">
-                                <button id="invite-btn" data-i18n-key="chat_btn_invite" data-i18n-title="chat_btn_invite_title" title="Inviter à jouer">Inviter</button>
-                                <button id="block-btn" data-i18n-key="chat_btn_block" data-i18n-title="chat_btn_block_title" title="Bloquer l'utilisateur">Bloquer</button>
+                                <button id="add-friend-btn" data-i18n-key="add_friend" title="Ajouter en ami">Add
+                                    Friend</button>
+                                <button id="invite-btn" title="Inviter à jouer">/invite</button>
+                                <button id="block-btn" title="Bloquer l'utilisateur">/block</button>
                             </div>
                         </div>
                         <div id="chatbox"></div>
                         <div id="controls">
-                            <input type="text" id="msg"
-                                data-i18n-placeholder="chat_placeholder"
+                            <input type="text" id="msg" data-i18n-key="type_message_placeholder"
                                 placeholder="Tape ton message (ou /dm pseudo ton message pour démarrer, /block, /unblock, /invite)..." />
-                            <button id="send" data-i18n-key="chat_send">Envoyer</button>
+                            <button id="send" data-i18n-key="send">Envoyer</button>
                         </div>
                     </div>
                 </div>
@@ -217,33 +270,289 @@
     <div id="pause-overlay" class="overlay">
         <div class="overlay-content">
             <h2 data-i18n-key="title_paused">PAUSED</h2>
-            <button id="resume-btn" data-i18n-key="resume">RESUME</button>
-            <button id="menu-btn" onclick="PONG.Nav.showHome()" data-i18n-key="menu">MENU</button>
-        </div>
-    </div>
-
-    <div id="game-in-progress-overlay" class="overlay" style="display: none;">
-        <div class="overlay-content">
-            <h2 data-i18n-key="game_in_progress_title">🎮 PARTIE EN COURS</h2>
-            <p data-i18n-key="game_in_progress_message"><span id="opponent-name"></span> joue actuellement...</p>
-            <div class="loading-dots">
-                <span>.</span><span>.</span><span>.</span>
-            </div>
+            <button id="resume-btn">RESUME</button>
+            <button id="menu-btn" onclick="PONG.Nav.showHome()">MENU</button>
         </div>
     </div>
 
     <!-- defer : script chargé en arrière-plan mais exécuté après le HTML -->
     <script src="i18n.js" defer></script>
     <script src="lang.js" defer></script>
-    <script src="dropdown.js" defer></script>
     <script src="pong.js" defer></script>
     <script src="pongAI.js" defer></script>
     <script src="tournament.js" defer></script>
     <script src="navigation.js" defer></script>
     <script src="user.js" defer></script>
     <script src="chat.js" defer></script>
-    <script src="chat-ui.js" defer></script>
-    <script src="game-invite.js" defer></script>
+
+    <!-- Script pour gérer les invitations depuis le chat -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Lire les paramètres URL pour les invitations de jeu
+            const urlParams = new URLSearchParams(window.location.search);
+            const player1 = urlParams.get('player1');
+            const player2 = urlParams.get('player2');
+
+            if (player1 && player2) {
+                // Délai pour s'assurer que tous les modules sont chargés
+                setTimeout(() => {
+                    if (window.PONG && window.PONG.PongGame && window.PONG.Nav) {
+                        // Configurer les noms des joueurs
+                        window.PONG.PongGame.setPlayerNames(player1, player2);
+
+                        // Aller à la vue de jeu et lancer la partie
+                        window.PONG.Nav.showGame();
+                        window.PONG.PongGame.start();
+
+                        // Nettoyer l'URL pour éviter de relancer le jeu au refresh
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                }, 500);
+            }
+        });
+    </script>
+
+    <script>
+        // Fonction pour afficher/cacher le chat
+        function toggleChat() {
+            const chatPanel = document.getElementById('chat-panel');
+            const button = document.getElementById('private-messages-btn');
+            const screens = document.querySelectorAll('.screen');
+
+            if (chatPanel && button) {
+                if (chatPanel.style.display === 'none' || chatPanel.style.display === '') {
+                    // Afficher le chat et cacher le jeu/menus
+                    chatPanel.style.display = 'flex';
+                    button.textContent = 'Hide Messages';
+
+                    // Cacher tous les écrans du jeu
+                    screens.forEach(screen => {
+                        screen.style.display = 'none';
+                    });
+                } else {
+                    // Cacher le chat et réafficher le jeu/menus
+                    chatPanel.style.display = 'none';
+                    const menuText = button.querySelector('.menu-text');
+                    if (menuText && window.i18n) {
+                        menuText.textContent = window.i18n.t('private_messages');
+                    } else if (menuText) {
+                        menuText.textContent = '💬 Private Messages';
+                    }
+
+                    // Réafficher l'écran qui était actif
+                    screens.forEach(screen => {
+                        if (screen.classList.contains('active')) {
+                            screen.style.display = 'flex';
+                        } else {
+                            screen.style.display = 'none';
+                        }
+                    });
+                }
+            }
+        }
+
+        // Au chargement de la page, cacher le chat par défaut
+        document.addEventListener('DOMContentLoaded', function () {
+            const chatPanel = document.getElementById('chat-panel');
+            if (chatPanel) {
+                chatPanel.style.display = 'none';
+            }
+
+            // Vérifier l'état de connexion et ajuster la visibilité du bouton
+            checkLoginStatus();
+
+            // Ajouter les événements pour les boutons d'action du chat
+            const addFriendBtn = document.getElementById('add-friend-btn');
+            const inviteBtn = document.getElementById('invite-btn');
+            const blockBtn = document.getElementById('block-btn');
+
+            if (addFriendBtn) {
+                addFriendBtn.addEventListener('click', async function () {
+                    const currentUser = getCurrentChatUser();
+                    if (!currentUser) {
+                        alert('Aucune conversation sélectionnée');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/friends/add', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({ username: currentUser })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            alert(`${currentUser} a été ajouté à votre liste d'amis !`);
+                            addFriendBtn.textContent = '✓ Friend';
+                            addFriendBtn.disabled = true;
+                            addFriendBtn.style.opacity = '0.5';
+
+                            // Mettre à jour la liste des amis dans le chat
+                            if (window.PONG && window.PONG.Chat && window.PONG.Chat.refreshFriendsList) {
+                                window.PONG.Chat.refreshFriendsList();
+                            }
+                        } else {
+                            alert(data.error || 'Erreur lors de l\'ajout de l\'ami');
+                        }
+                    } catch (error) {
+                        console.error('Erreur lors de l\'ajout de l\'ami:', error);
+                        alert('Erreur lors de l\'ajout de l\'ami');
+                    }
+                });
+            }
+
+            if (inviteBtn) {
+                inviteBtn.addEventListener('click', function () {
+                    const currentUser = getCurrentChatUser();
+                    if (currentUser && window.PONG && window.PONG.Chat) {
+                        // Simuler la commande /invite
+                        const msgInput = document.getElementById('msg');
+                        if (msgInput) {
+                            msgInput.value = `/invite "${currentUser}"`;
+                            // Déclencher l'envoi du message
+                            const sendBtn = document.getElementById('send');
+                            if (sendBtn) {
+                                sendBtn.click();
+                            }
+                        }
+                    } else {
+                        alert('Aucune conversation sélectionnée');
+                    }
+                });
+            }
+
+            if (blockBtn) {
+                blockBtn.addEventListener('click', function () {
+                    const currentUser = getCurrentChatUser();
+                    if (currentUser && window.PONG && window.PONG.Chat) {
+                        const isBlocked = blockBtn.textContent === '/unblock';
+
+                        if (isBlocked) {
+                            // Débloquer l'utilisateur
+                            const confirm = window.confirm(`Êtes-vous sûr de vouloir débloquer ${currentUser} ?`);
+                            if (confirm) {
+                                const msgInput = document.getElementById('msg');
+                                if (msgInput) {
+                                    msgInput.value = `/unblock "${currentUser}"`;
+                                    const sendBtn = document.getElementById('send');
+                                    if (sendBtn) {
+                                        sendBtn.click();
+                                    }
+                                    // Changer le bouton en /block
+                                    blockBtn.textContent = '/block';
+                                    blockBtn.title = 'Bloquer l\'utilisateur';
+                                }
+                            }
+                        } else {
+                            // Bloquer l'utilisateur
+                            const confirm = window.confirm(`Êtes-vous sûr de vouloir bloquer ${currentUser} ?`);
+                            if (confirm) {
+                                const msgInput = document.getElementById('msg');
+                                if (msgInput) {
+                                    msgInput.value = `/block "${currentUser}"`;
+                                    const sendBtn = document.getElementById('send');
+                                    if (sendBtn) {
+                                        sendBtn.click();
+                                    }
+                                    // Changer le bouton en /unblock
+                                    blockBtn.textContent = '/unblock';
+                                    blockBtn.title = 'Débloquer l\'utilisateur';
+                                }
+                            }
+                        }
+                    } else {
+                        alert('Aucune conversation sélectionnée');
+                    }
+                });
+            }
+        });
+
+        // Fonction utilitaire pour récupérer l'utilisateur de la conversation actuelle
+        function getCurrentChatUser() {
+            const currentChatEl = document.getElementById('current-chat');
+            if (currentChatEl && currentChatEl.textContent) {
+                const text = currentChatEl.textContent;
+                const match = text.match(/Conversation avec (.+)/);
+                return match ? match[1] : null;
+            }
+            return null;
+        }
+
+        // Fonction pour réinitialiser l'état du bouton block/unblock
+        function resetBlockButton() {
+            const blockBtn = document.getElementById('block-btn');
+            if (blockBtn) {
+                blockBtn.textContent = '/block';
+                blockBtn.title = 'Bloquer l\'utilisateur';
+            }
+        }
+
+        // Fonction pour vérifier si l'utilisateur est déjà ami et mettre à jour le bouton
+        async function checkAndUpdateFriendButton(username) {
+            const addFriendBtn = document.getElementById('add-friend-btn');
+            if (!addFriendBtn || !username) return;
+
+            try {
+                const response = await fetch(`/api/friends/check/${username}`, {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.isFriend) {
+                        addFriendBtn.textContent = '✓ Friend';
+                        addFriendBtn.disabled = true;
+                        addFriendBtn.style.opacity = '0.5';
+                        addFriendBtn.style.cursor = 'not-allowed';
+                    } else {
+                        addFriendBtn.textContent = 'Add Friend';
+                        addFriendBtn.disabled = false;
+                        addFriendBtn.style.opacity = '1';
+                        addFriendBtn.style.cursor = 'pointer';
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification du statut d\'ami:', error);
+            }
+        }
+
+        // Fonction pour vérifier l'état de connexion et ajuster la visibilité du bouton
+        function checkLoginStatus() {
+            // Cette fonction est maintenant dans chat-ui.js pour éviter les doublons
+            if (window.checkLoginStatus) {
+                window.checkLoginStatus();
+            }
+        }
+
+        // Observer les changements dans le titre de la conversation pour réinitialiser le bouton
+        const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+                if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                    const currentChatEl = document.getElementById('current-chat');
+                    if (currentChatEl && currentChatEl.textContent.includes('Conversation avec')) {
+                        resetBlockButton();
+                    }
+                }
+            });
+        });
+
+        // Démarrer l'observation quand le DOM est prêt
+        document.addEventListener('DOMContentLoaded', function () {
+            const currentChatEl = document.getElementById('current-chat');
+            if (currentChatEl) {
+                observer.observe(currentChatEl, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

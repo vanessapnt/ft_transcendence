@@ -79,7 +79,7 @@ router.get('/profile', requireAuth, (req, res) => {
 // Update user profile
 router.put('/profile', requireAuth, (req, res) => {
   try {
-    const { username, email, display_name, preferred_language } = req.body;
+    const { username, email } = req.body;
     const userId = req.session.userId;
 
     // Validate input
@@ -89,12 +89,6 @@ router.put('/profile', requireAuth, (req, res) => {
     }
     if (email && !email.includes('@')) {
       errors.push('Valid email is required');
-    }
-    if (display_name && display_name.length > 100) {
-      errors.push('Display name must be 100 characters or less');
-    }
-    if (preferred_language && !['en', 'fr', 'es'].includes(preferred_language)) {
-      errors.push('Invalid language. Must be en, fr, or es');
     }
 
     if (errors.length > 0) {
@@ -120,17 +114,9 @@ router.put('/profile', requireAuth, (req, res) => {
     const currentUser = statements.getUserById.get(userId);
     const newUsername = username || currentUser.username;
     const newEmail = email || currentUser.email;
-    const newDisplayName = display_name !== undefined ? display_name : currentUser.display_name;
 
-    // Update user (use updateUserWithDisplayName to include display_name)
-    statements.updateUserWithDisplayName.run(newUsername, newEmail, currentUser.avatar_path, newDisplayName, userId);
-
-    // Update language separately if provided
-    if (preferred_language) {
-      statements.updateUserLanguage.run(preferred_language, userId);
-      // Also update the session
-      req.session.language = preferred_language;
-    }
+    // Update user
+    statements.updateUser.run(newUsername, newEmail, currentUser.avatar_path, userId);
 
     // Return updated user
     const updatedUser = statements.getUserById.get(userId);
@@ -219,20 +205,20 @@ router.delete('/avatar', requireAuth, (req, res) => {
 router.get('/avatar/:username', (req, res) => {
   try {
     const { username } = req.params;
-    
+
     const getDefaultAvatar = () => {
       // Use default_avatar.png
       const defaultAvatarPath = path.join(__dirname, '../avatars/default_avatar.png');
       if (fs.existsSync(defaultAvatarPath)) {
         return res.sendFile(defaultAvatarPath);
       }
-      
+
       // Fallback to default.png if default_avatar.png doesn't exist
       const defaultPngPath = path.join(__dirname, '../avatars/default.png');
       if (fs.existsSync(defaultPngPath)) {
         return res.sendFile(defaultPngPath);
       }
-      
+
       // Generate a simple SVG avatar as last resort
       const defaultSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="50" fill="#00ff00"/>
@@ -242,12 +228,12 @@ router.get('/avatar/:username', (req, res) => {
       res.setHeader('Content-Type', 'image/svg+xml');
       return res.send(defaultSvg);
     };
-    
+
     // Handle default avatar request
     if (username === 'default') {
       return getDefaultAvatar();
     }
-    
+
     // Get user by username
     const user = statements.getUserByUsername.get(username);
     if (!user || !user.avatar_path) {

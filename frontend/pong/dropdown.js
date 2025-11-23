@@ -34,10 +34,16 @@
             const chatPanel = document.getElementById('chat-panel');
             if (chatPanel && chatPanel.style.display === 'flex') {
                 chatPanel.style.display = 'none';
-                // Réafficher les écrans du jeu
+                // Réafficher les écrans du jeu correctement
                 const screens = document.querySelectorAll('.screen');
                 screens.forEach(screen => {
-                    screen.style.display = 'block';
+                    const screenEl = screen;
+                    if (screenEl.classList.contains('active')) {
+                        screenEl.style.display = 'flex';
+                    }
+                    else {
+                        screenEl.style.display = 'none';
+                    }
                 });
             }
         });

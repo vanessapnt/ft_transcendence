@@ -61,73 +61,67 @@
 
 // Fonction pour vérifier l'état de connexion et ajuster la visibilité du bouton
 (window as any).checkLoginStatus = function checkLoginStatus() {
-    // Vérifier si l'utilisateur est connecté en regardant les éléments d'information utilisateur
-    const userDisplayElement = document.getElementById('user-display');
-    const userInfoElement = document.getElementById('user-info');
     const privateMessagesBtn = document.getElementById('private-messages-btn');
-
-    if (privateMessagesBtn) {
-        // TOUJOURS commencer par cacher le bouton par sécurité
-        if ((window as any).forceHidePrivateMessagesButton) {
-            (window as any).forceHidePrivateMessagesButton();
+    
+    if (!privateMessagesBtn) {
+        return;
+    }
+    
+    // Vérifier plusieurs indicateurs de connexion
+    const userInfo = document.getElementById('user-info');
+    const avatarImg = document.getElementById('avatar-img');
+    const currentUserId = (window as any).currentUserId;
+    const currentUsername = (window as any).currentUsername;
+    
+    let isLoggedIn = false;
+    
+    // Vérifier si on a des données utilisateur globales
+    if (currentUserId && currentUsername) {
+        isLoggedIn = true;
+    }
+    // Vérifier si les éléments UI indiquent une connexion
+    else if (userInfo && userInfo.style.display !== 'none' && userInfo.textContent.trim() !== '') {
+        isLoggedIn = true;
+    }
+    else if (avatarImg && avatarImg.style.display !== 'none' && avatarImg.src.includes('/avatars/')) {
+        isLoggedIn = true;
+    }
+    
+    if (isLoggedIn) {
+        // Utilisateur connecté - afficher le bouton
+        if ((window as any).forceShowPrivateMessagesButton) {
+            (window as any).forceShowPrivateMessagesButton();
         }
-
-        // Si on trouve un élément avec des informations utilisateur et qu'il contient un nom d'utilisateur
-        let isLoggedIn = false;
-
-        if (userDisplayElement && userDisplayElement.textContent.trim() !== '') {
-            isLoggedIn = true;
-        } else if (userInfoElement && userInfoElement.textContent.trim() !== '') {
-            isLoggedIn = true;
-        }
-
-        // Afficher le bouton seulement si on est sûr que l'utilisateur est connecté
-        if (isLoggedIn) {
-            if ((window as any).forceShowPrivateMessagesButton) {
-                (window as any).forceShowPrivateMessagesButton();
-            }
-            console.log('🔓 Bouton Private Messages affiché (utilisateur connecté)');
-        } else {
-            // Alternative: vérifier s'il y a un cookie de session ou faire un appel API
-            // Mais garder le bouton caché en attendant la réponse
-            try {
-                fetch('/api/user/profile')
-                    .then(response => {
-                        if (response.ok) {
-                            return response.json();
-                        } else {
-                            throw new Error('API response not ok');
-                        }
-                    })
-                    .then(userData => {
-                        // Vérifier si on a vraiment des données utilisateur
-                        if (userData && (userData.username || userData.id)) {
-                            if ((window as any).forceShowPrivateMessagesButton) {
-                                (window as any).forceShowPrivateMessagesButton();
-                            }
-                            console.log('🔓 Bouton Private Messages affiché (API confirme connexion avec données):', userData);
-                        } else {
-                            if ((window as any).forceHidePrivateMessagesButton) {
-                                (window as any).forceHidePrivateMessagesButton();
-                            }
-                            console.log('🔒 Bouton Private Messages caché (API ne retourne pas de données utilisateur)');
-                        }
-                    })
-                    .catch(() => {
-                        if ((window as any).forceHidePrivateMessagesButton) {
-                            (window as any).forceHidePrivateMessagesButton();
-                        }
-                        console.log('🔒 Bouton Private Messages caché (erreur API)');
-                    });
-            } catch (error) {
-                // En cas d'erreur, garder le bouton caché
+        console.log('🔓 Bouton Private Messages affiché (utilisateur connecté)');
+    } else {
+        // Pas sûr de la connexion - vérifier via API
+        fetch('/api/user/profile', { credentials: 'include' })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('API response not ok');
+                }
+            })
+            .then(userData => {
+                if (userData && (userData.username || userData.id)) {
+                    if ((window as any).forceShowPrivateMessagesButton) {
+                        (window as any).forceShowPrivateMessagesButton();
+                    }
+                    console.log('🔓 Bouton Private Messages affiché (API confirme connexion):', userData);
+                } else {
+                    if ((window as any).forceHidePrivateMessagesButton) {
+                        (window as any).forceHidePrivateMessagesButton();
+                    }
+                    console.log('🔒 Bouton Private Messages caché (pas de données utilisateur)');
+                }
+            })
+            .catch(() => {
                 if ((window as any).forceHidePrivateMessagesButton) {
                     (window as any).forceHidePrivateMessagesButton();
                 }
-                (privateMessagesBtn as HTMLElement).style.visibility = 'hidden';
-                console.log('🔒 Bouton Private Messages caché (exception JavaScript)');
-            }
-        }
+                console.log('🔒 Bouton Private Messages caché (erreur API)');
+            });
     }
 };
 
@@ -140,6 +134,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Vérifier l'état de connexion et ajuster la visibilité du bouton
     (window as any).checkLoginStatus();
+    
+    // Vérification périodique pour s'assurer que le bouton reste visible
+    // quand l'utilisateur est connecté (toutes les 5 secondes)
+    setInterval(function() {
+        if ((window as any).currentUserId && (window as any).currentUsername) {
+            const privateMessagesBtn = document.getElementById('private-messages-btn');
+            if (privateMessagesBtn && (privateMessagesBtn as HTMLElement).style.display === 'none') {
+                console.log('🔧 Correction automatique: ré-affichage du bouton Messages Privés');
+                if ((window as any).forceShowPrivateMessagesButton) {
+                    (window as any).forceShowPrivateMessagesButton();
+                }
+            }
+        }
+    }, 5000);
 
     // Ajouter les événements pour les boutons d'action du chat
     const inviteBtn = document.getElementById('invite-btn');

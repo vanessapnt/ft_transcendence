@@ -4,11 +4,72 @@
     box-sizing: border-box;
 }
 
+@keyframes starfield {
+    0% {
+        transform: translateY(0);
+    }
+
+    100% {
+        transform: translateY(-2000px);
+    }
+}
+
+@keyframes twinkle {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
 body {
-    background: #000;
+    background: #1a1a1a;
     color: #00ff00;
     font-family: 'Press Start 2P', cursive;
     overflow: hidden;
+    position: relative;
+}
+
+body::before,
+body::after {
+    content: '';
+    position: fixed;
+    top: -1000px;
+    left: 0;
+    width: 100%;
+    height: 3000px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+body::before {
+    background-image:
+        radial-gradient(circle, #00ff00 1px, transparent 1px),
+        radial-gradient(circle, #00ff00 1px, transparent 1px),
+        radial-gradient(circle, #00ff00 2px, transparent 2px),
+        radial-gradient(circle, rgba(0, 255, 0, 0.8) 1px, transparent 1px);
+    background-size: 200px 200px, 300px 300px, 150px 150px, 250px 250px;
+    background-position: 0 0, 40px 60px, 130px 270px, 70px 100px;
+    animation: starfield 80s linear infinite, twinkle 3s ease-in-out infinite;
+}
+
+body::after {
+    background-image:
+        radial-gradient(circle, rgba(0, 255, 0, 0.6) 1px, transparent 1px),
+        radial-gradient(circle, rgba(0, 255, 0, 0.7) 2px, transparent 2px),
+        radial-gradient(circle, rgba(0, 255, 0, 0.5) 1px, transparent 1px);
+    background-size: 180px 180px, 280px 280px, 220px 220px;
+    background-position: 50px 50px, 120px 180px, 190px 290px;
+    animation: starfield 120s linear infinite, twinkle 5s ease-in-out infinite;
+}
+
+body>* {
+    position: relative;
+    z-index: 1;
 }
 
 /* Language Selector Styling */
@@ -24,7 +85,7 @@ body {
 #lang-selector-container button {
     padding: 8px 14px;
     border: 2px solid #00ff00;
-    background: #000;
+    background: #1a1a1a;
     color: #00ff00;
     cursor: pointer;
     font-family: 'Press Start 2P', cursive;
@@ -124,10 +185,13 @@ body {
 }
 
 @keyframes pulse-notification {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
         box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
     }
+
     50% {
         transform: scale(1.1);
         box-shadow: 0 0 20px rgba(255, 0, 0, 1);
@@ -181,14 +245,9 @@ body {
     padding-left: 20px;
 }
 
-.dropdown-menu button .menu-icon {
-    font-size: 1.2em;
-    min-width: 20px;
-    text-align: center;
-}
-
 .dropdown-menu button .menu-text {
     flex: 1;
+    text-align: left;
 }
 
 /* Séparateur visuel entre les boutons */
@@ -196,17 +255,36 @@ body {
     border-bottom: 1px solid rgba(0, 255, 0, 0.2);
 }
 
+@keyframes pongGlow {
+
+    0%,
+    100% {
+        text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
+        transform: scale(1);
+    }
+
+    50% {
+        text-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00, 0 0 40px #00ff00, 0 0 50px #00ff00;
+        transform: scale(1.05);
+    }
+}
+
 #home-view h1 {
     font-size: 4rem;
     margin-bottom: 2rem;
     color: #00ff00;
     text-shadow: 0 0 10px #00ff00;
+    animation: pongGlow 3s ease-in-out infinite;
 }
 
 .menu-buttons {
     display: flex;
     flex-direction: column;
     gap: 20px;
+}
+
+.menu-buttons.hidden {
+    display: none !important;
 }
 
 .auth-buttons-row {
@@ -248,11 +326,28 @@ body {
     margin-right: auto;
 }
 
+.edit-profile-form {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    z-index: 10000;
+}
+
 .auth-form h2 {
     color: #00ff00;
     font-size: 1.5em;
     margin-bottom: 20px;
     text-shadow: 0 0 10px #00ff00;
+    text-align: center;
+}
+
+.auth-form button {
+    display: block;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .auth-form label {
@@ -269,7 +364,7 @@ body {
     margin: 10px 0;
     padding: 10px;
     font-size: 0.9em;
-    background: #000;
+    background: #1a1a1a;
     border: 2px solid #00ff00;
     color: #00ff00;
     border-radius: 5px;
@@ -340,72 +435,6 @@ body {
     box-shadow: 0 0 15px #00ff00;
 }
 
-.file-input-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.file-input-btn {
-    padding: 8px 16px;
-    background: #00ff00;
-    color: #000;
-    border: 2px solid #00ff00;
-    border-radius: 4px;
-    cursor: pointer;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 0.6em;
-    text-shadow: none;
-    transition: all 0.3s;
-}
-
-.file-input-btn:hover {
-    background: #00cc00;
-    box-shadow: 0 0 10px #00ff00;
-}
-
-.file-input-name {
-    color: #00ff00;
-    font-size: 0.7em;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.language-selector {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 15px;
-}
-
-.lang-option {
-    padding: 8px 16px;
-    background: transparent;
-    color: #00ff00;
-    border: 2px solid #00ff00;
-    border-radius: 4px;
-    cursor: pointer;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 0.6em;
-    text-shadow: 0 0 5px #00ff00;
-    transition: all 0.3s;
-}
-
-.lang-option:hover {
-    background: rgba(0, 255, 0, 0.1);
-    box-shadow: 0 0 10px #00ff00;
-}
-
-.lang-option.active {
-    background: #00ff00;
-    color: #000;
-    text-shadow: none;
-    box-shadow: 0 0 15px #00ff00;
-}
-
 #mode-selection h1 {
     font-size: 3em;
     margin-bottom: 50px;
@@ -442,7 +471,7 @@ body {
 #board {
     display: block;
     margin: 20px auto;
-    background-color: #000;
+    background-color: #1a1a1a;
     border: 2px solid #00ff00;
 }
 
@@ -494,7 +523,7 @@ body {
     margin: 15px 0;
     padding: 12px 15px;
     font-size: 1em;
-    background: #000;
+    background: #1a1a1a;
     border: 2px solid #00ff00;
     color: #00ff00;
     border-radius: 5px;
@@ -536,12 +565,18 @@ body {
     overflow-y: auto;
 }
 
+.tournament-container {
+    scrollbar-width: thin;
+    scrollbar-color: #00ff00 #1a1a1a;
+}
+
+/* Chrome/Safari scrollbar */
 .tournament-container::-webkit-scrollbar {
     width: 10px;
 }
 
 .tournament-container::-webkit-scrollbar-track {
-    background: #111;
+    background: #1a1a1a;
     border-radius: 10px;
 }
 
@@ -639,7 +674,7 @@ body {
 }
 
 .standings-row {
-    background: #111;
+    background: #1a1a1a;
     padding: 10px;
     margin: 5px 0;
     border-radius: 5px;
@@ -669,7 +704,7 @@ body {
 }
 
 .match-item {
-    background: #111;
+    background: #1a1a1a;
     padding: 15px;
     margin: 10px 0;
     border-radius: 8px;
@@ -734,7 +769,7 @@ body {
 }
 
 .final-standings-row {
-    background: #111;
+    background: #1a1a1a;
     padding: 15px;
     margin: 10px 0;
     border-radius: 8px;
@@ -833,7 +868,7 @@ button:active {
 .overlay-content {
     text-align: center;
     padding: 40px;
-    background: #000;
+    background: #1a1a1a;
     border: 3px solid #00ff00;
     border-radius: 15px;
 }
@@ -929,7 +964,7 @@ button:active {
     left: 0;
     width: 100vw;
     height: calc(100vh - 80px);
-    background: #000;
+    background: rgba(26, 26, 26, 0.85);
     padding: 20px;
     border: none;
     box-shadow: none;
@@ -987,6 +1022,7 @@ button:active {
     gap: 10px;
 }
 
+#add-friend-btn,
 #invite-btn,
 #block-btn {
     background: transparent;
@@ -998,6 +1034,13 @@ button:active {
     font-family: 'Press Start 2P', cursive;
     cursor: pointer;
     transition: all 0.3s ease;
+}
+
+#add-friend-btn:hover {
+    background: #00d9ff;
+    color: #000;
+    border-color: #00d9ff;
+    box-shadow: 0 0 10px #00d9ff;
 }
 
 #invite-btn:hover {
@@ -1030,7 +1073,7 @@ button:active {
 #conversations-sidebar {
     width: 300px;
     height: calc(100vh - 250px);
-    background: #111;
+    background: #1a1a1a;
     border: 2px solid #00ff00;
     border-radius: 10px;
     padding: 15px;
@@ -1039,17 +1082,70 @@ button:active {
     overflow-y: auto;
 }
 
+#conversations-header {
+    margin-bottom: 15px;
+}
+
 #conversations-sidebar h3 {
     color: #00ff00;
     font-size: 0.8rem;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     text-align: center;
     border-bottom: 1px solid #00ff00;
     padding-bottom: 10px;
-    height: 40px;
+}
+
+.switch-container {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 0.5rem;
+    color: #00ff00;
+}
+
+.switch-container input[type="checkbox"] {
+    display: none;
+}
+
+.switch-slider {
+    position: relative;
+    width: 40px;
+    height: 20px;
+    background: #333;
+    border: 2px solid #00ff00;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.switch-slider::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #00ff00;
+    top: 1px;
+    left: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 5px #00ff00;
+}
+
+.switch-container input[type="checkbox"]:checked+.switch-slider {
+    background: #00ff00;
+}
+
+.switch-container input[type="checkbox"]:checked+.switch-slider::before {
+    transform: translateX(20px);
+    background: #000;
+    box-shadow: 0 0 10px #00ff00;
+}
+
+.switch-label {
+    user-select: none;
+    cursor: pointer;
 }
 
 #chat-panel h2 {
@@ -1085,7 +1181,7 @@ button:active {
 }
 
 .conversation-tab {
-    background: #111;
+    background: rgba(26, 26, 26, 0.7);
     color: #00ff00;
     border-radius: 8px;
     padding: 12px;
@@ -1165,17 +1261,21 @@ button:active {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    background-color: #000;
+    background-color: rgba(26, 26, 26, 0.7);
     margin-bottom: 20px;
     box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+    /* Firefox scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: #00ff00 #1a1a1a;
 }
 
+/* Chrome/Safari scrollbar */
 #chatbox::-webkit-scrollbar {
     width: 8px;
 }
 
 #chatbox::-webkit-scrollbar-track {
-    background: #111;
+    background: #1a1a1a;
     border-radius: 4px;
 }
 
@@ -1268,7 +1368,7 @@ button:active {
     padding: 0.5rem;
     border: 2px solid #00ff00;
     border-radius: 5px;
-    background: #000;
+    background: rgba(26, 26, 26, 0.7);
     color: #00ff00;
     font-family: 'Press Start 2P', cursive;
     font-size: 0.6rem;
@@ -1296,7 +1396,7 @@ button:active {
 }
 
 #controls button:hover {
-    background-color: #000;
+    background-color: #1a1a1a;
     color: #00ff00;
     box-shadow: 0 0 10px #00ff00;
 }
@@ -1323,7 +1423,7 @@ button:active {
     max-width: 320px;
     text-align: center;
     position: relative;
-    background: #000;
+    background: #1a1a1a;
     border: 2px solid #00ff00;
     box-shadow: 0 0 20px #00ff00;
 }
@@ -1367,55 +1467,4 @@ button:active {
 #profile-modal-close:hover {
     color: #ff4444;
     text-shadow: 0 0 10px #ff4444;
-}
-
-/* Game in progress overlay */
-#game-in-progress-overlay .overlay-content {
-    max-width: 600px;
-}
-
-#game-in-progress-overlay .overlay-content h2 {
-    font-size: 2em;
-    margin-bottom: 20px;
-}
-
-#game-in-progress-overlay .overlay-content p {
-    font-size: 1.2em;
-    color: #00ff00;
-    margin-bottom: 30px;
-}
-
-#opponent-name {
-    color: #ffffff;
-    font-weight: bold;
-    text-shadow: 0 0 10px #00ff00;
-}
-
-.loading-dots {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    font-size: 3em;
-    color: #00ff00;
-}
-
-.loading-dots span {
-    animation: blink 1.4s infinite;
-}
-
-.loading-dots span:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.loading-dots span:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-@keyframes blink {
-    0%, 80%, 100% {
-        opacity: 0;
-    }
-    40% {
-        opacity: 1;
-    }
 }

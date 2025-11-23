@@ -57,6 +57,19 @@ const createTables = () => {
     )
   `);
 
+  // Friends table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS friends (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      friend_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(user_id, friend_id)
+    )
+  `);
+
   console.log('✅ Database tables created/verified');
 };
 
@@ -158,6 +171,27 @@ const statements = {
     WHERE (m.from_user_id = ? AND m.to_user_id = ?) OR (m.from_user_id = ? AND m.to_user_id = ?)
     ORDER BY m.created_at ASC
     LIMIT 50
+  `),
+
+  // Friend operations
+  addFriend: db.prepare(`
+    INSERT INTO friends (user_id, friend_id) VALUES (?, ?)
+  `),
+
+  removeFriend: db.prepare(`
+    DELETE FROM friends WHERE user_id = ? AND friend_id = ?
+  `),
+
+  getFriends: db.prepare(`
+    SELECT u.id, u.username, u.display_name, u.avatar_path, f.created_at as friend_since
+    FROM friends f
+    JOIN users u ON f.friend_id = u.id
+    WHERE f.user_id = ?
+    ORDER BY u.username
+  `),
+
+  isFriend: db.prepare(`
+    SELECT COUNT(*) as count FROM friends WHERE user_id = ? AND friend_id = ?
   `)
 };
 

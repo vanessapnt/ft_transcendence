@@ -5,8 +5,8 @@ declare const i18next: any;
 
 const i18nWrapper = {
   async init() {
-    const savedLang = localStorage.getItem('preferred_language') 
-      || navigator.language?.split('-')[0] 
+    const savedLang = localStorage.getItem('preferred_language')
+      || navigator.language?.split('-')[0]
       || 'en';
 
     // Fetch all translations
@@ -38,21 +38,14 @@ const i18nWrapper = {
     await i18next.changeLanguage(lang);
     document.documentElement.lang = lang;
     localStorage.setItem('preferred_language', lang);
-    
+
     // Inform backend
     fetch('/api/i18n/set-language', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({ language: lang })
-    }).catch(() => {});
-
-    // Update WebSocket chat language if connected
-    const pong = (window as any).PONG;
-    if (pong?.Chat?.ws && pong.Chat.ws.readyState === WebSocket.OPEN) {
-      pong.Chat.ws.send(JSON.stringify({ type: "updateLanguage", language: lang }));
-      console.log(`🌐 Langue du chat mise à jour: ${lang}`);
-    }
+    }).catch(() => { });
   },
 
   t(key: string, params?: any): string {
@@ -70,6 +63,7 @@ const i18nWrapper = {
 // Expose changeLang function globally for onclick handlers in HTML
 (window as any).changeLang = async (lang: string) => {
   await i18nWrapper.changeLanguage(lang);
+
   // Update all elements with data-i18n-key attribute
   document.querySelectorAll('[data-i18n-key]').forEach((el: any) => {
     const key = el.getAttribute('data-i18n-key');
@@ -77,76 +71,32 @@ const i18nWrapper = {
       if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
         el.placeholder = i18nWrapper.t(key);
       } else {
-        // Check if element has a .menu-text child (for dropdown menu buttons with icons)
-        const menuText = el.querySelector('.menu-text');
-        if (menuText) {
-          // Only update the text span, preserving the icon
-          menuText.textContent = i18nWrapper.t(key);
-        } else {
-          // For simple elements without children, update textContent
-          el.textContent = i18nWrapper.t(key);
-        }
+        el.textContent = i18nWrapper.t(key);
       }
     }
   });
 
-  // Update elements with data-i18n-placeholder attribute
-  document.querySelectorAll('[data-i18n-placeholder]').forEach((el: any) => {
-    const key = el.getAttribute('data-i18n-placeholder');
-    if (key) {
-      el.placeholder = i18nWrapper.t(key);
-    }
-  });
+  // Update tooltips (title attributes) based on button IDs
+  const addFriendBtn = document.getElementById('add-friend-btn');
+  if (addFriendBtn) addFriendBtn.title = i18nWrapper.t('add_friend');
 
-  // Update elements with data-i18n-title attribute
-  document.querySelectorAll('[data-i18n-title]').forEach((el: any) => {
-    const key = el.getAttribute('data-i18n-title');
-    if (key) {
-      el.title = i18nWrapper.t(key);
-    }
-  });
+  const inviteBtn = document.getElementById('invite-btn');
+  if (inviteBtn) inviteBtn.title = i18nWrapper.t('invite_to_play');
 
-  // Update placeholders for signup form if it exists
-  const signupUsername = document.getElementById('signup-username') as HTMLInputElement;
-  const signupEmail = document.getElementById('signup-email') as HTMLInputElement;
-  const signupPassword = document.getElementById('signup-password') as HTMLInputElement;
-  const signupDisplayname = document.getElementById('signup-displayname') as HTMLInputElement;
-  
-  if (signupUsername) signupUsername.placeholder = i18nWrapper.t('signup_username_placeholder');
-  if (signupEmail) signupEmail.placeholder = i18nWrapper.t('signup_email_placeholder');
-  if (signupPassword) signupPassword.placeholder = i18nWrapper.t('signup_password_placeholder');
-  if (signupDisplayname) signupDisplayname.placeholder = i18nWrapper.t('signup_displayname_placeholder');
-
-  // Update placeholders for login form if it exists
-  const loginUsername = document.getElementById('login-username') as HTMLInputElement;
-  const loginPassword = document.getElementById('login-password') as HTMLInputElement;
-  
-  if (loginUsername) loginUsername.placeholder = i18nWrapper.t('login_username_placeholder');
-  if (loginPassword) loginPassword.placeholder = i18nWrapper.t('login_password_placeholder');
-
-  // Update tournament placeholders if tournament module exists
-  const pong = (window as any).PONG;
-  if (pong?.Tournament && typeof pong.Tournament.updatePlaceholders === 'function') {
-    pong.Tournament.updatePlaceholders();
+  const blockBtn = document.getElementById('block-btn');
+  if (blockBtn) {
+    const isUnblock = blockBtn.textContent === '/unblock';
+    blockBtn.title = i18nWrapper.t(isUnblock ? 'unblock_user' : 'block_user');
   }
 
-  // Update block button text after language change
-  if (pong?.Chat && typeof pong.Chat.updateBlockButton === 'function') {
-    pong.Chat.updateBlockButton();
-  }
-
-  // Update Private Messages button text if chat is visible
-  const privateMessagesBtn = document.getElementById('private-messages-btn') as HTMLButtonElement;
-  const chatPanel = document.getElementById('chat-panel') as HTMLElement;
-  if (privateMessagesBtn && chatPanel) {
-    const menuText = privateMessagesBtn.querySelector('.menu-text');
-    if (menuText) {
-      // Update only the text span, preserving the icon
-      if (chatPanel.style.display === 'flex') {
-        menuText.textContent = i18nWrapper.t('chat_hide_messages');
-      } else {
-        menuText.textContent = i18nWrapper.t('private_messages');
-      }
+  // Update current chat label if present
+  const currentChatLabel = document.getElementById('current-chat');
+  if (currentChatLabel && (window as any).PONG && (window as any).PONG.Chat) {
+    const currentUser = (window as any).PONG.Chat.getCurrentChatUser ? (window as any).PONG.Chat.getCurrentChatUser() : null;
+    if (currentUser) {
+      currentChatLabel.textContent = `${i18nWrapper.t('conversation_with')} ${currentUser}`;
+    } else {
+      currentChatLabel.textContent = i18nWrapper.t('no_conversation_selected');
     }
   }
 };

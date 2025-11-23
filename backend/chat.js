@@ -11,7 +11,7 @@ const logger = require("./logger");
 function setupChat(server) {
   // On crée un WebSocket Server monté sur le même serveur HTTP (sur /chat)
   const wss = new WebSocket.Server({ server, path: "/chat" });
-  
+
   logger.info('WebSocket chat server initialized');
 
   // socket => { username, displayName, userId, blocked: Set }
@@ -330,7 +330,7 @@ function setupChat(server) {
         if (data.type === "dm" && data.to && data.text) {
           const fromUser = clientData.username;
           const fromDisplayName = clientData.displayName;
-          
+
           logger.info('Chat message sent', {
             from: fromUser,
             to: data.to,

@@ -28,7 +28,7 @@ const validateUserInput = (username, email, password) => {
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password, display_name } = req.body;
-    
+
     logger.info('Register attempt', { username, email });
 
     // Validate input
@@ -63,19 +63,19 @@ router.post('/register', async (req, res) => {
         result.lastInsertRowid
       );
     }
-    
+
     // Set preferred language from session if available
     const preferredLang = req.session.lang || 'en';
     if (preferredLang !== 'en') {
       statements.updateUserLanguage.run(preferredLang, result.lastInsertRowid);
     }
-    
+
     const user = statements.getUserById.get(result.lastInsertRowid);
 
     // Set session
     req.session.userId = user.id;
     req.session.lang = user.preferred_language || preferredLang;
-    
+
     logger.info('User registered successfully', { userId: user.id, username, email });
 
     // Return user data (without password)
@@ -95,7 +95,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    
+
     logger.info('Login attempt', { username });
 
     if (!username || !password) {
@@ -120,7 +120,7 @@ router.post('/login', async (req, res) => {
     // Set session
     req.session.userId = user.id;
     req.session.lang = user.preferred_language || 'en';
-    
+
     logger.info('User logged in', { userId: user.id, username });
 
     // Return user data
@@ -139,12 +139,19 @@ router.post('/login', async (req, res) => {
 
 // Logout
 router.post('/logout', (req, res) => {
+  console.log('[LOGOUT] sessionID:', req.sessionID, 'session:', req.session, 'cookie:', req.headers.cookie);
   req.session.destroy((err) => {
     if (err) {
       console.error('Logout error:', err);
       return res.status(500).json({ error: 'Could not log out' });
     }
-    res.clearCookie('connect.sid');
+    // Clear cookie using the same options as session creation
+    res.clearCookie('connect.sid', {
+      path: '/',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    });
+    console.log('[LOGOUT] cookie cleared');
     res.json({ message: 'Logged out successfully' });
   });
 });

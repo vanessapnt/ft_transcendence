@@ -99,7 +99,45 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         }
     }
     function logout() {
+        // Call backend logout endpoint to destroy server-side session and instruct browser to clear cookie
+        (function () {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const res = yield fetch(`${API_BASE_URL}/api/auth/logout`, {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    if (!res.ok) {
+                        console.warn('[Logout] API returned non-OK status:', res.status);
+                    }
+                    else {
+                        console.log('[Logout] API success');
+                    }
+                }
+                catch (err) {
+                    console.warn('[Logout] fetch error:', err);
+                }
+            });
+        })();
         var _a;
+        // Call backend logout endpoint to destroy server-side session and instruct browser to clear cookie
+        (() => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const res = yield fetch(`${API_BASE_URL}/api/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (!res.ok) {
+                    console.warn('[Logout] API returned non-OK status:', res.status);
+                }
+                else {
+                    console.log('[Logout] API success');
+                }
+            }
+            catch (err) {
+                console.warn('[Logout] fetch error:', err);
+            }
+        }))();
         // Cacher le chat s'il est ouvert
         const chatPanel = document.getElementById('chat-panel');
         if (chatPanel && chatPanel.classList.contains('active')) {

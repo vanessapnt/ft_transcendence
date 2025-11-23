@@ -880,7 +880,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 this.addSystemMessage(i18n ? i18n.t('chat_launching_game') : "🎮 Lancement du jeu Pong...");
                 // Fermer le chat panel
                 if (chatPanel) {
-                    chatPanel.style.display = 'none';
+                    chatPanel.classList.remove('active');
                 }
                 // Lancer le jeu directement (comme dans le tournoi)
                 setTimeout(() => {
@@ -930,7 +930,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             // Cacher le chat s'il est ouvert
             const chatPanel = document.getElementById('chat-panel');
             if (chatPanel) {
-                chatPanel.style.display = 'none';
+                chatPanel.classList.remove('active');
+            }
+            // Fermer le panel edit-profile s'il est ouvert
+            const editProfilePanel = document.getElementById('edit-profile-panel');
+            if (editProfilePanel && editProfilePanel.classList.contains('active')) {
+                editProfilePanel.classList.remove('active');
             }
             // Cacher tous les overlays/modals SAUF game-in-progress-overlay
             const overlays = document.querySelectorAll('.overlay');
@@ -943,12 +948,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             const signupForm = document.getElementById('signup-form');
             const loginForm = document.getElementById('login-form');
             const editProfileForm = document.getElementById('edit-profile-form');
-            if (signupForm)
-                signupForm.style.display = 'none';
-            if (loginForm)
-                loginForm.style.display = 'none';
-            if (editProfileForm)
-                editProfileForm.style.display = 'none';
             const pong = window.PONG;
             if (pong === null || pong === void 0 ? void 0 : pong.PongGame) {
                 // Configurer les noms des joueurs
@@ -1000,15 +999,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                         dropdownMenu.style.display = '';
                         dropdownMenu.classList.remove('show'); // Fermer le dropdown s'il était ouvert
                     }
-                    // Réinitialiser le style display pour tous les panels (pour qu'ils puissent être ouverts après)
-                    const chatPanel = document.getElementById('chat-panel');
-                    const editProfilePanel = document.getElementById('edit-profile-panel');
-                    if (chatPanel)
-                        chatPanel.style.display = '';
-                    if (editProfilePanel)
-                        editProfilePanel.style.display = '';
                     // Retourner à l'écran précédent
                     if (this.previousScreen === 'chat') {
+                        const chatPanel = document.getElementById('chat-panel');
                         if (chatPanel) {
                             chatPanel.classList.add('active');
                             console.log('✅ Chat réaffiché après le jeu');
@@ -1076,15 +1069,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 langSelector.style.display = '';
             if (userInfo)
                 userInfo.style.display = '';
-            // Réinitialiser le style display pour tous les panels
-            const chatPanel = document.getElementById('chat-panel');
-            const editProfilePanel = document.getElementById('edit-profile-panel');
-            if (chatPanel)
-                chatPanel.style.display = '';
-            if (editProfilePanel)
-                editProfilePanel.style.display = '';
             // Restaurer l'écran précédent
             if (this.previousScreen === 'chat') {
+                const chatPanel = document.getElementById('chat-panel');
                 if (chatPanel) {
                     chatPanel.classList.add('active');
                     console.log('✅ Chat réaffiché');

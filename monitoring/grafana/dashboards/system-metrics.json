@@ -1,82 +1,117 @@
 {
-  "dashboard": {
-    "title": "Transcendence - Système & Ressources",
-    "uid": "system-metrics",
-    "tags": ["transcendence", "system"],
-    "timezone": "browser",
-    "panels": [
-      {
-        "id": 1,
-        "title": "CPU Usage",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
-            "legendFormat": "CPU Usage %"
-          }
+    "dashboard": {
+        "title": "Transcendence - Système & Ressources",
+        "uid": "system-metrics",
+        "tags": [
+            "transcendence",
+            "system"
         ],
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
-        "yaxes": [
-          {"format": "percent", "min": 0, "max": 100}
-        ]
-      },
-      {
-        "id": 2,
-        "title": "Mémoire Utilisée",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
-            "legendFormat": "Mémoire %"
-          }
+        "timezone": "browser",
+        "panels": [
+            {
+                "id": 1,
+                "title": "CPU Usage",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+                        "legendFormat": "CPU Usage %"
+                    }
+                ],
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 0
+                },
+                "yaxes": [
+                    {
+                        "format": "percent",
+                        "min": 0,
+                        "max": 100
+                    }
+                ]
+            },
+            {
+                "id": 2,
+                "title": "Mémoire Utilisée",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+                        "legendFormat": "Mémoire %"
+                    }
+                ],
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 12,
+                    "y": 0
+                },
+                "yaxes": [
+                    {
+                        "format": "percent",
+                        "min": 0,
+                        "max": 100
+                    }
+                ]
+            },
+            {
+                "id": 3,
+                "title": "Utilisation Disque",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})) * 100",
+                        "legendFormat": "Disque /  %"
+                    }
+                ],
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 8
+                },
+                "yaxes": [
+                    {
+                        "format": "percent",
+                        "min": 0,
+                        "max": 100
+                    }
+                ]
+            },
+            {
+                "id": 4,
+                "title": "Charge Système",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "node_load1",
+                        "legendFormat": "Load 1min"
+                    },
+                    {
+                        "expr": "node_load5",
+                        "legendFormat": "Load 5min"
+                    },
+                    {
+                        "expr": "node_load15",
+                        "legendFormat": "Load 15min"
+                    }
+                ],
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 12,
+                    "y": 8
+                }
+            }
         ],
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
-        "yaxes": [
-          {"format": "percent", "min": 0, "max": 100}
-        ]
-      },
-      {
-        "id": 3,
-        "title": "Utilisation Disque",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})) * 100",
-            "legendFormat": "Disque /  %"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
-        "yaxes": [
-          {"format": "percent", "min": 0, "max": 100}
-        ]
-      },
-      {
-        "id": 4,
-        "title": "Charge Système",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "node_load1",
-            "legendFormat": "Load 1min"
-          },
-          {
-            "expr": "node_load5",
-            "legendFormat": "Load 5min"
-          },
-          {
-            "expr": "node_load15",
-            "legendFormat": "Load 15min"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
-      }
-    ],
-    "refresh": "30s",
-    "time": {
-      "from": "now-1h",
-      "to": "now"
-    },
-    "schemaVersion": 27,
-    "version": 0
-  }
+        "refresh": "30s",
+        "time": {
+            "from": "now-1h",
+            "to": "now"
+        },
+        "schemaVersion": 27,
+        "version": 0
+    }
 }

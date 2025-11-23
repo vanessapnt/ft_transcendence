@@ -1,39 +1,46 @@
 // Chat UI management functions
 // Fonction pour afficher/cacher le chat
 window.toggleChat = function toggleChat() {
+    var _a;
     const chatPanel = document.getElementById('chat-panel');
     const button = document.getElementById('private-messages-btn');
     const screens = document.querySelectorAll('.screen');
     if (chatPanel && button) {
         const i18n = window.i18n;
         const menuText = button.querySelector('.menu-text');
-        if (chatPanel.style.display === 'none' || chatPanel.style.display === '') {
+        if (!chatPanel.classList.contains('active')) {
             // Afficher le chat et cacher le jeu/menus
-            chatPanel.style.display = 'flex';
+            chatPanel.classList.add('active');
             if (menuText) {
                 menuText.textContent = i18n ? i18n.t('chat_hide_messages') : 'Hide Messages';
             }
-            // Cacher tous les écrans du jeu
+            // Désactiver tous les écrans du jeu
             screens.forEach(screen => {
-                screen.style.display = 'none';
+                screen.classList.remove('active');
             });
         }
         else {
             // Cacher le chat et réafficher le jeu/menus
-            chatPanel.style.display = 'none';
+            chatPanel.classList.remove('active');
             if (menuText) {
                 menuText.textContent = i18n ? i18n.t('private_messages') : 'Private Messages';
             }
-            // Réafficher l'écran qui était actif
-            screens.forEach(screen => {
-                const el = screen;
-                if (el.classList.contains('active')) {
-                    el.style.display = 'flex';
+            // Réafficher l'écran qui était actif ou home par défaut
+            const hasActiveScreen = Array.from(screens).some(screen => screen.classList.contains('active'));
+            if (!hasActiveScreen) {
+                // Aucun écran actif, retourner au home
+                const pong = window.PONG;
+                if ((_a = pong === null || pong === void 0 ? void 0 : pong.Nav) === null || _a === void 0 ? void 0 : _a.showHome) {
+                    pong.Nav.showHome();
                 }
                 else {
-                    el.style.display = 'none';
+                    // Fallback si Navigation pas encore chargé
+                    const homeView = document.getElementById('home-view');
+                    if (homeView) {
+                        homeView.classList.add('active');
+                    }
                 }
-            });
+            }
         }
     }
 };
@@ -130,7 +137,7 @@ window.checkLoginStatus = function checkLoginStatus() {
 document.addEventListener('DOMContentLoaded', function () {
     const chatPanel = document.getElementById('chat-panel');
     if (chatPanel) {
-        chatPanel.style.display = 'none';
+        chatPanel.classList.remove('active');
     }
     // Vérifier l'état de connexion et ajuster la visibilité du bouton
     window.checkLoginStatus();

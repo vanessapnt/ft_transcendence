@@ -9,33 +9,39 @@
         const i18n = (window as any).i18n;
         const menuText = button.querySelector('.menu-text');
         
-        if (chatPanel.style.display === 'none' || chatPanel.style.display === '') {
+        if (!chatPanel.classList.contains('active')) {
             // Afficher le chat et cacher le jeu/menus
-            chatPanel.style.display = 'flex';
+            chatPanel.classList.add('active');
             if (menuText) {
                 menuText.textContent = i18n ? i18n.t('chat_hide_messages') : 'Hide Messages';
             }
 
-            // Cacher tous les écrans du jeu
+            // Désactiver tous les écrans du jeu
             screens.forEach(screen => {
-                (screen as HTMLElement).style.display = 'none';
+                screen.classList.remove('active');
             });
         } else {
             // Cacher le chat et réafficher le jeu/menus
-            chatPanel.style.display = 'none';
+            chatPanel.classList.remove('active');
             if (menuText) {
                 menuText.textContent = i18n ? i18n.t('private_messages') : 'Private Messages';
             }
 
-            // Réafficher l'écran qui était actif
-            screens.forEach(screen => {
-                const el = screen as HTMLElement;
-                if (el.classList.contains('active')) {
-                    el.style.display = 'flex';
+            // Réafficher l'écran qui était actif ou home par défaut
+            const hasActiveScreen = Array.from(screens).some(screen => screen.classList.contains('active'));
+            if (!hasActiveScreen) {
+                // Aucun écran actif, retourner au home
+                const pong = (window as any).PONG;
+                if (pong?.Nav?.showHome) {
+                    pong.Nav.showHome();
                 } else {
-                    el.style.display = 'none';
+                    // Fallback si Navigation pas encore chargé
+                    const homeView = document.getElementById('home-view');
+                    if (homeView) {
+                        homeView.classList.add('active');
+                    }
                 }
-            });
+            }
         }
     }
 };
@@ -135,7 +141,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const chatPanel = document.getElementById('chat-panel');
     if (chatPanel) {
-        chatPanel.style.display = 'none';
+        chatPanel.classList.remove('active');
     }
 
     // Vérifier l'état de connexion et ajuster la visibilité du bouton

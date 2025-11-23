@@ -15,6 +15,7 @@
     interface ChatData {
         type?: string;
         from?: string;
+        fromDisplayName?: string;
         text?: string;
         to?: string;
         username?: string;
@@ -781,23 +782,25 @@
 
         private handleInvite(data: ChatData): void {
             console.log("🎮 Invitation reçue:", data);
-            const from = data.from;
+            const from = data.from; // username de l'inviteur
+            const fromDisplayName = data.fromDisplayName || from;
+            
             if (!from || !this.ws) {
                 console.log("❌ Données manquantes pour l'invitation:", { from, ws: !!this.ws });
                 return;
             }
 
-            console.log(`📩 Invitation de ${from} - affichage du confirm...`);
+            console.log(`📩 Invitation de ${fromDisplayName} (username: ${from}) - affichage du confirm...`);
             const accept = window.confirm(
-                `${from} t'invite à jouer à Pong.\nVeux-tu accepter ?`
+                `${fromDisplayName} t'invite à jouer à Pong.\nVeux-tu accepter ?`
             );
 
-            console.log(`✅ Réponse à l'invitation: ${accept ? 'acceptée' : 'refusée'}`);
+            console.log(`✅ Réponse à l'invitation: ${accept ? 'acceptée' : 'refusée'}, envoi vers username: ${from}`);
 
             this.ws.send(
                 JSON.stringify({
                     type: "inviteResponse",
-                    to: from,
+                    to: from, // username de l'inviteur
                     accepted: accept,
                 })
             );
@@ -834,6 +837,7 @@
         }
 
         private launchInvitedGame(player1: string, player2: string): void {
+            console.log('🎮 launchInvitedGame appelé:', { player1, player2 });
             const gameView = document.getElementById('game-view');
             
             // Désactiver tous les écrans
@@ -845,6 +849,9 @@
             // Activer la vue de jeu
             if (gameView) {
                 gameView.classList.add('active');
+                console.log('✅ game-view activé');
+            } else {
+                console.error('❌ game-view introuvable !');
             }
             
             // Cacher les éléments d'interface utilisateur (avatar, boutons de langue, info utilisateur)
@@ -862,10 +869,12 @@
                 chatPanel.style.display = 'none';
             }
             
-            // Cacher tous les overlays/modals qui pourraient être ouverts
+            // Cacher tous les overlays/modals SAUF game-in-progress-overlay
             const overlays = document.querySelectorAll('.overlay');
             overlays.forEach(overlay => {
-                (overlay as HTMLElement).style.display = 'none';
+                if (overlay.id !== 'game-in-progress-overlay') {
+                    (overlay as HTMLElement).style.display = 'none';
+                }
             });
             
             // Cacher tous les formulaires qui pourraient être ouverts
@@ -936,54 +945,64 @@
         }
 
         private handleGameEnded(data: ChatData): void {
-            console.log("🏁 Partie terminée, fermeture de l'overlay");
-            // Cacher l'overlay "Partie en cours"
-            const gameInProgressOverlay = document.getElementById('game-in-progress-overlay');
+            console.log("🏁 Partie terminée, retour au chat");
+            // Cacher complètement l'overlay "Partie en cours"
+            const gameInProgressOverlay = document.getElementById('game-in-progress-overlay') as HTMLElement;
             if (gameInProgressOverlay) {
-                gameInProgressOverlay.style.display = 'none';
+                gameInProgressOverlay.classList.remove('active');
+                console.log('✅ Overlay caché');
             }
             
-            // Réafficher les éléments d'interface utilisateur
-            const avatarContainer = document.getElementById('avatar-container');
-            const langSelector = document.getElementById('lang-selector-container');
-            const userInfo = document.getElementById('user-info');
-            const dropdownMenu = document.getElementById('user-dropdown-menu');
+            // Réafficher le chat
+            const chatPanel = document.getElementById('chat-panel') as HTMLElement;
+            if (chatPanel) {
+                chatPanel.classList.add('active');
+                console.log('✅ Chat réaffiché');
+            }
+        }
+
+        private showGameInProgress(opponentName: string): void {
+            console.log('🎮 Affichage overlay "Partie en cours" pour', opponentName);
             
-            if (avatarContainer) avatarContainer.style.display = '';
-            if (langSelector) langSelector.style.display = '';
-            if (userInfo) userInfo.style.display = '';
-            if (dropdownMenu) {
-                dropdownMenu.style.display = '';
-                dropdownMenu.classList.remove('show'); // Fermer le dropdown s'il était ouvert
+            // Cacher tous les screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Cacher le chat
+            const chatPanel = document.getElementById('chat-panel');
+            if (chatPanel) {
+                chatPanel.classList.remove('active');
             }
             
-            // Arrêter le jeu s'il tourne encore
-            const pong = (window as any).PONG;
-            if (pong?.PongGame) {
-                pong.PongGame.stop();
-            }
+            // Afficher l'overlay "Partie en cours"
+            const gameInProgressOverlay = document.getElementById('game-in-progress-overlay') as HTMLElement;
+            const opponentNameSpan = document.getElementById('opponent-name');
             
-            // Retourner au menu principal
-            if (pong?.Nav) {
-                pong.Nav.showHome();
+            if (gameInProgressOverlay && opponentNameSpan) {
+                opponentNameSpan.textContent = opponentName;
+                gameInProgressOverlay.classList.add('active');
+                console.log('✅ Overlay "Partie en cours" affiché');
+            } else {
+                console.error('❌ Éléments overlay introuvables');
             }
         }
 
         private handleInviteResponse(data: ChatData): void {
+            console.log('📥 handleInviteResponse appelé:', data);
             const from = data.from;
-            if (!from) return;
+            if (!from) {
+                console.log('❌ Pas de from dans data');
+                return;
+            }
 
             const i18n = (window as any).i18n;
+            console.log('🔍 data.accepted =', data.accepted);
             if (data.accepted) {
-                // Afficher l'overlay "Partie en cours" par-dessus le chat (sans fermer le chat)
-                const gameInProgressOverlay = document.getElementById('game-in-progress-overlay');
-                const opponentNameSpan = document.getElementById('opponent-name');
-                if (gameInProgressOverlay && opponentNameSpan) {
-                    opponentNameSpan.textContent = from;
-                    gameInProgressOverlay.style.display = 'flex';
-                    console.log('✅ Overlay "Partie en cours" affiché pour', from, '(chat reste ouvert)');
-                }
+                console.log('✅ Invitation acceptée');
+                this.showGameInProgress(from);
             } else {
+                console.log('❌ Invitation refusée');
                 this.addSystemMessage(
                     i18n ? i18n.t('chat_invite_declined_by', { from }) : `${from} a refusé ton invitation.`
                 );

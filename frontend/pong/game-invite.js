@@ -32,10 +32,12 @@
         if (chatPanel && chatPanel.style.display === 'flex') {
             chatPanel.style.display = 'none';
         }
-        // Cacher tous les overlays/modals qui pourraient être ouverts
+        // Cacher tous les overlays/modals SAUF game-in-progress-overlay
         const overlays = document.querySelectorAll('.overlay');
         overlays.forEach(overlay => {
-            overlay.style.display = 'none';
+            if (overlay.id !== 'game-in-progress-overlay') {
+                overlay.style.display = 'none';
+            }
         });
         // Cacher le formulaire d'édition de profil s'il est ouvert
         const editProfileForm = document.getElementById('edit-profile-form');

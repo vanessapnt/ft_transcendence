@@ -3,6 +3,7 @@
         constructor() {
             // ScreenId est un type personnalisé qui restreint les valeurs possibles sinon erreur de compilation
             this.currentScreen = 'home-view';
+            this.allowGameAccess = false; // Flag pour autoriser l'accès au jeu
             this.init();
         }
         init() {
@@ -71,12 +72,11 @@
             }
             // ajoute l'état mode à l'historique pour la flèche back + met à jour l'URL sans recharger la page
         }
-        showGame(addToHistory = true) {
+        showGame() {
+            this.allowGameAccess = true; // Autoriser l'accès au jeu
             this.showScreen('game-view');
-            if (addToHistory) {
-                window.history.pushState({ page: 'game' }, '', '#game');
-                console.log('📍 Game ajouté à l\'historique. Length:', window.history.length);
-            }
+            // Ne pas toucher à l'historique, juste changer le hash pour l'affichage
+            window.location.hash = '#game';
         }
         showTournament() {
             var _a;
@@ -168,7 +168,13 @@
                 this.stopGames();
             }
             else if (hash === '#game') {
-                this.showGame(false); // false = ne pas ajouter à l'historique (navigation via back)
+                // Rediriger vers mode si on essaie d'accéder au jeu via l'historique
+                if (!this.allowGameAccess) {
+                    window.location.hash = '#mode';
+                }
+                else {
+                    this.allowGameAccess = false; // Réinitialiser le flag
+                }
             }
             else if (hash === '#tournament') {
                 this.showTournament();
@@ -190,6 +196,18 @@
                     const currentUsername = window.currentUsername || '';
                     const currentDisplayName = window.currentDisplayName || '';
                     window.PONG.showEditProfile(currentUsername, currentDisplayName);
+                }
+            }
+            else if (hash === '#signup') {
+                // Afficher le formulaire signup
+                if (window.showSignup) {
+                    window.showSignup();
+                }
+            }
+            else if (hash === '#login') {
+                // Afficher le formulaire login
+                if (window.showLogin) {
+                    window.showLogin();
                 }
             }
         }

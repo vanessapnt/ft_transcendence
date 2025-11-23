@@ -192,6 +192,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         }
     }
     function showSignup() {
+        console.log('🔵 showSignup appelé');
         const form = document.getElementById('signup-form');
         const menu = document.querySelector('.menu-buttons');
         if (!form || !menu)
@@ -208,6 +209,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             // Activer home-view
             homeView.classList.add('active');
         }
+        // Ajouter à l'historique
+        window.history.pushState({ page: 'signup' }, '', '#signup');
+        console.log('📍 Signup ajouté à l\'historique. URL:', window.location.href);
         // Masquer le menu et afficher le formulaire
         menu.style.display = 'none';
         form.style.display = 'block';
@@ -307,6 +311,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         }
     }
     function showLogin() {
+        console.log('🔵 showLogin appelé');
         const form = document.getElementById('login-form');
         const menu = document.querySelector('.menu-buttons');
         if (!form || !menu)
@@ -323,6 +328,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             // Activer home-view
             homeView.classList.add('active');
         }
+        // Ajouter à l'historique
+        window.history.pushState({ page: 'login' }, '', '#login');
+        console.log('📍 Login ajouté à l\'historique. URL:', window.location.href);
         // Masquer le menu et afficher le formulaire
         menu.style.display = 'none';
         form.style.display = 'block';

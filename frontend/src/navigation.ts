@@ -7,6 +7,7 @@ class Navigation
 {
     // ScreenId est un type personnalisé qui restreint les valeurs possibles sinon erreur de compilation
     private currentScreen: ScreenId = 'home-view';
+    private allowGameAccess: boolean = false; // Flag pour autoriser l'accès au jeu
 
     constructor()
     {
@@ -94,9 +95,10 @@ class Navigation
 
     showGame(): void
     {
+        this.allowGameAccess = true; // Autoriser l'accès au jeu
         this.showScreen('game-view');
-        // On remplace l'état actuel sans créer un nouvel historique
-        window.history.replaceState({ page: 'game' }, '', '#game');
+        // Ne pas toucher à l'historique, juste changer le hash pour l'affichage
+        window.location.hash = '#game';
     }
 
     showTournament(): void
@@ -206,9 +208,20 @@ class Navigation
             this.showScreen('home-view');
             this.hidePauseOverlay();
             this.stopGames();
+            // Cacher les formulaires login/signup
+            const loginForm = document.getElementById('login-form') as HTMLElement;
+            const signupForm = document.getElementById('signup-form') as HTMLElement;
+            const menu = document.querySelector('.menu-buttons') as HTMLElement;
+            if (loginForm) loginForm.style.display = 'none';
+            if (signupForm) signupForm.style.display = 'none';
+            if (menu) menu.style.display = 'block';
         } else if (hash === '#game') {
             // Rediriger vers mode si on essaie d'accéder au jeu via l'historique
-            window.location.hash = '#mode';
+            if (!this.allowGameAccess) {
+                window.location.hash = '#mode';
+            } else {
+                this.allowGameAccess = false; // Réinitialiser le flag
+            }
         } else if (hash === '#tournament') {
             this.showTournament();
         } else if (hash === '#mode') {
@@ -226,6 +239,16 @@ class Navigation
                 const currentUsername = (window as any).currentUsername || '';
                 const currentDisplayName = (window as any).currentDisplayName || '';
                 (window as any).PONG.showEditProfile(currentUsername, currentDisplayName);
+            }
+        } else if (hash === '#signup') {
+            // Afficher le formulaire signup sans ajouter à l'historique
+            if ((window as any).showSignup) {
+                (window as any).showSignup(false);
+            }
+        } else if (hash === '#login') {
+            // Afficher le formulaire login sans ajouter à l'historique
+            if ((window as any).showLogin) {
+                (window as any).showLogin(false);
             }
         }
     }

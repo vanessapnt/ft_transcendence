@@ -994,7 +994,8 @@ button:active {
 }
 
 #invite-btn,
-#block-btn {
+#block-btn,
+#add-friend-btn {
     background: transparent;
     color: #00ff00;
     border: 1px solid #00ff00;
@@ -1004,6 +1005,17 @@ button:active {
     font-family: 'Press Start 2P', cursive;
     cursor: pointer;
     transition: all 0.3s ease;
+}
+
+#add-friend-btn {
+    color: #00ff00;
+    border-color: #00ff00;
+}
+
+#add-friend-btn:hover {
+    background: #00ff00;
+    color: #000;
+    box-shadow: 0 0 10px #00ff00;
 }
 
 #invite-btn:hover {

@@ -863,6 +863,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             if (gameInProgressOverlay) {
                 gameInProgressOverlay.style.display = 'none';
             }
+            // Réafficher les éléments d'interface utilisateur
+            const avatarContainer = document.getElementById('avatar-container');
+            const langSelector = document.getElementById('lang-selector-container');
+            const userInfo = document.getElementById('user-info');
+            const dropdownMenu = document.getElementById('user-dropdown-menu');
+            if (avatarContainer)
+                avatarContainer.style.display = '';
+            if (langSelector)
+                langSelector.style.display = '';
+            if (userInfo)
+                userInfo.style.display = '';
+            if (dropdownMenu) {
+                dropdownMenu.style.display = '';
+                dropdownMenu.classList.remove('show'); // Fermer le dropdown s'il était ouvert
+            }
+            // Arrêter le jeu s'il tourne encore
+            const pong = window.PONG;
+            if (pong === null || pong === void 0 ? void 0 : pong.PongGame) {
+                pong.PongGame.stop();
+            }
+            // Retourner au menu principal
+            if (pong === null || pong === void 0 ? void 0 : pong.Nav) {
+                pong.Nav.showHome();
+            }
         }
         handleInviteResponse(data) {
             const from = data.from;

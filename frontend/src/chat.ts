@@ -942,6 +942,31 @@
             if (gameInProgressOverlay) {
                 gameInProgressOverlay.style.display = 'none';
             }
+            
+            // Réafficher les éléments d'interface utilisateur
+            const avatarContainer = document.getElementById('avatar-container');
+            const langSelector = document.getElementById('lang-selector-container');
+            const userInfo = document.getElementById('user-info');
+            const dropdownMenu = document.getElementById('user-dropdown-menu');
+            
+            if (avatarContainer) avatarContainer.style.display = '';
+            if (langSelector) langSelector.style.display = '';
+            if (userInfo) userInfo.style.display = '';
+            if (dropdownMenu) {
+                dropdownMenu.style.display = '';
+                dropdownMenu.classList.remove('show'); // Fermer le dropdown s'il était ouvert
+            }
+            
+            // Arrêter le jeu s'il tourne encore
+            const pong = (window as any).PONG;
+            if (pong?.PongGame) {
+                pong.PongGame.stop();
+            }
+            
+            // Retourner au menu principal
+            if (pong?.Nav) {
+                pong.Nav.showHome();
+            }
         }
 
         private handleInviteResponse(data: ChatData): void {

@@ -160,6 +160,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         if (!form || !menu)
             return;
         const i18n = window.i18n;
+        // S'assurer que le home-view est actif
+        const homeView = document.getElementById('home-view');
+        if (homeView && !homeView.classList.contains('active')) {
+            // Désactiver tous les screens
+            const screens = document.querySelectorAll('.screen');
+            screens.forEach(screen => {
+                screen.classList.remove('active');
+            });
+            // Activer home-view
+            homeView.classList.add('active');
+        }
         // Masquer le menu et afficher le formulaire
         menu.style.display = 'none';
         form.style.display = 'block';
@@ -234,6 +245,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         if (!form || !menu)
             return;
         const i18n = window.i18n;
+        // S'assurer que le home-view est actif
+        const homeView = document.getElementById('home-view');
+        if (homeView && !homeView.classList.contains('active')) {
+            // Désactiver tous les screens
+            const screens = document.querySelectorAll('.screen');
+            screens.forEach(screen => {
+                screen.classList.remove('active');
+            });
+            // Activer home-view
+            homeView.classList.add('active');
+        }
         // Masquer le menu et afficher le formulaire
         menu.style.display = 'none';
         form.style.display = 'block';

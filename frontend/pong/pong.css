@@ -1112,6 +1112,32 @@ button:active {
     flex-shrink: 0;
 }
 
+.conversation-tab-avatar-container {
+    position: relative !important;
+    display: inline-block !important;
+}
+
+.status-indicator {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #000;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+.status-indicator.online {
+    background: #00ff00;
+    box-shadow: 0 0 6px #00ff00;
+}
+
+.status-indicator.offline {
+    background: #ff0000;
+    box-shadow: 0 0 6px #ff0000;
+}
+
 .conversation-tab-content {
     display: flex;
     flex-direction: column;

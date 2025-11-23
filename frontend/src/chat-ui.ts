@@ -8,7 +8,7 @@
     if (chatPanel && button) {
         const i18n = (window as any).i18n;
         const menuText = button.querySelector('.menu-text');
-        
+
         if (!chatPanel.classList.contains('active')) {
             // Afficher le chat et cacher le jeu/menus
             chatPanel.classList.add('active');

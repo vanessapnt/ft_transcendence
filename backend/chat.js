@@ -14,6 +14,49 @@ function setupChat(server) {
   // socket => { username, displayName, userId, blocked: Set }
   const clients = new Map();
 
+  // Set pour garder la liste des utilisateurs connectés
+  const onlineUsers = new Set();
+
+  // Fonction pour diffuser la liste des utilisateurs en ligne
+  function broadcastOnlineUsers() {
+    const usersList = Array.from(onlineUsers);
+    const message = JSON.stringify({ type: "onlineUsersList", users: usersList });
+
+    clients.forEach((clientData, socket) => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(message);
+      }
+    });
+
+    console.log(`📅 Diffusion de la liste des utilisateurs en ligne:`, usersList);
+  }
+
+  // Fonction pour notifier qu'un utilisateur est en ligne
+  function notifyUserOnline(username) {
+    const message = JSON.stringify({ type: "userOnline", username });
+
+    clients.forEach((clientData, socket) => {
+      if (socket.readyState === WebSocket.OPEN && clientData.username !== username) {
+        socket.send(message);
+      }
+    });
+
+    console.log(`🟢 Notification: ${username} est en ligne`);
+  }
+
+  // Fonction pour notifier qu'un utilisateur est hors ligne
+  function notifyUserOffline(username) {
+    const message = JSON.stringify({ type: "userOffline", username });
+
+    clients.forEach((clientData, socket) => {
+      if (socket.readyState === WebSocket.OPEN && clientData.username !== username) {
+        socket.send(message);
+      }
+    });
+
+    console.log(`🔴 Notification: ${username} est hors ligne`);
+  }
+
   // Petit helper pour retrouver un socket à partir d'un username (le premier trouvé)
   function findSocketByUsername(username) {
     for (const [sock, info] of clients.entries()) {
@@ -50,6 +93,34 @@ function setupChat(server) {
 
     console.log(`📤 Message envoyé à ${sentCount} onglet(s) de ${username}`);
     return sentCount > 0;
+  }
+
+  // Helper pour diffuser le changement de statut d'un utilisateur à tous les autres utilisateurs connectés
+  function broadcastUserStatus(username, isOnline) {
+    const message = {
+      type: isOnline ? "userOnline" : "userOffline",
+      username: username
+    };
+
+    // Envoyer à tous les autres utilisateurs connectés
+    for (const [socket, clientData] of clients.entries()) {
+      if (socket.readyState === WebSocket.OPEN && clientData.username && clientData.username !== username) {
+        socket.send(JSON.stringify(message));
+      }
+    }
+
+    console.log(`📡 Diffusion du statut ${isOnline ? 'en ligne' : 'hors ligne'} de ${username}`);
+  }
+
+  // Helper pour obtenir la liste des utilisateurs en ligne
+  function getOnlineUsers() {
+    const onlineUsers = new Set();
+    for (const [socket, clientData] of clients.entries()) {
+      if (socket.readyState === WebSocket.OPEN && clientData.username) {
+        onlineUsers.add(clientData.username);
+      }
+    }
+    return Array.from(onlineUsers);
   }
 
   // === Connexion d'un nouveau client ===
@@ -104,9 +175,26 @@ function setupChat(server) {
             totalConnected: clients.size
           });
 
+          // Ajouter l'utilisateur à la liste des utilisateurs en ligne
+          onlineUsers.add(clientData.username);
+
+          // Vérifier si c'est une première connexion pour cet utilisateur
+          const userSockets = findAllSocketsByUsername(user.username);
+          const isFirstConnection = userSockets.length === 1; // Seulement cette nouvelle connexion
+
+          // Notifier les autres utilisateurs seulement si c'est la première connexion
+          if (isFirstConnection) {
+            notifyUserOnline(clientData.username);
+          }
+
+          if (isFirstConnection) {
+            // Diffuser que cet utilisateur est maintenant en ligne
+            broadcastUserStatus(user.username, true);
+          }
+
           const welcomeMsg = t('welcome', clientData.language, { user: clientData.displayName });
           console.log(`📨 Envoi message de bienvenue en ${clientData.language}:`, welcomeMsg);
-          
+
           socket.send(
             JSON.stringify({
               from: "Serveur",
@@ -306,13 +394,13 @@ function setupChat(server) {
         // 5️⃣ Notification de fin de partie
         if (data.type === "gameEnded" && data.to) {
           const fromUser = clientData.username;
-          
+
           // Envoyer la notification à tous les onglets de l'utilisateur cible
           sendToAllUserSockets(data.to, {
             type: "gameEnded",
             from: fromUser
           });
-          
+
           console.log(`🏁 Notification de fin de partie envoyée de ${fromUser} à ${data.to}`);
           return;
         }
@@ -430,7 +518,7 @@ function setupChat(server) {
             const userList = allUsers
               .filter(user => user.username !== fromUser) // Exclure l'utilisateur actuel
               .map(user => {
-                const isOnline = findSocketByUsername(user.username) !== null;
+                const isOnline = onlineUsers.has(user.username);
                 const status = isOnline ? "🟢" : "⚫";
                 return `${status} ${user.display_name || user.username} (@${user.username})`;
               })
@@ -451,6 +539,14 @@ function setupChat(server) {
               })
             );
           }
+          return;
+        }
+
+        // 7️⃣ Demande de la liste des utilisateurs en ligne
+        if (data.type === "getOnlineUsers") {
+          const usersList = getOnlineUsers();
+          socket.send(JSON.stringify({ type: "onlineUsersList", users: usersList }));
+          console.log(`📅 Liste des utilisateurs en ligne envoyée à ${clientData.username}:`, usersList);
           return;
         }
 
@@ -505,9 +601,9 @@ function setupChat(server) {
               socket.send(
                 JSON.stringify({
                   from: "Serveur",
-                  text: t('history_with', clientData.language, { 
-                    user: targetUser.display_name || data.target, 
-                    count: history.length 
+                  text: t('history_with', clientData.language, {
+                    user: targetUser.display_name || data.target,
+                    count: history.length
                   }),
                 })
               );
@@ -576,13 +672,25 @@ function setupChat(server) {
     // === Déconnexion ===
     socket.on("close", (code, reason) => {
       const clientData = clients.get(socket);
+      const username = clientData?.username;
+
       console.log("🔌 Connexion fermée:", {
-        username: clientData?.username || "anonyme",
+        username: username || "anonyme",
         code,
         reason: reason.toString(),
         totalConnected: clients.size - 1
       });
+
       clients.delete(socket);
+
+      // Vérifier s'il reste d'autres connexions pour cet utilisateur
+      if (username) {
+        const remainingUserSockets = findAllSocketsByUsername(username);
+        if (remainingUserSockets.length === 0) {
+          // Plus aucune connexion pour cet utilisateur, le diffuser comme hors ligne
+          broadcastUserStatus(username, false);
+        }
+      }
     });
   });
 

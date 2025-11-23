@@ -1201,6 +1201,11 @@ button:active {
     min-height: 50px;
 }
 
+.conversation-tab-avatar-container {
+    position: relative;
+    display: inline-block;
+}
+
 .conversation-tab-avatar {
     width: 32px;
     height: 32px;
@@ -1208,6 +1213,28 @@ button:active {
     border: 2px solid #00ff00;
     object-fit: cover;
     flex-shrink: 0;
+}
+
+/* Pastille de statut ronde */
+.status-indicator {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #000000;
+    z-index: 10;
+}
+
+.status-indicator.online {
+    background-color: #00ff00;
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
+}
+
+.status-indicator.offline {
+    background-color: #ff4444;
+    box-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
 }
 
 .conversation-tab-content {

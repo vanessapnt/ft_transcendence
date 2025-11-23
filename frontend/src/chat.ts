@@ -22,6 +22,7 @@
         accepted?: boolean;
         isHistory?: boolean; // Pour les messages d'historique
         timestamp?: string; // Pour les messages d'historique
+        users?: string[]; // Pour la liste des utilisateurs en ligne
     }
 
     class Chat {
@@ -44,6 +45,7 @@
         private historyLoaded: Set<string> = new Set(); // Suivi des historiques chargés
         private friendsOnly: boolean = false; // Filtrage par amis
         private friendsList: Set<string> = new Set(); // Liste des amis
+        private onlineUsers: Set<string> = new Set(); // Liste des utilisateurs en ligne
 
         constructor() {
             this.init();
@@ -203,6 +205,8 @@
                 if (this.ws) {
                     console.log("🔐 Envoi du login:", this.username);
                     this.ws.send(JSON.stringify({ type: "login", username: this.username }));
+                    // Demander la liste des utilisateurs en ligne
+                    this.ws.send(JSON.stringify({ type: "getOnlineUsers" }));
                     this.addSystemMessage(`Tu es connecté en tant que ${this.username}`);
                     this.addSystemMessage(
                         `Commandes : /dm pseudo message, /block pseudo, /unblock pseudo, /invite pseudo, /list, /history pseudo. Pour usernames avec espaces : utilisez des guillemets "/dm "John Doe" message"`
@@ -377,6 +381,33 @@
                 return;
             }
 
+            // Gestion du statut en ligne des utilisateurs
+            if (data.type === "userOnline") {
+                if (data.username) {
+                    this.onlineUsers.add(data.username);
+                    console.log(`🟢 ${data.username} est maintenant en ligne`);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
+            if (data.type === "userOffline") {
+                if (data.username) {
+                    this.onlineUsers.delete(data.username);
+                    console.log(`🔴 ${data.username} est maintenant hors ligne`);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
+            // Liste des utilisateurs en ligne
+            if (data.type === "onlineUsersList") {
+                if (data.users && Array.isArray(data.users)) {
+                    this.onlineUsers = new Set(data.users);
+                    console.log(`📅 Liste des utilisateurs en ligne reçue:`, data.users);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
+
             const from = data.from;
             const text = data.text;
 
@@ -518,7 +549,25 @@
                 avatar.onerror = () => {
                     avatar.src = '/api/user/avatar/default';
                 };
-                tab.appendChild(avatar);
+
+                // Créer un conteneur pour l'avatar et l'indicateur de statut
+                const avatarContainer = document.createElement("div");
+                avatarContainer.classList.add("conversation-tab-avatar-container");
+                avatarContainer.style.position = "relative";
+                avatarContainer.style.display = "inline-block";
+
+                // Ajouter la pastille de statut
+                const statusIndicator = document.createElement("div");
+                statusIndicator.classList.add("status-indicator");
+
+                // Déterminer le statut en ligne
+                const isOnline = this.onlineUsers && this.onlineUsers.has(user);
+                statusIndicator.classList.add(isOnline ? 'online' : 'offline');
+
+                avatarContainer.appendChild(avatar);
+                avatarContainer.appendChild(statusIndicator);
+
+                tab.appendChild(avatarContainer);
 
                 // Créer un conteneur pour le nom et le badge
                 const contentDiv = document.createElement("div");

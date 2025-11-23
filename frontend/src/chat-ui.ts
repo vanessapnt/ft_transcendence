@@ -8,7 +8,7 @@
     if (chatPanel && button) {
         const i18n = (window as any).i18n;
         const menuText = button.querySelector('.menu-text');
-        
+
         if (chatPanel.style.display === 'none' || chatPanel.style.display === '') {
             // Afficher le chat et cacher le jeu/menus
             chatPanel.style.display = 'flex';
@@ -62,19 +62,19 @@
 // Fonction pour vérifier l'état de connexion et ajuster la visibilité du bouton
 (window as any).checkLoginStatus = function checkLoginStatus() {
     const privateMessagesBtn = document.getElementById('private-messages-btn');
-    
+
     if (!privateMessagesBtn) {
         return;
     }
-    
+
     // Vérifier plusieurs indicateurs de connexion
     const userInfo = document.getElementById('user-info');
     const avatarImg = document.getElementById('avatar-img');
     const currentUserId = (window as any).currentUserId;
     const currentUsername = (window as any).currentUsername;
-    
+
     let isLoggedIn = false;
-    
+
     // Vérifier si on a des données utilisateur globales
     if (currentUserId && currentUsername) {
         isLoggedIn = true;
@@ -83,10 +83,10 @@
     else if (userInfo && userInfo.style.display !== 'none' && userInfo.textContent.trim() !== '') {
         isLoggedIn = true;
     }
-    else if (avatarImg && avatarImg.style.display !== 'none' && avatarImg.src.includes('/avatars/')) {
+    else if (avatarImg && avatarImg.style.display !== 'none' && (avatarImg as HTMLImageElement).src.includes('/avatars/')) {
         isLoggedIn = true;
     }
-    
+
     if (isLoggedIn) {
         // Utilisateur connecté - afficher le bouton
         if ((window as any).forceShowPrivateMessagesButton) {
@@ -134,10 +134,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Vérifier l'état de connexion et ajuster la visibilité du bouton
     (window as any).checkLoginStatus();
-    
+
     // Vérification périodique pour s'assurer que le bouton reste visible
     // quand l'utilisateur est connecté (toutes les 5 secondes)
-    setInterval(function() {
+    setInterval(function () {
         if ((window as any).currentUserId && (window as any).currentUsername) {
             const privateMessagesBtn = document.getElementById('private-messages-btn');
             if (privateMessagesBtn && (privateMessagesBtn as HTMLElement).style.display === 'none') {

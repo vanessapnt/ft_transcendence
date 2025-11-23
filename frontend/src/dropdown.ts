@@ -1,6 +1,6 @@
 // Dropdown menu management for avatar menu
-(function() {
-    document.addEventListener('DOMContentLoaded', function() {
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
         const avatarWrapper = document.getElementById('avatar-wrapper');
         const dropdownMenu = document.getElementById('user-dropdown-menu');
         const privateMessagesBtn = document.getElementById('private-messages-btn');
@@ -13,26 +13,26 @@
         }
 
         // Toggle du menu au clic sur l'avatar
-        avatarWrapper.addEventListener('click', function(e) {
+        avatarWrapper.addEventListener('click', function (e) {
             e.stopPropagation();
             dropdownMenu.classList.toggle('show');
         });
 
         // Fermer le menu si on clique ailleurs
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             if (!avatarWrapper.contains(e.target as Node) && !dropdownMenu.contains(e.target as Node)) {
                 dropdownMenu.classList.remove('show');
             }
         });
 
         // Gérer le clic sur Private Messages
-        privateMessagesBtn.addEventListener('click', function() {
+        privateMessagesBtn.addEventListener('click', function () {
             if ((window as any).toggleChat) (window as any).toggleChat();
             dropdownMenu.classList.remove('show');
         });
 
         // Gérer le clic sur Edit Profile
-        editProfileBtn.addEventListener('click', function() {
+        editProfileBtn.addEventListener('click', function () {
             dropdownMenu.classList.remove('show');
             // Fermer le chat s'il est ouvert
             const chatPanel = document.getElementById('chat-panel');
@@ -52,18 +52,18 @@
         });
 
         // Gérer le clic sur Logout
-        logoutBtn.addEventListener('click', function() {
+        logoutBtn.addEventListener('click', function () {
             dropdownMenu.classList.remove('show');
         });
 
         // Fonctions pour compatibilité avec l'ancien code
-        (window as any).createPrivateMessagesButton = function() {
+        (window as any).createPrivateMessagesButton = function () {
             privateMessagesBtn.style.display = 'flex';
             console.log('✅ Bouton Private Messages affiché dans le menu');
             return privateMessagesBtn;
         };
 
-        (window as any).removePrivateMessagesButton = function() {
+        (window as any).removePrivateMessagesButton = function () {
             privateMessagesBtn.style.display = 'none';
             console.log('🗑️ Bouton Private Messages caché dans le menu');
         };

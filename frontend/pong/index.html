@@ -476,9 +476,23 @@
         function getCurrentChatUser() {
             const currentChatEl = document.getElementById('current-chat');
             if (currentChatEl && currentChatEl.textContent) {
-                const text = currentChatEl.textContent;
-                const match = text.match(/Conversation avec (.+)/);
-                return match ? match[1] : null;
+                const text = currentChatEl.textContent.trim();
+
+                // Essayer avec toutes les traductions possibles
+                const patterns = [
+                    /Conversation avec (.+)/,      // Français
+                    /Conversation with (.+)/,      // Anglais
+                    /Conversación con (.+)/        // Espagnol
+                ];
+
+                for (const pattern of patterns) {
+                    const match = text.match(pattern);
+                    if (match) {
+                        return match[1];
+                    }
+                }
+
+                console.warn('Impossible d\'extraire l\'utilisateur du texte:', text);
             }
             return null;
         }

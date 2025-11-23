@@ -28,6 +28,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             this.historyLoaded = new Set(); // Suivi des historiques chargés
             this.friendsOnly = false; // Filtrage par amis
             this.friendsList = new Set(); // Liste des amis
+            this.onlineUsers = new Set(); // Liste des utilisateurs en ligne
             this.reconnectAttempts = 0;
             this.maxReconnectAttempts = 0; // Désactivé - pas de reconnexion automatique
             this.reconnectDelay = 1000; // 1 seconde au début
@@ -176,6 +177,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 if (this.ws) {
                     console.log("🔐 Envoi du login:", this.username);
                     this.ws.send(JSON.stringify({ type: "login", username: this.username }));
+                    // Demander la liste des utilisateurs en ligne
+                    this.ws.send(JSON.stringify({ type: "getOnlineUsers" }));
                     this.addSystemMessage(`Tu es connecté en tant que ${this.username}`);
                     this.addSystemMessage(`Commandes : /dm pseudo message, /block pseudo, /unblock pseudo, /invite pseudo, /list, /history pseudo. Pour usernames avec espaces : utilisez des guillemets "/dm "John Doe" message"`);
                 }
@@ -337,6 +340,32 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 this.handleInviteResponse(data);
                 return;
             }
+            // Gestion du statut en ligne des utilisateurs
+            if (data.type === "userOnline") {
+                if (data.username) {
+                    this.onlineUsers.add(data.username);
+                    console.log(`🟢 ${data.username} est maintenant en ligne`);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
+            if (data.type === "userOffline") {
+                if (data.username) {
+                    this.onlineUsers.delete(data.username);
+                    console.log(`🔴 ${data.username} est maintenant hors ligne`);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
+            // Liste des utilisateurs en ligne
+            if (data.type === "onlineUsersList") {
+                if (data.users && Array.isArray(data.users)) {
+                    this.onlineUsers = new Set(data.users);
+                    console.log(`📅 Liste des utilisateurs en ligne reçue:`, data.users);
+                    this.renderConversationTabs();
+                }
+                return;
+            }
             const from = data.from;
             const text = data.text;
             if (!from || !text)
@@ -465,7 +494,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 avatar.onerror = () => {
                     avatar.src = '/api/user/avatar/default';
                 };
-                tab.appendChild(avatar);
+                // Créer un conteneur pour l'avatar et l'indicateur de statut
+                const avatarContainer = document.createElement("div");
+                avatarContainer.classList.add("conversation-tab-avatar-container");
+                avatarContainer.style.position = "relative";
+                avatarContainer.style.display = "inline-block";
+                // Ajouter la pastille de statut
+                const statusIndicator = document.createElement("div");
+                statusIndicator.classList.add("status-indicator");
+                // Déterminer le statut en ligne
+                const isOnline = this.onlineUsers && this.onlineUsers.has(user);
+                statusIndicator.classList.add(isOnline ? 'online' : 'offline');
+                avatarContainer.appendChild(avatar);
+                avatarContainer.appendChild(statusIndicator);
+                tab.appendChild(avatarContainer);
                 // Créer un conteneur pour le nom et le badge
                 const contentDiv = document.createElement("div");
                 contentDiv.classList.add("conversation-tab-content");

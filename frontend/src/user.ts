@@ -525,7 +525,7 @@
                     };
                     reader.readAsDataURL(fileInput.files[0]);
                 } else {
-                    filenameSpan.textContent = i18n ? i18n.t('no_file_chosen') : 'No file chosen';
+                    filenameSpan.textContent = i18n ? i18n.t('edit_profile_no_file_chosen') : 'No file chosen';
                 }
             };
         }

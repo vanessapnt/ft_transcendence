@@ -10,94 +10,77 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 (function () {
     class Chat {
         constructor() {
-            this.chatBox = null;
-            this.messageInput = null;
-            this.btnSend = null;
-            this.conversationTabs = null;
-            this.currentChatLabel = null;
-            this.profileModal = null;
-            this.profileClose = null;
-            this.profileName = null;
-            this.profileUsername = null;
-            this.profileAvatar = null;
-            this.conversations = {};
-            this.unreadMessages = {}; // Compteur de messages non lus
-            this.currentChatUser = null;
             this.username = null;
-            this.ws = null;
-            this.historyLoaded = new Set(); // Suivi des historiques chargés
-            this.blockedUsers = new Set(); // Liste des utilisateurs bloqués
-            this.friendsOnly = false; // Filtrage par amis
-            this.friendsList = new Set(); // Liste des amis
-            this.onlineUsers = new Set(); // Liste des utilisateurs en ligne
-            this.previousScreen = null; // Écran actif avant l'overlay game in progress
-            this.reconnectAttempts = 0;
-            this.maxReconnectAttempts = 0; // Désactivé - pas de reconnexion automatique
-            this.reconnectDelay = 1000; // 1 seconde au début
-            this.isIntentionalDisconnect = false;
-            this.isConnecting = false; // Empêche les connexions multiples
-            this.reconnectTimer = null; // Pour annuler les reconnexions en attente
+            this.blockedUsers = new Set();
+            this.onlineUsers = new Set();
+            this.elements = {
+                chatBox: null,
+                messageInput: null,
+                btnSend: null,
+                conversationTabs: null,
+                currentChatLabel: null,
+                profileModal: null,
+                profileClose: null,
+                profileName: null,
+                profileUsername: null,
+                profileAvatar: null
+            };
+            this.wsManager = new ChatWebSocket();
+            this.conversationManager = new ConversationManager(null);
+            this.messageRenderer = new MessageRenderer(this.elements, null);
+            this.commandParser = new CommandParser();
+            this.friendsManager = new FriendsManager();
+            this.gameInviteHandler = new GameInviteHandler(null, (text) => this.addSystemMessage(text));
             this.init();
+        }
+        get currentChatUser() {
+            return this.conversationManager.currentChatUser;
         }
         init() {
             document.addEventListener('DOMContentLoaded', () => {
-                // Initialiser les éléments DOM
-                this.chatBox = document.getElementById("chatbox");
-                this.messageInput = document.getElementById("msg");
-                this.btnSend = document.getElementById("send");
-                this.conversationTabs = document.getElementById("conversation-tabs");
-                this.currentChatLabel = document.getElementById("current-chat");
-                this.profileModal = document.getElementById("profile-modal");
-                this.profileClose = document.getElementById("profile-modal-close");
-                this.profileName = document.getElementById("profile-modal-name");
-                this.profileUsername = document.getElementById("profile-modal-username");
-                this.profileAvatar = document.getElementById("profile-modal-avatar");
+                this.elements.chatBox = document.getElementById("chatbox");
+                this.elements.messageInput = document.getElementById("msg");
+                this.elements.btnSend = document.getElementById("send");
+                this.elements.conversationTabs = document.getElementById("conversation-tabs");
+                this.elements.currentChatLabel = document.getElementById("current-chat");
+                this.elements.profileModal = document.getElementById("profile-modal");
+                this.elements.profileClose = document.getElementById("profile-modal-close");
+                this.elements.profileName = document.getElementById("profile-modal-name");
+                this.elements.profileUsername = document.getElementById("profile-modal-username");
+                this.elements.profileAvatar = document.getElementById("profile-modal-avatar");
                 this.setupEventListeners();
-                // Ajouter l'event listener pour le switch Friends Only
                 const friendsToggle = document.getElementById("friends-only-toggle");
                 if (friendsToggle) {
                     friendsToggle.addEventListener("change", () => {
-                        this.friendsOnly = friendsToggle.checked;
-                        console.log("🔄 Filtre amis:", this.friendsOnly ? "activé" : "désactivé");
+                        this.friendsManager.setFriendsOnlyFilter(friendsToggle.checked);
                         this.renderConversationTabs();
                     });
                 }
                 console.log('✅ Chat DOM initialized');
             });
         }
-        // Méthode publique pour initialiser le chat après login
         initializeChat() {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log("🎯 Initialisation du chat après login...");
-                if (!this.chatBox || !this.messageInput || !this.btnSend) {
+                if (!this.elements.chatBox || !this.elements.messageInput || !this.elements.btnSend) {
                     console.error("❌ Éléments DOM du chat non chargés");
                     return;
                 }
-                // Récupérer le username de l'utilisateur connecté
                 try {
-                    console.log("🔍 Récupération du profil utilisateur...");
                     const res = yield fetch('/api/user/profile');
-                    console.log("📡 Réponse /api/user/profile:", res.status, res.ok);
                     if (res.ok) {
                         const data = yield res.json();
-                        console.log("📋 Données utilisateur:", data);
                         if (data.user && data.user.username) {
                             this.username = data.user.username;
-                            console.log("✅ Username récupéré:", this.username);
-                            // Charger la liste des amis
-                            yield this.loadFriendsList();
-                            // Charger les conversations maintenant qu'on a le username
-                            this.loadConversationsFromStorage();
-                            // Connecter le WebSocket
+                            this.conversationManager.setUsername(this.username);
+                            this.messageRenderer.setUsername(this.username);
+                            this.gameInviteHandler.setUsername(this.username);
+                            yield this.friendsManager.loadFriendsList();
+                            this.conversationManager.loadFromStorage();
+                            this.renderConversationTabs();
                             this.setupWebSocket();
                             console.log("✅ Chat complètement initialisé pour", this.username);
                         }
-                        else {
-                            console.log("❌ Pas d'username dans la réponse");
-                        }
-                    }
-                    else {
-                        console.log("❌ Erreur API:", res.status);
                     }
                 }
                 catch (e) {
@@ -105,397 +88,127 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 }
             });
         }
-        loadFriendsList() {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    const response = yield fetch('/api/friends/list', {
-                        credentials: 'include'
-                    });
-                    if (response.ok) {
-                        const data = yield response.json();
-                        this.friendsList = new Set(data.friends.map((f) => f.username));
-                        console.log("✅ Liste d'amis chargée:", this.friendsList.size, "amis");
-                    }
-                }
-                catch (error) {
-                    console.error("❌ Erreur lors du chargement de la liste d'amis:", error);
-                }
-            });
-        }
-        // Méthode publique pour rafraîchir la liste des amis
         refreshFriendsList() {
             return __awaiter(this, void 0, void 0, function* () {
-                yield this.loadFriendsList();
+                yield this.friendsManager.loadFriendsList();
                 this.renderConversationTabs();
                 console.log("🔄 Liste d'amis rafraîchie");
             });
         }
         setupWebSocket() {
-            // Empêcher les connexions multiples
-            if (this.isConnecting) {
-                console.log("⚠️ Connexion déjà en cours, ignore...");
-                return;
-            }
-            // Fermer la connexion existante si elle existe
-            if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
-                console.log("🔌 Fermeture de la connexion WebSocket existante");
-                this.isIntentionalDisconnect = true;
-                this.ws.close();
-                this.ws = null;
-            }
-            this.createNewWebSocket();
-        }
-        createNewWebSocket() {
-            this.isConnecting = true;
-            const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-            const wsUrl = `${wsProtocol}://${window.location.host}/chat`;
-            console.log("🔗 Tentative de connexion WebSocket:", wsUrl);
-            try {
-                this.ws = new WebSocket(wsUrl);
-            }
-            catch (error) {
-                console.error("❌ Erreur création WebSocket:", error);
-                this.isConnecting = false;
-                const i18n = window.i18n;
-                this.addSystemMessage(i18n ? i18n.t('chat_error_connection') : "❌ Erreur de connexion au chat. Veuillez rafraîchir la page.");
-                // Plus de reconnexion automatique
-                return;
-            }
-            // Helper pour le tournoi : envoie un message système dans le chat
-            if (!window.PONG)
-                window.PONG = {};
-            window.PONG.sendChatSystemMessage = (text) => {
-                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                    this.ws.send(JSON.stringify({ from: "Tournoi", text }));
-                }
-            };
-            this.ws.onopen = () => {
-                console.log("✅ WebSocket connexion établie");
-                this.isConnecting = false; // Connexion réussie
-                this.isIntentionalDisconnect = false; // Reset pour les futures déconnexions
-                this.reconnectAttempts = 0; // Reset compteur de reconnexion
-                this.reconnectDelay = 1000; // Reset délai
-                if (this.ws) {
-                    const i18n = window.i18n;
-                    const currentLanguage = i18n ? i18n.getCurrentLanguage() : 'en';
-                    console.log("🔐 Envoi du login:", this.username, "langue:", currentLanguage);
-                    this.ws.send(JSON.stringify({
-                        type: "login",
-                        username: this.username,
-                        language: currentLanguage
-                    }));
-                    // Message de bienvenue désactivé
-                }
-            };
-            this.ws.onmessage = (event) => {
-                this.handleWebSocketMessage(event);
-            };
-            this.ws.onerror = (err) => {
-                console.error("❌ Chat: WS ERROR", err);
-                this.isConnecting = false; // Erreur de connexion
-                const i18n = window.i18n;
-                this.addSystemMessage(i18n ? i18n.t('chat_error_connection_failed') : "Erreur de connexion au chat.");
-            };
-            this.ws.onclose = (event) => {
-                console.log("🔌 WebSocket fermée:", { code: event.code, reason: event.reason, intentional: this.isIntentionalDisconnect });
-                this.isConnecting = false; // Connexion fermée
-                const i18n = window.i18n;
-                this.addSystemMessage(i18n ? i18n.t('chat_connection_closed') : "Connexion au chat fermée.");
-                // Pas de reconnexion automatique - l'utilisateur doit rafraîchir la page
-                // if (!this.isIntentionalDisconnect) {
-                //     this.scheduleReconnect();
-                // }
-            };
-        }
-        scheduleReconnect() {
-            // Système de reconnexion automatique désactivé
-            console.log("🚫 Reconnexion automatique désactivée");
             const i18n = window.i18n;
-            this.addSystemMessage(i18n ? i18n.t('chat_connection_closed_refresh') : "❌ Connexion fermée. Veuillez rafraîchir la page pour vous reconnecter.");
-            return;
-            /* Code de reconnexion désactivé
-            // Annuler toute reconnexion en attente
-            if (this.reconnectTimer) {
-                clearTimeout(this.reconnectTimer);
-                this.reconnectTimer = null;
-            }
-
-            if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-                this.addSystemMessage("❌ Impossible de se reconnecter au chat après plusieurs tentatives.");
-                return;
-            }
-
-            // Ne pas reconnecter si on est déjà en train de se connecter ou connecté
-            if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
-                console.log("⚠️ Reconnexion ignorée: déjà connecté ou en cours de connexion");
-                return;
-            }
-
-            this.reconnectAttempts++;
-            console.log(`🔄 Tentative de reconnexion ${this.reconnectAttempts}/${this.maxReconnectAttempts} dans ${this.reconnectDelay}ms`);
-
-            this.reconnectTimer = window.setTimeout(() => {
-                if (this.username && !this.isConnecting) {
-                    this.addSystemMessage(`🔄 Tentative de reconnexion ${this.reconnectAttempts}/${this.maxReconnectAttempts}...`);
-                    this.setupWebSocket();
-                }
-                this.reconnectTimer = null;
-            }, this.reconnectDelay);
-
-            // Augmentation progressive du délai (backoff exponentiel)
-            this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000); // Max 30 secondes
-            */
+            const currentLanguage = i18n ? i18n.getCurrentLanguage() : 'en';
+            this.wsManager.setMessageCallback((data) => this.handleWebSocketMessage(data));
+            this.wsManager.setSystemMessageCallback((text) => this.addSystemMessage(text));
+            this.wsManager.connect(this.username || '', currentLanguage);
         }
         disconnect() {
             console.log("🔌 Déconnexion intentionnelle du chat");
-            this.isIntentionalDisconnect = true;
-            // Annuler les reconnexions en attente
-            if (this.reconnectTimer) {
-                clearTimeout(this.reconnectTimer);
-                this.reconnectTimer = null;
-            }
-            // Réinitialiser l'état de l'historique chargé et EFFACER les conversations
-            this.historyLoaded.clear();
-            this.conversations = {}; // Vider les conversations en mémoire
-            this.unreadMessages = {}; // Vider les messages non lus
-            this.blockedUsers.clear(); // Vider la liste des utilisateurs bloqués
-            this.currentChatUser = null;
-            // Mettre à jour l'interface
+            this.wsManager.disconnect();
+            this.conversationManager.clearAllConversations();
+            this.blockedUsers.clear();
             this.renderConversationTabs();
             this.updateAvatarNotification();
             this.updateBlockButton();
-            // Fermer la connexion WebSocket
-            if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
-                this.ws.close();
-            }
-            this.ws = null;
-            this.isConnecting = false;
         }
-        // === Méthodes de persistance des conversations ===
-        saveConversationsToStorage() {
-            try {
-                if (!this.username)
-                    return;
-                const key = `chat_conversations_${this.username}`;
-                localStorage.setItem(key, JSON.stringify(this.conversations));
-                console.log("💾 Conversations sauvegardées dans localStorage");
-            }
-            catch (e) {
-                console.warn("❌ Erreur lors de la sauvegarde des conversations:", e);
-            }
-        }
-        loadConversationsFromStorage() {
-            try {
-                if (!this.username) {
-                    console.log("⚠️ Impossible de charger les conversations: username non défini");
-                    return;
-                }
-                const key = `chat_conversations_${this.username}`;
-                const saved = localStorage.getItem(key);
-                if (saved) {
-                    this.conversations = JSON.parse(saved);
-                    console.log("📂 Conversations chargées depuis localStorage pour", this.username, ":", Object.keys(this.conversations));
-                    this.renderConversationTabs();
-                }
-                else {
-                    console.log("📂 Aucune conversation sauvegardée pour", this.username);
-                    this.conversations = {};
-                }
-            }
-            catch (e) {
-                console.warn("❌ Erreur lors du chargement des conversations:", e);
-                this.conversations = {};
-            }
-        }
-        clearStoredConversations() {
-            try {
-                if (!this.username)
-                    return;
-                const key = `chat_conversations_${this.username}`;
-                localStorage.removeItem(key);
-                console.log("🗑️ Conversations supprimées du localStorage");
-            }
-            catch (e) {
-                console.warn("❌ Erreur lors de la suppression des conversations:", e);
-            }
-        }
-        // Méthode publique pour effacer toutes les conversations
         deleteConversation(user) {
-            if (this.conversations[user]) {
-                delete this.conversations[user];
-                if (this.unreadMessages[user]) {
-                    delete this.unreadMessages[user];
-                }
-                if (this.historyLoaded.has(user)) {
-                    this.historyLoaded.delete(user);
-                }
-                // Si c'est la conversation active, changer
-                if (this.currentChatUser === user) {
-                    this.currentChatUser = null;
-                    this.renderCurrentConversation();
-                }
-                this.saveConversationsToStorage();
-                this.renderConversationTabs();
-                this.updateAvatarNotification();
-                console.log(`🗑️ Conversation avec ${user} supprimée`);
-            }
-        }
-        clearAllConversations() {
-            this.conversations = {};
-            this.currentChatUser = null;
-            this.historyLoaded.clear();
-            this.clearStoredConversations();
+            this.conversationManager.deleteConversation(user);
             this.renderConversationTabs();
             this.renderCurrentConversation();
-            console.log("🗑️ Toutes les conversations ont été effacées");
+            this.updateAvatarNotification();
         }
-        handleWebSocketMessage(event) {
-            let data;
-            try {
-                data = JSON.parse(event.data);
-                console.log("📨 Message WebSocket reçu:", data);
-            }
-            catch (_a) {
-                return;
-            }
-            // Invitations
+        clearAllConversations() {
+            this.conversationManager.clearAllConversations();
+            this.renderConversationTabs();
+            this.renderCurrentConversation();
+        }
+        handleWebSocketMessage(data) {
+            // Invitations de jeu
             if (data.type === "invite") {
-                console.log("🎮 Type invite détecté, appel handleInvite...");
-                this.handleInvite(data);
+                this.gameInviteHandler.handleInvite(data, this.wsManager.isConnected() ? this.wsManager : null);
                 return;
             }
             if (data.type === "inviteResponse") {
-                console.log("📤 Type inviteResponse détecté...");
-                this.handleInviteResponse(data);
+                this.gameInviteHandler.handleInviteResponse(data);
                 return;
             }
             if (data.type === "gameEnded") {
-                console.log("🏁 Type gameEnded détecté...");
-                this.handleGameEnded(data);
+                this.gameInviteHandler.handleGameEnded(data);
                 return;
             }
-            // Gestion du statut en ligne des utilisateurs
-            if (data.type === "userOnline") {
-                if (data.username) {
-                    this.onlineUsers.add(data.username);
-                    console.log(`🟢 ${data.username} est maintenant en ligne`);
-                    this.renderConversationTabs();
-                }
+            // Statut en ligne
+            if (data.type === "userOnline" && data.username) {
+                this.onlineUsers.add(data.username);
+                this.renderConversationTabs();
                 return;
             }
-            if (data.type === "userOffline") {
-                if (data.username) {
-                    this.onlineUsers.delete(data.username);
-                    console.log(`🔴 ${data.username} est maintenant hors ligne`);
-                    this.renderConversationTabs();
-                }
+            if (data.type === "userOffline" && data.username) {
+                this.onlineUsers.delete(data.username);
+                this.renderConversationTabs();
                 return;
             }
-            // Liste des utilisateurs en ligne
-            if (data.type === "onlineUsersList") {
-                if (data.users && Array.isArray(data.users)) {
-                    this.onlineUsers = new Set(data.users);
-                    console.log(`📅 Liste des utilisateurs en ligne reçue:`, data.users);
-                    this.renderConversationTabs();
-                }
+            if (data.type === "onlineUsersList" && data.users) {
+                this.onlineUsers = new Set(data.users);
+                this.renderConversationTabs();
                 return;
             }
-            const from = data.from;
-            const text = data.text;
-            if (!from || !text)
-                return;
-            // DM reçu
-            if (data.type === "dm") {
-                console.log("📨 DM reçu:", { from, to: data.to, text, isMyMessage: from === this.username, isHistory: data.isHistory });
+            // Messages
+            if (data.type === "dm" && data.from && data.text) {
                 if (data.isHistory) {
-                    // Message d'historique - l'ajouter au début de la conversation
-                    const otherUser = from === this.username ? data.to : from;
+                    const otherUser = data.from === this.username ? data.to : data.from;
                     if (otherUser) {
-                        this.addHistoryMessageToConversation(otherUser, from, text, from === this.username, data.timestamp);
+                        this.conversationManager.addHistoryMessage(otherUser, data.from, data.text, data.from === this.username, data.timestamp);
                     }
                 }
-                else if (from === this.username) {
-                    // C'est l'écho de notre propre message - l'ajouter à la conversation
-                    this.addMessageToConversation(data.to || "", from, text, true);
+                else if (data.from === this.username) {
+                    this.conversationManager.addMessage(data.to || "", data.from, data.text, true);
                 }
                 else {
-                    // Message reçu d'un autre utilisateur
-                    const otherUser = from; // celui qui nous écrit
-                    this.addMessageToConversation(otherUser, from, text, false);
+                    this.conversationManager.addMessage(data.from, data.from, data.text, false);
                 }
+                this.renderConversationTabs();
+                this.renderCurrentConversation();
+                this.updateAvatarNotification();
                 return;
             }
-            // Messages système (Serveur / Tournoi)
-            if (from === "Serveur" || from === "Tournoi") {
-                this.addSystemMessage(text);
+            // Messages système
+            if (data.from && data.text && (data.from === "Serveur" || data.from === "Tournoi")) {
+                this.addSystemMessage(data.text);
             }
         }
         setupEventListeners() {
-            if (this.btnSend) {
-                this.btnSend.addEventListener("click", () => {
-                    console.log("🔘 Bouton Send cliqué");
-                    this.sendMessage();
-                });
+            if (this.elements.btnSend) {
+                this.elements.btnSend.addEventListener("click", () => this.sendMessage());
             }
-            if (this.messageInput) {
-                this.messageInput.addEventListener("keyup", (e) => {
-                    console.log("⌨️ Touche pressée:", e.key);
-                    if (e.key === "Enter") {
-                        console.log("✅ Entrée détectée, appel sendMessage");
+            if (this.elements.messageInput) {
+                this.elements.messageInput.addEventListener("keyup", (e) => {
+                    if (e.key === "Enter")
                         this.sendMessage();
-                    }
                 });
             }
-            // Fermeture du modal profil
-            if (this.profileClose && this.profileModal) {
-                this.profileClose.addEventListener("click", () => {
-                    if (this.profileModal) {
-                        this.profileModal.style.display = "none";
+            if (this.elements.profileClose && this.elements.profileModal) {
+                this.elements.profileClose.addEventListener("click", () => {
+                    if (this.elements.profileModal)
+                        this.elements.profileModal.style.display = "none";
+                });
+                this.elements.profileModal.addEventListener("click", (e) => {
+                    if (e.target === this.elements.profileModal && this.elements.profileModal) {
+                        this.elements.profileModal.style.display = "none";
                     }
                 });
-                this.profileModal.addEventListener("click", (e) => {
-                    if (e.target === this.profileModal && this.profileModal) {
-                        this.profileModal.style.display = "none";
-                    }
-                });
-            }
-        }
-        ensureConversation(user) {
-            if (!this.conversations[user]) {
-                this.conversations[user] = [];
             }
         }
         setCurrentChatUser(user) {
-            this.currentChatUser = user;
-            // Réinitialiser les messages non lus pour cet utilisateur
-            if (user && this.unreadMessages[user]) {
-                this.unreadMessages[user] = 0;
-                this.updateAvatarNotification();
-            }
-            if (this.currentChatLabel) {
-                const i18n = window.i18n;
-                this.currentChatLabel.innerHTML = user
-                    ? (i18n ? i18n.t('chat_conversation_with', { user }) : `Conversation avec ${user}`)
-                    : (i18n ? i18n.t('chat_no_conversation') : "Aucune conversation sélectionnée");
-                // Ajouter un click handler sur le label pour afficher le profil
-                if (user && this.currentChatLabel) {
-                    this.currentChatLabel.style.cursor = 'pointer';
-                    this.currentChatLabel.addEventListener('click', () => {
-                        if (window.showUserProfile) {
-                            window.showUserProfile(user);
-                        }
-                    });
-                }
-            }
+            this.conversationManager.setCurrentChatUser(user);
+            this.messageRenderer.updateCurrentChatLabel(user);
             this.renderConversationTabs();
             this.renderCurrentConversation();
             this.updateBlockButton();
-            // Vérifier le statut d'ami et mettre à jour le bouton
+            this.updateAvatarNotification();
             if (user && window.checkAndUpdateFriendButton) {
                 window.checkAndUpdateFriendButton(user);
             }
-            // Charger automatiquement l'historique si disponible
-            if (user && this.ws && this.ws.readyState === WebSocket.OPEN) {
+            if (user && this.wsManager.isConnected()) {
                 this.loadConversationHistory(user);
             }
         }
@@ -504,7 +217,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             if (!blockBtn)
                 return;
             const i18n = window.i18n;
-            if (this.currentChatUser && this.blockedUsers.has(this.currentChatUser)) {
+            const user = this.conversationManager.currentChatUser;
+            if (user && this.blockedUsers.has(user)) {
                 blockBtn.textContent = i18n ? i18n.t('chat_btn_unblock') : 'Débloquer';
                 blockBtn.title = i18n ? i18n.t('chat_btn_unblock_title') : 'Débloquer l\'utilisateur';
             }
@@ -514,645 +228,130 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
         }
         loadConversationHistory(user) {
-            if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
+            if (this.conversationManager.isHistoryLoaded(user))
                 return;
-            // Éviter de charger l'historique plusieurs fois pour le même utilisateur
-            if (this.historyLoaded.has(user)) {
-                console.log(`📜 Historique déjà chargé pour ${user}`);
-                return;
-            }
             console.log(`📜 Chargement de l'historique avec ${user}...`);
-            this.historyLoaded.add(user);
-            this.ws.send(JSON.stringify({ type: "getHistory", target: user }));
+            this.conversationManager.markHistoryLoaded(user);
+            this.wsManager.send({ type: "getHistory", target: user });
         }
         renderConversationTabs() {
-            if (!this.conversationTabs)
-                return;
-            this.conversationTabs.innerHTML = "";
-            // Filtrer les conversations selon le switch
-            let users = Object.keys(this.conversations);
-            if (this.friendsOnly) {
-                users = users.filter(user => this.friendsList.has(user));
-            }
-            users.forEach((user) => {
-                const tab = document.createElement("button");
-                tab.classList.add("conversation-tab");
-                if (user === this.currentChatUser)
-                    tab.classList.add("active");
-                // Ajouter l'avatar de l'utilisateur
-                const avatar = document.createElement("img");
-                avatar.classList.add("conversation-tab-avatar");
-                avatar.src = `/api/user/avatar/${user}`;
-                avatar.alt = user;
-                avatar.onerror = () => {
-                    avatar.src = '/api/user/avatar/default';
-                };
-                tab.appendChild(avatar);
-                // Créer un conteneur pour l'avatar et l'indicateur de statut
-                const avatarContainer = document.createElement("div");
-                avatarContainer.classList.add("conversation-tab-avatar-container");
-                avatarContainer.style.position = "relative";
-                avatarContainer.style.display = "inline-block";
-                // Ajouter la pastille de statut
-                const statusIndicator = document.createElement("div");
-                statusIndicator.classList.add("status-indicator");
-                // Déterminer le statut en ligne
-                const isOnline = this.onlineUsers && this.onlineUsers.has(user);
-                statusIndicator.classList.add(isOnline ? 'online' : 'offline');
-                avatarContainer.appendChild(avatar);
-                avatarContainer.appendChild(statusIndicator);
-                tab.appendChild(avatarContainer);
-                // Créer un conteneur pour le nom et le badge
-                const contentDiv = document.createElement("div");
-                contentDiv.classList.add("conversation-tab-content");
-                const username = document.createElement("span");
-                username.classList.add("conversation-tab-username");
-                username.textContent = user;
-                contentDiv.appendChild(username);
-                tab.appendChild(contentDiv);
-                // Ajouter le badge de notification si des messages non lus
-                const unreadCount = this.unreadMessages[user] || 0;
-                if (unreadCount > 0) {
-                    const badge = document.createElement("span");
-                    badge.classList.add("unread-badge");
-                    badge.textContent = unreadCount > 99 ? "99+" : unreadCount.toString();
-                    tab.appendChild(badge);
-                }
-                // Ajouter la croix pour supprimer la conversation
-                const deleteBtn = document.createElement("button");
-                deleteBtn.classList.add("conversation-delete-btn");
-                deleteBtn.innerHTML = "✕";
-                deleteBtn.title = `Supprimer la conversation avec ${user}`;
-                deleteBtn.addEventListener("click", (e) => {
-                    e.stopPropagation(); // Empêcher de activer la tab
-                    this.deleteConversation(user);
-                });
-                tab.appendChild(deleteBtn);
-                tab.addEventListener("click", () => {
-                    this.setCurrentChatUser(user);
-                });
-                if (this.conversationTabs) {
-                    this.conversationTabs.appendChild(tab);
-                }
-            });
+            this.messageRenderer.renderConversationTabs(this.conversationManager.getConversations(), this.conversationManager.getUnreadMessages(), this.conversationManager.currentChatUser, this.onlineUsers, this.friendsManager.getFriendsList(), this.friendsManager.friendsOnly, (user) => this.setCurrentChatUser(user), (user) => this.deleteConversation(user));
         }
         renderCurrentConversation() {
-            if (!this.chatBox)
-                return;
-            this.chatBox.innerHTML = "";
-            if (!this.currentChatUser)
-                return;
-            const msgs = this.conversations[this.currentChatUser] || [];
-            msgs.forEach((m) => {
-                const type = m.mine ? "me" : "other";
-                const fromLabel = m.mine ? this.username || "" : m.from;
-                const node = this.createMessageBubble(fromLabel, m.text, type, m.isHistory, m.timestamp);
-                if (this.chatBox) {
-                    this.chatBox.appendChild(node);
-                }
-            });
-            if (this.chatBox) {
-                this.chatBox.scrollTop = this.chatBox.scrollHeight;
-            }
-        }
-        addMessageToConversation(otherUser, from, text, mine = false) {
-            this.ensureConversation(otherUser);
-            this.conversations[otherUser].push({ from, text, mine });
-            this.saveConversationsToStorage(); // Sauvegarder après chaque nouveau message
-            // Incrémenter les messages non lus si ce n'est pas notre message et pas la conversation active
-            if (!mine && otherUser !== this.currentChatUser) {
-                this.unreadMessages[otherUser] = (this.unreadMessages[otherUser] || 0) + 1;
-                this.updateAvatarNotification();
-            }
-            // Ne sélectionner automatiquement que si c'est déjà la conversation active ou si le chat est visible
-            const chatPanel = document.getElementById('chat-panel');
-            const isChatVisible = chatPanel && chatPanel.style.display !== 'none';
-            if (!this.currentChatUser && isChatVisible) {
-                // Première conversation ET chat visible → on la sélectionne automatiquement
-                this.setCurrentChatUser(otherUser);
-            }
-            else if (otherUser === this.currentChatUser) {
-                this.renderCurrentConversation();
-            }
-            else {
-                // juste mettre à jour les tabs (nouvelle conversation)
-                this.renderConversationTabs();
-            }
-        }
-        addHistoryMessageToConversation(otherUser, from, text, mine = false, timestamp) {
-            this.ensureConversation(otherUser);
-            // Vérifier si ce message existe déjà pour éviter les doublons
-            const exists = this.conversations[otherUser].some(msg => msg.from === from &&
-                msg.text === text &&
-                msg.mine === mine);
-            if (exists) {
-                console.log("⚠️ Message d'historique déjà présent, ignoré:", { from, text });
-                return;
-            }
-            // Ajouter le message d'historique au début de la conversation (plus ancien d'abord)
-            this.conversations[otherUser].unshift({ from, text, mine, timestamp, isHistory: true });
-            this.saveConversationsToStorage(); // Sauvegarder après ajout de l'historique
-            // Si c'est la conversation active, re-rendre
-            if (otherUser === this.currentChatUser) {
-                this.renderCurrentConversation();
-            }
-            else {
-                // Mettre à jour les tabs pour indiquer qu'il y a une nouvelle conversation
-                this.renderConversationTabs();
-            }
+            this.messageRenderer.renderCurrentConversation(this.conversationManager.getCurrentMessages());
         }
         addSystemMessage(text) {
-            if (!this.chatBox)
-                return;
-            const msgDiv = document.createElement("div");
-            msgDiv.classList.add("message", "system");
-            msgDiv.textContent = text;
-            this.chatBox.appendChild(msgDiv);
-            this.chatBox.scrollTop = this.chatBox.scrollHeight;
+            this.messageRenderer.addSystemMessage(text);
         }
-        parseCommandTarget(command, fullText) {
-            const content = fullText.substring(command.length).trim();
-            if (content.startsWith('"')) {
-                // Username entre guillemets
-                const closingQuoteIndex = content.indexOf('"', 1);
-                if (closingQuoteIndex === -1) {
-                    const i18n = window.i18n;
-                    this.addSystemMessage(i18n ? i18n.t('chat_format_quotes_missing', { command }) : `Guillemet fermant manquant. Format : ${command} "pseudo avec espaces" OU ${command} pseudo_sans_espaces`);
-                    return null;
-                }
-                return content.substring(1, closingQuoteIndex);
-            }
-            else {
-                // Username sans guillemets
-                const spaceIndex = content.indexOf(" ");
-                if (spaceIndex === -1) {
-                    // Pas d'espace, retourner tout le contenu
-                    return content || null;
-                }
-                // Prendre seulement le premier mot
-                return content.substring(0, spaceIndex);
-            }
+        updateAvatarNotification() {
+            this.messageRenderer.updateAvatarNotification(this.conversationManager.getTotalUnread());
         }
         sendMessage() {
-            var _a, _b;
-            console.log("🚀 sendMessage() appelée");
-            if (!this.messageInput || !this.ws) {
-                console.log("❌ messageInput ou ws manquant:", {
-                    messageInput: !!this.messageInput,
-                    ws: !!this.ws,
-                    wsState: (_a = this.ws) === null || _a === void 0 ? void 0 : _a.readyState
-                });
+            if (!this.elements.messageInput)
                 return;
-            }
-            const text = this.messageInput.value.trim();
-            console.log("📝 Texte à envoyer:", text);
+            const text = this.elements.messageInput.value.trim();
             if (!text)
                 return;
             if (text.startsWith("/block ")) {
-                const target = this.parseCommandTarget("/block ", text);
-                if (target) {
-                    this.ws.send(JSON.stringify({ type: "block", target }));
-                    this.blockedUsers.add(target);
-                    this.updateBlockButton();
-                    // Message envoyé par le serveur, pas besoin de l'afficher ici
-                }
-                else {
-                    const i18n = window.i18n;
-                    this.addSystemMessage(i18n ? i18n.t('chat_format_block') : "Format : /block pseudo OU /block \"pseudo avec espaces\"");
-                }
+                this.handleBlockCommand(text);
             }
             else if (text.startsWith("/unblock ")) {
-                const target = this.parseCommandTarget("/unblock ", text);
-                if (target) {
-                    this.ws.send(JSON.stringify({ type: "unblock", target }));
-                    this.blockedUsers.delete(target);
-                    this.updateBlockButton();
-                    // Message envoyé par le serveur, pas besoin de l'afficher ici
-                }
-                else {
-                    const i18n = window.i18n;
-                    this.addSystemMessage(i18n ? i18n.t('chat_format_unblock') : "Format : /unblock pseudo OU /unblock \"pseudo avec espaces\"");
-                }
+                this.handleUnblockCommand(text);
             }
             else if (text.startsWith("/invite ")) {
-                const target = this.parseCommandTarget("/invite ", text);
-                console.log("🎯 Target parsé pour /invite:", target);
-                if (target) {
-                    console.log("📤 Envoi de l'invitation au serveur:", { type: "invite", target });
-                    this.ws.send(JSON.stringify({ type: "invite", target }));
-                    // Message envoyé par le serveur, pas besoin de l'afficher ici
-                }
-                else {
-                    console.log("❌ Target invalide pour /invite");
-                    const i18n = window.i18n;
-                    this.addSystemMessage(i18n ? i18n.t('chat_format_invite') : "Format : /invite pseudo OU /invite \"pseudo avec espaces\"");
-                }
+                this.handleInviteCommand(text);
             }
             else if (text === "/list") {
-                // Lister tous les utilisateurs disponibles
-                console.log("📋 Commande /list détectée, envoi...");
-                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                    this.ws.send(JSON.stringify({ type: "listUsers" }));
-                    console.log("✅ Commande /list envoyée au serveur");
-                }
-                else {
-                    console.log("❌ WebSocket pas ouverte:", (_b = this.ws) === null || _b === void 0 ? void 0 : _b.readyState);
-                    const i18n = window.i18n;
-                    this.addSystemMessage(i18n ? i18n.t('chat_connection_closed_command') : "Connexion fermée, impossible d'envoyer la commande");
-                }
-                this.messageInput.value = ""; // Vider le champ après /list
+                this.handleListCommand();
             }
             else if (text.startsWith("/history ")) {
-                // Voir l'historique d'une conversation
-                const target = this.parseCommandTarget("/history ", text);
-                if (target) {
-                    console.log("📜 Demande d'historique pour:", target);
-                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                        this.ws.send(JSON.stringify({ type: "getHistory", target }));
-                        console.log("✅ Commande /history envoyée");
-                    }
-                    else {
-                        const i18n = window.i18n;
-                        this.addSystemMessage(i18n ? i18n.t('chat_connection_closed_command') : "Connexion fermée, impossible d'envoyer la commande");
-                    }
-                }
-                else {
-                    const i18n = window.i18n;
-                    this.addSystemMessage(i18n ? i18n.t('chat_format_history') : "Format : /history pseudo OU /history \"pseudo avec espaces\"");
-                }
-                this.messageInput.value = ""; // Vider le champ
+                this.handleHistoryCommand(text);
             }
             else if (text.startsWith("/dm ")) {
-                // Démarrer une nouvelle conversation via commande
-                // Support des guillemets pour usernames avec espaces : /dm "John Doe" message
-                const dmContent = text.substring(4).trim(); // Enlever "/dm "
-                console.log("🔍 Parsing DM:", { originalText: text, dmContent });
-                let target, body;
-                if (dmContent.startsWith('"')) {
-                    // Username entre guillemets
-                    const closingQuoteIndex = dmContent.indexOf('"', 1);
-                    if (closingQuoteIndex === -1) {
-                        const i18n = window.i18n;
-                        this.addSystemMessage(i18n ? i18n.t('chat_format_dm_quotes_missing') : "Guillemet fermant manquant. Format : /dm \"pseudo avec espaces\" message OU /dm pseudo_sans_espaces message");
-                        return;
-                    }
-                    target = dmContent.substring(1, closingQuoteIndex);
-                    body = dmContent.substring(closingQuoteIndex + 1).trim();
-                    console.log("📝 Parsing avec guillemets:", { target, body });
-                }
-                else {
-                    // Username sans guillemets (pas d'espaces)
-                    const firstSpaceIndex = dmContent.indexOf(" ");
-                    if (firstSpaceIndex === -1) {
-                        const i18n = window.i18n;
-                        this.addSystemMessage(i18n ? i18n.t('chat_format_dm') : "Format attendu : /dm pseudo message OU /dm \"pseudo avec espaces\" message");
-                        return;
-                    }
-                    target = dmContent.substring(0, firstSpaceIndex);
-                    body = dmContent.substring(firstSpaceIndex + 1);
-                    console.log("📝 Parsing sans guillemets:", { target, body });
-                }
-                if (!target || !body) {
-                    const i18n = window.i18n;
-                    this.addSystemMessage(i18n ? i18n.t('chat_format_dm') : "Format attendu : /dm pseudo message OU /dm \"pseudo avec espaces\" message");
-                }
-                else {
-                    console.log("📤 Envoi DM:", { target, body });
-                    this.ws.send(JSON.stringify({
-                        type: "dm",
-                        to: target,
-                        text: body,
-                    }));
-                    // Ne pas ajouter le message localement - attendre l'écho du serveur
-                }
+                this.handleDMCommand(text);
             }
             else {
-                // Message simple → envoyé à la conversation actuellement sélectionnée
-                if (!this.currentChatUser) {
-                    const i18n = window.i18n;
-                    this.addSystemMessage(i18n ? i18n.t('chat_no_conversation_selected') : "Aucune conversation sélectionnée. Utilise : /dm pseudo message OU /dm \"pseudo avec espaces\" message pour démarrer une nouvelle conversation.");
-                }
-                else {
-                    this.ws.send(JSON.stringify({
-                        type: "dm",
-                        to: this.currentChatUser,
-                        text,
-                    }));
-                    // Ne pas ajouter le message localement - attendre l'écho du serveur
-                }
+                this.sendDirectMessage(text);
             }
-            this.messageInput.value = "";
+            this.elements.messageInput.value = "";
         }
-        handleInvite(data) {
-            console.log("🎮 Invitation reçue:", data);
-            const from = data.from; // username de l'inviteur
-            const fromDisplayName = data.fromDisplayName || from;
-            if (!from || !this.ws) {
-                console.log("❌ Données manquantes pour l'invitation:", { from, ws: !!this.ws });
-                return;
-            }
-            console.log(`📩 Invitation de ${fromDisplayName} (username: ${from}) - affichage du confirm...`);
-            const accept = window.confirm(`${fromDisplayName} t'invite à jouer à Pong.\nVeux-tu accepter ?`);
-            console.log(`✅ Réponse à l'invitation: ${accept ? 'acceptée' : 'refusée'}, envoi vers username: ${from}`);
-            this.ws.send(JSON.stringify({
-                type: "inviteResponse",
-                to: from, // username de l'inviteur
-                accepted: accept,
-            }));
-            if (accept) {
-                // Sauvegarder l'écran actuellement actif
-                const chatPanel = document.getElementById('chat-panel');
-                if (chatPanel && chatPanel.classList.contains('active')) {
-                    this.previousScreen = 'chat';
-                }
-                else {
-                    const activeScreen = document.querySelector('.screen.active');
-                    if (activeScreen) {
-                        this.previousScreen = activeScreen.id;
-                    }
-                    else {
-                        this.previousScreen = 'home-view';
-                    }
-                }
-                console.log('💾 Écran sauvegardé avant le jeu:', this.previousScreen);
-                // Afficher un message
-                const i18n = window.i18n;
-                this.addSystemMessage(i18n ? i18n.t('chat_launching_game') : "🎮 Lancement du jeu Pong...");
-                // Fermer le chat panel
-                if (chatPanel) {
-                    chatPanel.classList.remove('active');
-                }
-                // Lancer le jeu directement (comme dans le tournoi)
-                setTimeout(() => {
-                    this.launchInvitedGame(from, this.username || 'Player');
-                    // Donner le focus au document pour que les touches fonctionnent
-                    setTimeout(() => {
-                        const board = document.getElementById('board');
-                        if (board) {
-                            board.focus();
-                        }
-                        // Fallback: focus sur le document
-                        window.focus();
-                    }, 100);
-                }, 300);
+        handleBlockCommand(text) {
+            const target = this.commandParser.parseCommandTarget("/block ", text);
+            if (target) {
+                this.wsManager.send({ type: "block", target });
+                this.blockedUsers.add(target);
+                this.updateBlockButton();
             }
             else {
                 const i18n = window.i18n;
-                this.addSystemMessage(i18n ? i18n.t('chat_invite_declined', { from }) : `Invitation de ${from} refusée.`);
+                this.addSystemMessage(i18n ? i18n.t('chat_format_block') : "Format : /block pseudo OU /block \"pseudo avec espaces\"");
             }
         }
-        launchInvitedGame(player1, player2) {
-            console.log('🎮 launchInvitedGame appelé:', { player1, player2 });
-            const gameView = document.getElementById('game-view');
-            // Désactiver tous les écrans
-            const screens = document.querySelectorAll('.screen');
-            screens.forEach(screen => {
-                screen.classList.remove('active');
-            });
-            // Activer la vue de jeu
-            if (gameView) {
-                gameView.classList.add('active');
-                console.log('✅ game-view activé');
+        handleUnblockCommand(text) {
+            const target = this.commandParser.parseCommandTarget("/unblock ", text);
+            if (target) {
+                this.wsManager.send({ type: "unblock", target });
+                this.blockedUsers.delete(target);
+                this.updateBlockButton();
             }
             else {
-                console.error('❌ game-view introuvable !');
-            }
-            // Cacher les éléments d'interface utilisateur (avatar, boutons de langue, info utilisateur)
-            const avatarContainer = document.getElementById('avatar-container');
-            const langSelector = document.getElementById('lang-selector-container');
-            const userInfo = document.getElementById('user-info');
-            if (avatarContainer)
-                avatarContainer.style.display = 'none';
-            if (langSelector)
-                langSelector.style.display = 'none';
-            if (userInfo)
-                userInfo.style.display = 'none';
-            // Cacher le chat s'il est ouvert
-            const chatPanel = document.getElementById('chat-panel');
-            if (chatPanel) {
-                chatPanel.classList.remove('active');
-            }
-            // Fermer le panel edit-profile s'il est ouvert
-            const editProfilePanel = document.getElementById('edit-profile-panel');
-            if (editProfilePanel && editProfilePanel.classList.contains('active')) {
-                editProfilePanel.classList.remove('active');
-            }
-            // Cacher tous les overlays/modals SAUF game-in-progress-overlay
-            const overlays = document.querySelectorAll('.overlay');
-            overlays.forEach(overlay => {
-                if (overlay.id !== 'game-in-progress-overlay') {
-                    overlay.style.display = 'none';
-                }
-            });
-            // Cacher tous les formulaires qui pourraient être ouverts
-            const signupForm = document.getElementById('signup-form');
-            const loginForm = document.getElementById('login-form');
-            const editProfileForm = document.getElementById('edit-profile-form');
-            const pong = window.PONG;
-            if (pong === null || pong === void 0 ? void 0 : pong.PongGame) {
-                // Configurer les noms des joueurs
-                pong.PongGame.setPlayerNames(player1, player2);
-                // Définir un callback pour la fin du match (retour au menu)
-                pong.PongGame.setCallback((winner) => {
-                    console.log('🏆 Winner:', winner);
-                    // Sauvegarder le match dans la base de données
-                    const opponentUsername = player1 === this.username ? player2 : player1;
-                    fetch('/api/matches/save', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            player2_username: opponentUsername,
-                            winner_username: winner,
-                            player1_score: 1,
-                            player2_score: 0,
-                            match_type: 'invitation'
-                        })
-                    })
-                        .then(res => res.json())
-                        .then(data => console.log('✅ Match sauvegardé:', data))
-                        .catch(err => console.error('❌ Erreur sauvegarde match:', err));
-                    // Arrêter le jeu
-                    if (pong.PongGame) {
-                        pong.PongGame.stop();
-                    }
-                    // Notifier l'autre joueur que la partie est terminée
-                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                        // player1 est celui qui a envoyé l'invitation (celui qui attend)
-                        const waitingPlayer = player1 === this.username ? player2 : player1;
-                        this.ws.send(JSON.stringify({
-                            type: "gameEnded",
-                            to: waitingPlayer
-                        }));
-                    }
-                    // Réafficher les éléments d'interface utilisateur
-                    const avatarContainer = document.getElementById('avatar-container');
-                    const langSelector = document.getElementById('lang-selector-container');
-                    const userInfo = document.getElementById('user-info');
-                    const dropdownMenu = document.getElementById('user-dropdown-menu');
-                    if (avatarContainer)
-                        avatarContainer.style.display = '';
-                    if (langSelector)
-                        langSelector.style.display = '';
-                    if (userInfo)
-                        userInfo.style.display = '';
-                    if (dropdownMenu) {
-                        dropdownMenu.style.display = '';
-                        dropdownMenu.classList.remove('show'); // Fermer le dropdown s'il était ouvert
-                    }
-                    // Retourner à l'écran précédent
-                    if (this.previousScreen === 'chat') {
-                        const chatPanel = document.getElementById('chat-panel');
-                        if (chatPanel) {
-                            chatPanel.classList.add('active');
-                            console.log('✅ Chat réaffiché après le jeu');
-                            // Mettre à jour l'URL
-                            window.history.pushState({ page: 'chat' }, '', '#chat');
-                        }
-                    }
-                    else if (this.previousScreen && pong.Nav) {
-                        const screen = document.getElementById(this.previousScreen);
-                        if (screen) {
-                            screen.classList.add('active');
-                            console.log('✅ Écran réaffiché après le jeu:', this.previousScreen);
-                            // Mettre à jour l'URL
-                            const screenName = this.previousScreen.replace('-view', '').replace('mode-selection', 'mode');
-                            window.history.pushState({ page: screenName }, '', `#${screenName}`);
-                        }
-                        else if (pong.Nav) {
-                            pong.Nav.showHome();
-                        }
-                    }
-                    else if (pong.Nav) {
-                        pong.Nav.showHome();
-                    }
-                    // Réinitialiser la sauvegarde
-                    this.previousScreen = null;
-                    // Fermer le profile panel et le vider
-                    const profilePanel = document.getElementById('profile-panel');
-                    if (profilePanel) {
-                        profilePanel.classList.remove('active');
-                    }
-                    if (window.clearProfilePanel) {
-                        window.clearProfilePanel();
-                    }
-                });
-                // Démarrer le jeu
-                pong.PongGame.start();
-                // Donner le focus pour que les touches fonctionnent
-                setTimeout(() => {
-                    const board = document.getElementById('board');
-                    if (board) {
-                        board.focus();
-                    }
-                    window.focus();
-                }, 100);
-            }
-            else {
-                console.error('❌ PongGame not found');
+                const i18n = window.i18n;
+                this.addSystemMessage(i18n ? i18n.t('chat_format_unblock') : "Format : /unblock pseudo OU /unblock \"pseudo avec espaces\"");
             }
         }
-        handleGameEnded(data) {
-            console.log("🏁 Partie terminée, retour à l'écran précédent");
-            // Cacher complètement l'overlay "Partie en cours"
-            const gameInProgressOverlay = document.getElementById('game-in-progress-overlay');
-            if (gameInProgressOverlay) {
-                gameInProgressOverlay.classList.remove('active');
-                console.log('✅ Overlay caché');
-            }
-            // Réafficher les éléments d'interface utilisateur
-            const avatarContainer = document.getElementById('avatar-container');
-            const langSelector = document.getElementById('lang-selector-container');
-            const userInfo = document.getElementById('user-info');
-            if (avatarContainer)
-                avatarContainer.style.display = '';
-            if (langSelector)
-                langSelector.style.display = '';
-            if (userInfo)
-                userInfo.style.display = '';
-            // Restaurer l'écran précédent
-            if (this.previousScreen === 'chat') {
-                const chatPanel = document.getElementById('chat-panel');
-                if (chatPanel) {
-                    chatPanel.classList.add('active');
-                    console.log('✅ Chat réaffiché');
-                    // Mettre à jour l'URL
-                    window.history.pushState({ page: 'chat' }, '', '#chat');
-                }
-            }
-            else if (this.previousScreen) {
-                const screen = document.getElementById(this.previousScreen);
-                if (screen) {
-                    screen.classList.add('active');
-                    console.log('✅ Écran réaffiché:', this.previousScreen);
-                    // Mettre à jour l'URL
-                    const screenName = this.previousScreen.replace('-view', '').replace('mode-selection', 'mode');
-                    window.history.pushState({ page: screenName }, '', `#${screenName}`);
-                }
+        handleInviteCommand(text) {
+            const target = this.commandParser.parseCommandTarget("/invite ", text);
+            if (target) {
+                this.wsManager.send({ type: "invite", target });
             }
             else {
-                // Par défaut, retour à home
-                const pong = window.PONG;
-                if (pong && pong.Nav) {
-                    pong.Nav.showHome();
-                    console.log('✅ Retour à home (par défaut)');
-                }
+                const i18n = window.i18n;
+                this.addSystemMessage(i18n ? i18n.t('chat_format_invite') : "Format : /invite pseudo OU /invite \"pseudo avec espaces\"");
             }
-            // Réinitialiser la sauvegarde
-            this.previousScreen = null;
         }
-        showGameInProgress(opponentName) {
-            console.log('🎮 Affichage overlay "Partie en cours" pour', opponentName);
-            // Sauvegarder l'écran actuellement actif
-            const chatPanel = document.getElementById('chat-panel');
-            if (chatPanel && chatPanel.classList.contains('active')) {
-                this.previousScreen = 'chat';
+        handleListCommand() {
+            if (this.wsManager.isConnected()) {
+                this.wsManager.send({ type: "listUsers" });
             }
             else {
-                const activeScreen = document.querySelector('.screen.active');
-                if (activeScreen) {
-                    this.previousScreen = activeScreen.id;
+                const i18n = window.i18n;
+                this.addSystemMessage(i18n ? i18n.t('chat_connection_closed_command') : "Connexion fermée, impossible d'envoyer la commande");
+            }
+        }
+        handleHistoryCommand(text) {
+            const target = this.commandParser.parseCommandTarget("/history ", text);
+            if (target) {
+                if (this.wsManager.isConnected()) {
+                    this.wsManager.send({ type: "getHistory", target });
                 }
                 else {
-                    this.previousScreen = 'home-view';
+                    const i18n = window.i18n;
+                    this.addSystemMessage(i18n ? i18n.t('chat_connection_closed_command') : "Connexion fermée");
                 }
             }
-            console.log('💾 Écran sauvegardé:', this.previousScreen);
-            // Cacher tous les screens
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
-            // Cacher le chat
-            if (chatPanel) {
-                chatPanel.classList.remove('active');
-            }
-            // Afficher l'overlay "Partie en cours"
-            const gameInProgressOverlay = document.getElementById('game-in-progress-overlay');
-            const opponentNameSpan = document.getElementById('opponent-name');
-            if (gameInProgressOverlay && opponentNameSpan) {
-                opponentNameSpan.textContent = opponentName;
-                gameInProgressOverlay.classList.add('active');
-                console.log('✅ Overlay "Partie en cours" affiché');
-            }
             else {
-                console.error('❌ Éléments overlay introuvables');
+                const i18n = window.i18n;
+                this.addSystemMessage(i18n ? i18n.t('chat_format_history') : "Format : /history pseudo OU /history \"pseudo avec espaces\"");
             }
         }
-        handleInviteResponse(data) {
-            console.log('📥 handleInviteResponse appelé:', data);
-            const from = data.from;
-            if (!from) {
-                console.log('❌ Pas de from dans data');
-                return;
-            }
-            const i18n = window.i18n;
-            console.log('🔍 data.accepted =', data.accepted);
-            if (data.accepted) {
-                console.log('✅ Invitation acceptée');
-                this.showGameInProgress(from);
+        handleDMCommand(text) {
+            const parsed = this.commandParser.parseDMCommand(text);
+            if (parsed) {
+                this.wsManager.send({ type: "dm", to: parsed.target, text: parsed.body });
             }
             else {
-                console.log('❌ Invitation refusée');
-                this.addSystemMessage(i18n ? i18n.t('chat_invite_declined_by', { from }) : `${from} a refusé ton invitation.`);
+                const i18n = window.i18n;
+                this.addSystemMessage(i18n ? i18n.t('chat_format_dm') : "Format : /dm pseudo message OU /dm \"pseudo avec espaces\" message");
+            }
+        }
+        sendDirectMessage(text) {
+            const currentUser = this.conversationManager.currentChatUser;
+            if (!currentUser) {
+                const i18n = window.i18n;
+                this.addSystemMessage(i18n ? i18n.t('chat_no_conversation_selected') : "Aucune conversation sélectionnée. Utilise /dm");
+            }
+            else {
+                this.wsManager.send({ type: "dm", to: currentUser, text });
             }
         }
         openUserProfile(usernameToView) {
@@ -1161,7 +360,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     const res = yield fetch(`/api/user/public/${encodeURIComponent(usernameToView)}`);
                     const i18n = window.i18n;
                     if (res.status === 404) {
-                        this.addSystemMessage(i18n ? i18n.t('chat_profile_not_found', { username: usernameToView }) : `Ce joueur (${usernameToView}) n'a pas de profil enregistré (invité ou non inscrit).`);
+                        this.addSystemMessage(i18n ? i18n.t('chat_profile_not_found', { username: usernameToView }) : `Ce joueur (${usernameToView}) n'a pas de profil enregistré.`);
                         return;
                     }
                     if (!res.ok) {
@@ -1170,16 +369,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     }
                     const data = yield res.json();
                     const user = data.user || data;
-                    if (this.profileName && this.profileUsername && this.profileAvatar && this.profileModal) {
-                        this.profileName.textContent =
-                            user.display_name || user.username || usernameToView;
-                        this.profileUsername.textContent = `@${user.username || usernameToView}`;
-                        this.profileAvatar.src =
-                            user.avatar_url || "/avatars/default_avatar.png";
-                        this.profileModal.style.display = "flex";
+                    if (this.elements.profileName && this.elements.profileUsername && this.elements.profileAvatar && this.elements.profileModal) {
+                        this.elements.profileName.textContent = user.display_name || user.username || usernameToView;
+                        this.elements.profileUsername.textContent = `@${user.username || usernameToView}`;
+                        this.elements.profileAvatar.src = user.avatar_url || "/avatars/default_avatar.png";
+                        this.elements.profileModal.style.display = "flex";
                     }
-                    // En même temps, on ouvre/force une conversation avec ce joueur
-                    this.ensureConversation(usernameToView);
+                    this.conversationManager.ensureConversation(usernameToView);
                     this.setCurrentChatUser(usernameToView);
                 }
                 catch (e) {
@@ -1188,62 +384,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     this.addSystemMessage(i18n ? i18n.t('chat_profile_load_error', { username: usernameToView }) : `Erreur lors du chargement du profil de ${usernameToView}.`);
                 }
             });
-        }
-        createMessageBubble(from, text, type, isHistory, timestamp) {
-            const msgDiv = document.createElement("div");
-            msgDiv.classList.add("message", type);
-            // Ajouter une classe spéciale pour les messages d'historique
-            if (isHistory) {
-                msgDiv.classList.add("history");
-            }
-            if (!from || type === "system") {
-                msgDiv.textContent = text;
-            }
-            else {
-                const nameSpan = document.createElement("span");
-                nameSpan.classList.add("chat-username");
-                nameSpan.style.cursor = 'pointer';
-                nameSpan.style.textDecoration = 'underline';
-                nameSpan.textContent = from + ": ";
-                // Ajouter un click handler pour afficher le profil
-                nameSpan.addEventListener('click', () => {
-                    if (window.showUserProfile) {
-                        window.showUserProfile(from);
-                    }
-                });
-                const textSpan = document.createElement("span");
-                textSpan.textContent = text;
-                msgDiv.appendChild(nameSpan);
-                msgDiv.appendChild(textSpan);
-                // Ajouter timestamp pour les messages d'historique
-                if (isHistory && timestamp) {
-                    const timestampSpan = document.createElement("span");
-                    timestampSpan.classList.add("timestamp");
-                    const date = new Date(timestamp);
-                    timestampSpan.textContent = ` (${date.toLocaleDateString()} ${date.toLocaleTimeString()})`;
-                    msgDiv.appendChild(timestampSpan);
-                }
-            }
-            return msgDiv;
-        }
-        // Mettre à jour le badge de notification sur l'avatar
-        updateAvatarNotification() {
-            // Calculer le nombre total de messages non lus
-            let totalUnread = 0;
-            for (const user in this.unreadMessages) {
-                totalUnread += this.unreadMessages[user];
-            }
-            // Utiliser le badge statique
-            const badge = document.getElementById('avatar-notification-badge');
-            if (!badge)
-                return;
-            if (totalUnread > 0) {
-                badge.textContent = totalUnread > 99 ? '99+' : totalUnread.toString();
-                badge.style.display = 'flex';
-            }
-            else {
-                badge.style.display = 'none';
-            }
         }
     }
     if (!window.PONG)

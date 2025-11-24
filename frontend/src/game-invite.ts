@@ -1,26 +1,7 @@
-// Handle game invitations via URL parameters  
-(function() {
-    document.addEventListener('DOMContentLoaded', function () {
-        // Lire les paramètres URL pour les invitations de jeu
-        const urlParams = new URLSearchParams(window.location.search);
-        const player1 = urlParams.get('player1');
-        const player2 = urlParams.get('player2');
+// Handle game invitations via URL parameters
 
-        if (player1 && player2) {
-            // Délai pour s'assurer que tous les modules sont chargés
-            setTimeout(() => {
-                launchInvitedGame(player1, player2);
-                
-                // Nettoyer l'URL pour éviter de relancer le jeu au refresh
-                window.history.replaceState({}, document.title, window.location.pathname);
-                
-                console.log('🎮 Game started with players:', player1, 'vs', player2);
-            }, 500);
-        }
-    });
-
-    // Fonction pour lancer un jeu invité (utilise la même logique que le tournoi)
-    function launchInvitedGame(player1: string, player2: string): void {
+// Fonction pour lancer un jeu invité (utilise la même logique que le tournoi)
+function launchInvitedGame(player1: string, player2: string, onGameEnd?: (winner: string) => void): void {
         const gameView = document.getElementById('game-view');
         
         // Désactiver tous les écrans
@@ -32,7 +13,25 @@
         // Activer la vue de jeu
         if (gameView) {
             gameView.classList.add('active');
+            // Cacher le bouton MENU pour les jeux invités
+            const menuButton = gameView.querySelector('.menu-button') as HTMLElement;
+            if (menuButton) {
+                menuButton.style.display = 'none';
+            }
+            // Cacher le hint de pause pour les jeux invités
+            const pauseHint = gameView.querySelector('.pause-hint') as HTMLElement;
+            if (pauseHint) {
+                pauseHint.style.display = 'none';
+            }
         }
+        
+        // Cacher les éléments d'interface utilisateur (avatar, boutons de langue, info utilisateur)
+        const avatarContainer = document.getElementById('avatar-container');
+        const langSelector = document.getElementById('lang-selector-container');
+        const userInfo = document.getElementById('user-info');
+        if (avatarContainer) avatarContainer.style.display = 'none';
+        if (langSelector) langSelector.style.display = 'none';
+        if (userInfo) userInfo.style.display = 'none';
         
         // Cacher le chat s'il est ouvert
         const chatPanel = document.getElementById('chat-panel');
@@ -40,10 +39,10 @@
             chatPanel.style.display = 'none';
         }
         
-        // Cacher tous les overlays/modals SAUF game-in-progress-overlay
+        // Cacher tous les overlays/modals SAUF game-in-progress-overlay et pause-overlay
         const overlays = document.querySelectorAll('.overlay');
         overlays.forEach(overlay => {
-            if (overlay.id !== 'game-in-progress-overlay') {
+            if (overlay.id !== 'game-in-progress-overlay' && overlay.id !== 'pause-overlay') {
                 (overlay as HTMLElement).style.display = 'none';
             }
         });
@@ -77,23 +76,71 @@
             // Configurer les noms des joueurs
             pong.PongGame.setPlayerNames(player1, player2);
             
-            // Définir un callback pour la fin du match (retour au menu)
+            // Définir un callback pour la fin du match
             pong.PongGame.setCallback((winner: string) => {
-                console.log('� Winner:', winner);
+                console.log('🏆 Winner:', winner);
                 // Arrêter le jeu
                 if (pong.PongGame) {
                     pong.PongGame.stop();
                 }
-                // Retourner au menu principal
-                if (pong.Nav) {
+                // Réafficher le bouton MENU
+                const menuButton = gameView?.querySelector('.menu-button') as HTMLElement;
+                if (menuButton) {
+                    menuButton.style.display = '';
+                }
+                // Réafficher le hint de pause
+                const pauseHint = gameView?.querySelector('.pause-hint') as HTMLElement;
+                if (pauseHint) {
+                    pauseHint.style.display = '';
+                }
+                // Réafficher les éléments d'interface utilisateur
+                const avatarContainer = document.getElementById('avatar-container');
+                const langSelector = document.getElementById('lang-selector-container');
+                const userInfo = document.getElementById('user-info');
+                const dropdownMenu = document.getElementById('user-dropdown-menu');
+                if (avatarContainer) avatarContainer.style.display = '';
+                if (langSelector) langSelector.style.display = '';
+                if (userInfo) userInfo.style.display = '';
+                if (dropdownMenu) {
+                    dropdownMenu.style.display = '';
+                    dropdownMenu.classList.remove('show');
+                }
+                // Appeler le callback personnalisé si fourni, sinon retourner au menu
+                if (onGameEnd) {
+                    onGameEnd(winner);
+                } else if (pong.Nav) {
                     pong.Nav.showHome();
                 }
             });
             
-            // Démarrer le jeu
-            pong.PongGame.start();
+            // Démarrer le jeu (true = jeu invité, pas de pause autorisée)
+            pong.PongGame.start(true);
         } else {
             console.error('❌ PongGame not found');
         }
+}
+
+// Exposer la fonction globalement
+if (!(window as any).PONG) {
+    (window as any).PONG = {};
+}
+(window as any).PONG.launchInvitedGame = launchInvitedGame;
+
+// Handle URL parameters on page load
+document.addEventListener('DOMContentLoaded', function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const player1 = urlParams.get('player1');
+    const player2 = urlParams.get('player2');
+
+    if (player1 && player2) {
+        // Délai pour s'assurer que tous les modules sont chargés
+        setTimeout(() => {
+            launchInvitedGame(player1, player2);
+            
+            // Nettoyer l'URL pour éviter de relancer le jeu au refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            console.log('🎮 Game started with players:', player1, 'vs', player2);
+        }, 500);
     }
-})();
+});

@@ -32,6 +32,7 @@
     let isGameRunning: boolean = false;
     let isPaused: boolean = false;
     let animationFrameId: number | null = null;
+    let isInvitedGame: boolean = false; // Désactiver la pause pour les jeux invités
 
     // requestAnimationFrame(f) et cancelAnimationFrame(f) : méthodes de l’objet global window (Web API)
     // Implémentées par le moteur du navigateur (Chrome/Firefox/Safari…)
@@ -87,7 +88,7 @@
     }
 
     function switchPause(): void {
-        if (!isGameRunning)
+        if (!isGameRunning || isInvitedGame)
             return;
 
         isPaused = !isPaused;
@@ -101,6 +102,7 @@
     function showPauseMenu(): void {
         const pauseOverlay = document.getElementById('pause-overlay');
         if (pauseOverlay) {
+            pauseOverlay.style.display = ''; // Remove inline display style if any
             pauseOverlay.classList.add('active');
         }
     }
@@ -288,7 +290,7 @@
     }
 
     class PongGame {
-        start(): void {
+        start(invitedGame: boolean = false): void {
             board = document.getElementById("board") as HTMLCanvasElement;
             if (!board) {
                 console.error("Canvas not found");
@@ -303,6 +305,7 @@
             player2Score = 0;
             isGameRunning = true;
             isPaused = false;
+            isInvitedGame = invitedGame;
 
             initializeGameObjects();
 
@@ -328,8 +331,9 @@
         stop(): void {
             isGameRunning = false;
             isPaused = false;
+            isInvitedGame = false;
             if (animationFrameId !== null) {
-                cancelAnimationFrame(animationFrameId); // annule la requête d’animation planifiée correspondant à cet identifiant pour empêcher l’exécution de la fonction update et donc stopper la boucle de jeu
+                cancelAnimationFrame(animationFrameId); // annule la requête d'animation planifiée correspondant à cet identifiant pour empêcher l'exécution de la fonction update et donc stopper la boucle de jeu
                 animationFrameId = null;
             }
             removeEventListeners();

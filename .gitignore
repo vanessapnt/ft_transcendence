@@ -11,6 +11,11 @@ yarn-error.log*
 /dist/
 /build/
 
+# Frontend compiled files (generated from TypeScript)
+/frontend/pong/*.js
+/frontend/pong/*.js.map
+/frontend/pong/*.d.ts
+
 # Docker
 *.env
 *.local

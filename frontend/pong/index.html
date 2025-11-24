@@ -78,8 +78,6 @@
             <input type="password" id="signup-password" data-i18n-placeholder="signup_password_placeholder"
                 placeholder="Password" required>
             <div id="password-requirements" class="password-requirements" style="display: none;">
-                <p data-i18n-key="password_requirements_title" style="font-weight: bold; margin-bottom: 8px;">Password
-                    Requirements:</p>
                 <ul style="text-align: left; font-size: 0.7rem; margin: 8px 0;">
                     <li id="req-length" style="color: #ff6666;">❌ <span data-i18n-key="password_req_length">At least 6
                             characters</span></li>
@@ -208,13 +206,13 @@
                 <label for="edit-avatar-input" class="file-input-btn" data-i18n-key="choose_avatar">Choose
                     Avatar</label>
                 <input type="file" id="edit-avatar-input" accept="image/*" style="display: none;">
-                <span id="edit-avatar-filename" class="file-input-name" data-i18n-key="no_file_chosen">No file
+                <span id="edit-avatar-filename" class="file-input-name" data-i18n-key="edit_profile_no_file_chosen">No file
                     chosen</span>
             </div>
             <label data-i18n-key="edit_profile_username">Username (not editable)</label>
             <input type="text" id="edit-username-display" disabled class="disabled-input">
             <label data-i18n-key="edit_profile_displayname">Display Name</label>
-            <input type="text" id="edit-display-name" data-i18n-placeholder="edit_display_name_placeholder"
+            <input type="text" id="edit-display-name" data-i18n-placeholder="edit_profile_displayname_placeholder"
                 placeholder="Display Name">
             <label data-i18n-key="edit_profile_language">Preferred Language</label>
             <div class="language-selector">
@@ -222,9 +220,9 @@
                 <button type="button" class="lang-option" data-lang="fr">FR</button>
                 <button type="button" class="lang-option" data-lang="es">ES</button>
             </div>
-            <button type="submit" class="auth-submit-btn" data-i18n-key="save_changes">Save Changes</button>
+            <button type="submit" class="auth-submit-btn" data-i18n-key="edit_profile_save">Save Changes</button>
             <button type="button" id="cancel-edit-profile" class="auth-cancel-btn"
-                data-i18n-key="cancel">Cancel</button>
+                data-i18n-key="edit_profile_cancel">Cancel</button>
             <div id="edit-profile-message" class="auth-message"></div>
         </form>
     </div>
@@ -240,7 +238,7 @@
                             <label class="switch-container">
                                 <input type="checkbox" id="friends-only-toggle">
                                 <span class="switch-slider"></span>
-                                <span class="switch-label" data-i18n-key="friends_only">Friends only</span>
+                                <span class="switch-label" data-i18n-key="chat_friends_only">Friends only</span>
                             </label>
                         </div>
                         <div id="conversation-tabs"></div>
@@ -250,7 +248,7 @@
                             <div id="current-chat" data-i18n-key="chat_no_conversation">Aucune conversation sélectionnée
                             </div>
                             <div id="chat-actions">
-                                <button id="add-friend-btn" data-i18n-key="add_friend" title="Ajouter en ami">Add
+                                <button id="add-friend-btn" data-i18n-key="chat_add_friend" title="Ajouter en ami">Add
                                     Friend</button>
                                 <button id="invite-btn" data-i18n-key="chat_btn_invite"
                                     data-i18n-title="chat_btn_invite_title" title="Inviter à jouer">Inviter</button>
@@ -283,7 +281,7 @@
                 </div>
             </div>
             <div class="profile-section">
-                <h3 data-i18n-key="match_history">MATCH HISTORY</h3>
+                <h3 data-i18n-key="profile_display_match_history">MATCH HISTORY</h3>
                 <div id="profile-match-history" class="match-history-container"></div>
             </div>
         </div>

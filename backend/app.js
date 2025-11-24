@@ -73,9 +73,7 @@ if (!fs.existsSync(publicDir)) {
 app.use(express.static(publicDir));
 
 // Routes
-const i18nRouter = require('./routes/change_lang');
-app.use('/api/change_lang', i18nRouter);
-const i18nRoute = require('./routes/i18n');
+const i18nRoute = require('./routes/change_lang');
 app.use('/api/i18n', i18nRoute);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));

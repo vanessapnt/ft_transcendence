@@ -78,6 +78,16 @@ class Navigation
             console.log('📍 Home ajouté à l\'historique. Length:', window.history.length);
         }
         
+        // S'assurer que le menu est visible
+        const menu = document.querySelector('.menu-buttons') as HTMLElement;
+        if (menu) menu.style.display = 'flex';
+        
+        // Cacher les formulaires login/signup
+        const loginForm = document.getElementById('login-form') as HTMLElement;
+        const signupForm = document.getElementById('signup-form') as HTMLElement;
+        if (loginForm) loginForm.style.display = 'none';
+        if (signupForm) signupForm.style.display = 'none';
+        
         // pour l'appel depuis pause overlay
         this.hidePauseOverlay();
         this.stopGames();
@@ -214,7 +224,7 @@ class Navigation
             const menu = document.querySelector('.menu-buttons') as HTMLElement;
             if (loginForm) loginForm.style.display = 'none';
             if (signupForm) signupForm.style.display = 'none';
-            if (menu) menu.style.display = 'block';
+            if (menu) menu.style.display = 'flex';
         } else if (hash === '#game') {
             // Rediriger vers mode si on essaie d'accéder au jeu via l'historique
             if (!this.allowGameAccess) {

@@ -153,17 +153,18 @@ router.put('/profile', requireAuth, (req, res) => {
     // Update user (use updateUserWithDisplayName to include display_name)
     statements.updateUserWithDisplayName.run(newUsername, newEmail, currentUser.avatar_path, newDisplayName, userId);
 
-    // Update language separately if provided
+    // Update language séparément si fourni
     if (preferred_language) {
       statements.updateUserLanguage.run(preferred_language, userId);
-      // Also update the session
-      req.session.language = preferred_language;
     }
 
-    // Return updated user
+    // Relire l'utilisateur pour récupérer la langue effectivement stockée
     const updatedUser = statements.getUserById.get(userId);
+    req.session.lang = updatedUser.preferred_language || 'en';
+
+    // Return updated user
     const { password_hash, ...userData } = updatedUser;
-    logger.info('Profile updated successfully', { userId, newUsername, newEmail, newDisplayName, newLanguage: preferred_language });
+    logger.info('Profile updated successfully', { userId, newUsername, newEmail, newDisplayName, newLanguage: updatedUser.preferred_language });
     res.json({
       message: 'Profile updated successfully',
       user: userData

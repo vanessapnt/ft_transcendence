@@ -1,5 +1,6 @@
 services:
   frontend:
+    container_name: transcendence-frontend-dev
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
@@ -23,6 +24,7 @@ services:
     stop_grace_period: 2s
 
   backend:
+    container_name: transcendence-backend-dev
     build: ./backend
     ports:
       - "8000:8000"
@@ -51,6 +53,7 @@ services:
         max-file: "1"
 
   nginx:
+    container_name: transcendence-nginx-dev
     build: ./nginx
     ports:
       - "8080:80"

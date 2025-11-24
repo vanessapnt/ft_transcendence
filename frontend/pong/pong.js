@@ -23,6 +23,7 @@
     let isGameRunning = false;
     let isPaused = false;
     let animationFrameId = null;
+    let isInvitedGame = false; // Désactiver la pause pour les jeux invités
     let player1;
     let player2;
     let ball;
@@ -51,7 +52,7 @@
         };
     }
     function switchPause() {
-        if (!isGameRunning)
+        if (!isGameRunning || isInvitedGame)
             return;
         isPaused = !isPaused;
         if (isPaused)
@@ -62,6 +63,7 @@
     function showPauseMenu() {
         const pauseOverlay = document.getElementById('pause-overlay');
         if (pauseOverlay) {
+            pauseOverlay.style.display = ''; // Remove inline display style if any
             pauseOverlay.classList.add('active');
         }
     }
@@ -221,7 +223,7 @@
         };
     }
     class PongGame {
-        start() {
+        start(invitedGame = false) {
             board = document.getElementById("board");
             if (!board) {
                 console.error("Canvas not found");
@@ -234,6 +236,7 @@
             player2Score = 0;
             isGameRunning = true;
             isPaused = false;
+            isInvitedGame = invitedGame;
             initializeGameObjects();
             setupEventListeners();
             update();
@@ -252,8 +255,9 @@
         stop() {
             isGameRunning = false;
             isPaused = false;
+            isInvitedGame = false;
             if (animationFrameId !== null) {
-                cancelAnimationFrame(animationFrameId); // annule la requête d’animation planifiée correspondant à cet identifiant pour empêcher l’exécution de la fonction update et donc stopper la boucle de jeu
+                cancelAnimationFrame(animationFrameId); // annule la requête d'animation planifiée correspondant à cet identifiant pour empêcher l'exécution de la fonction update et donc stopper la boucle de jeu
                 animationFrameId = null;
             }
             removeEventListeners();

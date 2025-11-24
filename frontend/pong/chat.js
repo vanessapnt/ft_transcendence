@@ -882,9 +882,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 if (chatPanel) {
                     chatPanel.classList.remove('active');
                 }
-                // Lancer le jeu directement (comme dans le tournoi)
+                // Lancer le jeu directement en utilisant la fonction partagée
                 setTimeout(() => {
-                    this.launchInvitedGame(from, this.username || 'Player');
+                    const pong = window.PONG;
+                    if (pong === null || pong === void 0 ? void 0 : pong.launchInvitedGame) {
+                        pong.launchInvitedGame(from, this.username || 'Player', (winner) => {
+                            // Callback personnalisé pour la fin du jeu
+                            this.onInvitedGameEnd(from, this.username || 'Player', winner);
+                        });
+                    }
                     // Donner le focus au document pour que les touches fonctionnent
                     setTimeout(() => {
                         const board = document.getElementById('board');
@@ -901,154 +907,81 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                 this.addSystemMessage(i18n ? i18n.t('chat_invite_declined', { from }) : `Invitation de ${from} refusée.`);
             }
         }
-        launchInvitedGame(player1, player2) {
-            console.log('🎮 launchInvitedGame appelé:', { player1, player2 });
-            const gameView = document.getElementById('game-view');
-            // Désactiver tous les écrans
-            const screens = document.querySelectorAll('.screen');
-            screens.forEach(screen => {
-                screen.classList.remove('active');
-            });
-            // Activer la vue de jeu
-            if (gameView) {
-                gameView.classList.add('active');
-                console.log('✅ game-view activé');
+        onInvitedGameEnd(player1, player2, winner) {
+            console.log('🏆 Winner:', winner);
+            const pong = window.PONG;
+            // Sauvegarder le match dans la base de données
+            const opponentUsername = player1 === this.username ? player2 : player1;
+            fetch('/api/matches/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    player2_username: opponentUsername,
+                    winner_username: winner,
+                    player1_score: 1,
+                    player2_score: 0,
+                    match_type: 'invitation'
+                })
+            })
+                .then(res => res.json())
+                .then(data => console.log('✅ Match sauvegardé:', data))
+                .catch(err => console.error('❌ Erreur sauvegarde match:', err));
+            // Notifier l'autre joueur que la partie est terminée
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                const waitingPlayer = player1 === this.username ? player2 : player1;
+                this.ws.send(JSON.stringify({
+                    type: "gameEnded",
+                    to: waitingPlayer
+                }));
             }
-            else {
-                console.error('❌ game-view introuvable !');
-            }
-            // Cacher les éléments d'interface utilisateur (avatar, boutons de langue, info utilisateur)
+            // Réafficher les éléments d'interface utilisateur
             const avatarContainer = document.getElementById('avatar-container');
             const langSelector = document.getElementById('lang-selector-container');
             const userInfo = document.getElementById('user-info');
+            const dropdownMenu = document.getElementById('user-dropdown-menu');
             if (avatarContainer)
-                avatarContainer.style.display = 'none';
+                avatarContainer.style.display = '';
             if (langSelector)
-                langSelector.style.display = 'none';
+                langSelector.style.display = '';
             if (userInfo)
-                userInfo.style.display = 'none';
-            // Cacher le chat s'il est ouvert
-            const chatPanel = document.getElementById('chat-panel');
-            if (chatPanel) {
-                chatPanel.classList.remove('active');
+                userInfo.style.display = '';
+            if (dropdownMenu) {
+                dropdownMenu.style.display = '';
+                dropdownMenu.classList.remove('show');
             }
-            // Fermer le panel edit-profile s'il est ouvert
-            const editProfilePanel = document.getElementById('edit-profile-panel');
-            if (editProfilePanel && editProfilePanel.classList.contains('active')) {
-                editProfilePanel.classList.remove('active');
-            }
-            // Cacher tous les overlays/modals SAUF game-in-progress-overlay
-            const overlays = document.querySelectorAll('.overlay');
-            overlays.forEach(overlay => {
-                if (overlay.id !== 'game-in-progress-overlay') {
-                    overlay.style.display = 'none';
+            // Retourner à l'écran précédent
+            if (this.previousScreen === 'chat') {
+                const chatPanel = document.getElementById('chat-panel');
+                if (chatPanel) {
+                    chatPanel.classList.add('active');
+                    console.log('✅ Chat réaffiché après le jeu');
+                    window.history.pushState({ page: 'chat' }, '', '#chat');
                 }
-            });
-            // Cacher tous les formulaires qui pourraient être ouverts
-            const signupForm = document.getElementById('signup-form');
-            const loginForm = document.getElementById('login-form');
-            const editProfileForm = document.getElementById('edit-profile-form');
-            const pong = window.PONG;
-            if (pong === null || pong === void 0 ? void 0 : pong.PongGame) {
-                // Configurer les noms des joueurs
-                pong.PongGame.setPlayerNames(player1, player2);
-                // Définir un callback pour la fin du match (retour au menu)
-                pong.PongGame.setCallback((winner) => {
-                    console.log('🏆 Winner:', winner);
-                    // Sauvegarder le match dans la base de données
-                    const opponentUsername = player1 === this.username ? player2 : player1;
-                    fetch('/api/matches/save', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            player2_username: opponentUsername,
-                            winner_username: winner,
-                            player1_score: 1,
-                            player2_score: 0,
-                            match_type: 'invitation'
-                        })
-                    })
-                        .then(res => res.json())
-                        .then(data => console.log('✅ Match sauvegardé:', data))
-                        .catch(err => console.error('❌ Erreur sauvegarde match:', err));
-                    // Arrêter le jeu
-                    if (pong.PongGame) {
-                        pong.PongGame.stop();
-                    }
-                    // Notifier l'autre joueur que la partie est terminée
-                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                        // player1 est celui qui a envoyé l'invitation (celui qui attend)
-                        const waitingPlayer = player1 === this.username ? player2 : player1;
-                        this.ws.send(JSON.stringify({
-                            type: "gameEnded",
-                            to: waitingPlayer
-                        }));
-                    }
-                    // Réafficher les éléments d'interface utilisateur
-                    const avatarContainer = document.getElementById('avatar-container');
-                    const langSelector = document.getElementById('lang-selector-container');
-                    const userInfo = document.getElementById('user-info');
-                    const dropdownMenu = document.getElementById('user-dropdown-menu');
-                    if (avatarContainer)
-                        avatarContainer.style.display = '';
-                    if (langSelector)
-                        langSelector.style.display = '';
-                    if (userInfo)
-                        userInfo.style.display = '';
-                    if (dropdownMenu) {
-                        dropdownMenu.style.display = '';
-                        dropdownMenu.classList.remove('show'); // Fermer le dropdown s'il était ouvert
-                    }
-                    // Retourner à l'écran précédent
-                    if (this.previousScreen === 'chat') {
-                        const chatPanel = document.getElementById('chat-panel');
-                        if (chatPanel) {
-                            chatPanel.classList.add('active');
-                            console.log('✅ Chat réaffiché après le jeu');
-                            // Mettre à jour l'URL
-                            window.history.pushState({ page: 'chat' }, '', '#chat');
-                        }
-                    }
-                    else if (this.previousScreen && pong.Nav) {
-                        const screen = document.getElementById(this.previousScreen);
-                        if (screen) {
-                            screen.classList.add('active');
-                            console.log('✅ Écran réaffiché après le jeu:', this.previousScreen);
-                            // Mettre à jour l'URL
-                            const screenName = this.previousScreen.replace('-view', '').replace('mode-selection', 'mode');
-                            window.history.pushState({ page: screenName }, '', `#${screenName}`);
-                        }
-                        else if (pong.Nav) {
-                            pong.Nav.showHome();
-                        }
-                    }
-                    else if (pong.Nav) {
-                        pong.Nav.showHome();
-                    }
-                    // Réinitialiser la sauvegarde
-                    this.previousScreen = null;
-                    // Fermer le profile panel et le vider
-                    const profilePanel = document.getElementById('profile-panel');
-                    if (profilePanel) {
-                        profilePanel.classList.remove('active');
-                    }
-                    if (window.clearProfilePanel) {
-                        window.clearProfilePanel();
-                    }
-                });
-                // Démarrer le jeu
-                pong.PongGame.start();
-                // Donner le focus pour que les touches fonctionnent
-                setTimeout(() => {
-                    const board = document.getElementById('board');
-                    if (board) {
-                        board.focus();
-                    }
-                    window.focus();
-                }, 100);
             }
-            else {
-                console.error('❌ PongGame not found');
+            else if (this.previousScreen && (pong === null || pong === void 0 ? void 0 : pong.Nav)) {
+                const screen = document.getElementById(this.previousScreen);
+                if (screen) {
+                    screen.classList.add('active');
+                    console.log('✅ Écran réaffiché après le jeu:', this.previousScreen);
+                    const screenName = this.previousScreen.replace('-view', '').replace('mode-selection', 'mode');
+                    window.history.pushState({ page: screenName }, '', `#${screenName}`);
+                }
+                else if (pong.Nav) {
+                    pong.Nav.showHome();
+                }
+            }
+            else if (pong === null || pong === void 0 ? void 0 : pong.Nav) {
+                pong.Nav.showHome();
+            }
+            // Réinitialiser la sauvegarde
+            this.previousScreen = null;
+            // Fermer le profile panel et le vider
+            const profilePanel = document.getElementById('profile-panel');
+            if (profilePanel) {
+                profilePanel.classList.remove('active');
+            }
+            if (window.clearProfilePanel) {
+                window.clearProfilePanel();
             }
         }
         handleGameEnded(data) {

@@ -166,6 +166,16 @@
                 this.showScreen('home-view');
                 this.hidePauseOverlay();
                 this.stopGames();
+                // Cacher les formulaires login/signup
+                const loginForm = document.getElementById('login-form');
+                const signupForm = document.getElementById('signup-form');
+                const menu = document.querySelector('.menu-buttons');
+                if (loginForm)
+                    loginForm.style.display = 'none';
+                if (signupForm)
+                    signupForm.style.display = 'none';
+                if (menu)
+                    menu.style.display = 'block';
             }
             else if (hash === '#game') {
                 // Rediriger vers mode si on essaie d'accéder au jeu via l'historique
@@ -199,15 +209,15 @@
                 }
             }
             else if (hash === '#signup') {
-                // Afficher le formulaire signup
+                // Afficher le formulaire signup sans ajouter à l'historique
                 if (window.showSignup) {
-                    window.showSignup();
+                    window.showSignup(false);
                 }
             }
             else if (hash === '#login') {
-                // Afficher le formulaire login
+                // Afficher le formulaire login sans ajouter à l'historique
                 if (window.showLogin) {
-                    window.showLogin();
+                    window.showLogin(false);
                 }
             }
         }

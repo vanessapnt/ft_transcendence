@@ -99,26 +99,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         }
     }
     function logout() {
-        // Call backend logout endpoint to destroy server-side session and instruct browser to clear cookie
-        (function () {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    const res = yield fetch(`${API_BASE_URL}/api/auth/logout`, {
-                        method: 'POST',
-                        credentials: 'include'
-                    });
-                    if (!res.ok) {
-                        console.warn('[Logout] API returned non-OK status:', res.status);
-                    }
-                    else {
-                        console.log('[Logout] API success');
-                    }
-                }
-                catch (err) {
-                    console.warn('[Logout] fetch error:', err);
-                }
-            });
-        })();
         var _a;
         // Call backend logout endpoint to destroy server-side session and instruct browser to clear cookie
         (() => __awaiter(this, void 0, void 0, function* () {
@@ -229,8 +209,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             }
         }
     }
-    function showSignup() {
-        console.log('🔵 showSignup appelé');
+    function showSignup(addToHistory = true) {
         const form = document.getElementById('signup-form');
         const menu = document.querySelector('.menu-buttons');
         if (!form || !menu)
@@ -247,9 +226,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             // Activer home-view
             homeView.classList.add('active');
         }
-        // Ajouter à l'historique
-        window.history.pushState({ page: 'signup' }, '', '#signup');
-        console.log('📍 Signup ajouté à l\'historique. URL:', window.location.href);
+        // Ajouter à l'historique seulement si demandé
+        if (addToHistory) {
+            window.history.pushState({ page: 'signup' }, '', '#signup');
+            console.log('📍 Signup ajouté à l\'historique. URL:', window.location.href);
+        }
         // Masquer le menu et afficher le formulaire
         menu.style.display = 'none';
         form.style.display = 'block';
@@ -348,8 +329,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             };
         }
     }
-    function showLogin() {
-        console.log('🔵 showLogin appelé');
+    function showLogin(addToHistory = true) {
         const form = document.getElementById('login-form');
         const menu = document.querySelector('.menu-buttons');
         if (!form || !menu)
@@ -366,9 +346,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             // Activer home-view
             homeView.classList.add('active');
         }
-        // Ajouter à l'historique
-        window.history.pushState({ page: 'login' }, '', '#login');
-        console.log('📍 Login ajouté à l\'historique. URL:', window.location.href);
+        // Ajouter à l'historique seulement si demandé
+        if (addToHistory) {
+            window.history.pushState({ page: 'login' }, '', '#login');
+            console.log('📍 Login ajouté à l\'historique. URL:', window.location.href);
+        }
         // Masquer le menu et afficher le formulaire
         menu.style.display = 'none';
         form.style.display = 'block';

@@ -33,3 +33,6 @@ Thumbs.db
 # Autres fichiers temporaires
 *.swp
 *.swo
+
+# IDE
+.vscode/

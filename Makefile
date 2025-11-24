@@ -1,6 +1,6 @@
 # Makefile pour le projet transcendence
 
-.PHONY: dev prod stop build clean logs logs-prod help
+.PHONY: dev prod stop build build-ts clean logs logs-prod help
 .ONESHELL:
 
 # Commandes par défaut
@@ -11,6 +11,8 @@ help:
 	@echo "║  make dev              → Mode développement              ║"
 	@echo "║  make prod             → Lancer en mode production       ║"
 	@echo "║  make stop             → Arrêter les services            ║"
+	@echo "║  make build            → Compiler TS + Rebuild images   ║"
+	@echo "║  make build-ts         → Compiler TypeScript seulement   ║"
 	@echo "║  make clean            → Nettoyer tout (BD + volumes)    ║"
 	@echo "║  make logs             → Afficher les logs               ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
@@ -45,6 +47,8 @@ wait $$DC_PID || true'
 # Mode production
 prod:
 	@echo "🚀 Démarrage en mode production..."
+	@echo "🔨 Compilation TypeScript..."
+	@make build-ts
 	@bash ./scripts/fix-elk-perms.sh
 	@bash ./scripts/ensure-ssl.sh
 	@docker compose -f docker-compose.prod.yml up -d --build
@@ -59,6 +63,12 @@ prod:
 build-prod:
 	@echo "🔨 Reconstruction des images (prod)..."
 	docker compose -f docker-compose.prod.yml build --no-cache
+
+# Compiler TypeScript localement
+build-ts:
+	@echo "🔨 Compilation TypeScript..."
+	@cd frontend && npm run build
+	@echo "✅ Compilation terminée !"
 
 # Arrêter les services (dev et prod)
 stop:
@@ -81,12 +91,15 @@ reset-db: ## 🗑️ Supprime la base de données et relance le dev
 
 # Rebuilder les images (dev)
 build:
+	@echo "🔨 Compilation TypeScript..."
+	@make build-ts
 	@echo "🔨 Reconstruction des images (dev)..."
 	docker compose -f docker-compose.dev.yml build --no-cache
 
 # Nettoyer tout (dev et prod)
 clean:
 	@echo "🧹 Nettoyage complet..."
+	@$(MAKE) clean-js
 	@echo "🛑 Arrêt forcé de tous les conteneurs du projet..."
 	-docker compose -f docker-compose.dev.yml down -v --remove-orphans 2>/dev/null
 	-docker compose -f docker-compose.prod.yml down -v --remove-orphans 2>/dev/null

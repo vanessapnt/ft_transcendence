@@ -28,30 +28,26 @@ const validateUserInput = (username, email, password) => {
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password, display_name } = req.body;
-
     logger.info('Register attempt', { username, email });
-
     // Validate input
     const errors = validateUserInput(username, email, password);
     if (errors.length > 0) {
+      logger.warn('Register failed: invalid input', { username, email, errors });
       return res.status(400).json({ errors });
     }
-
     // Check if user already exists
     const existingUser = statements.getUserByUsername.get(username) ||
       statements.getUserByEmail.get(email);
-
     if (existingUser) {
+      logger.warn('Register failed: user exists', { username, email });
       return res.status(409).json({
         error: existingUser.username === username ?
           'Username already taken' : 'Email already registered'
       });
     }
-
     // Hash password
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
-
     // Create user
     const result = statements.createUser.run(username, email, passwordHash, null, null);
     if (display_name) {
@@ -63,21 +59,16 @@ router.post('/register', async (req, res) => {
         result.lastInsertRowid
       );
     }
-
     // Set preferred language from session if available
     const preferredLang = req.session.lang || 'en';
     if (preferredLang !== 'en') {
       statements.updateUserLanguage.run(preferredLang, result.lastInsertRowid);
     }
-
     const user = statements.getUserById.get(result.lastInsertRowid);
-
     // Set session
     req.session.userId = user.id;
     req.session.lang = user.preferred_language || preferredLang;
-
     logger.info('User registered successfully', { userId: user.id, username, email });
-
     // Return user data (without password)
     const { password_hash, ...userData } = user;
     res.status(201).json({
@@ -95,34 +86,27 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-
     logger.info('Login attempt', { username });
-
     if (!username || !password) {
       logger.warn('Login failed: missing credentials', { username });
       return res.status(400).json({ error: 'Username and password are required' });
     }
-
     // Find user
     const user = statements.getUserByUsername.get(username);
     if (!user || !user.password_hash) {
       logger.warn('Login failed: user not found', { username });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
     // Check password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
       logger.warn('Login failed: invalid password', { userId: user.id, username });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
     // Set session
     req.session.userId = user.id;
     req.session.lang = user.preferred_language || 'en';
-
     logger.info('User logged in', { userId: user.id, username });
-
     // Return user data
     const { password_hash, ...userData } = user;
     res.json({
@@ -130,19 +114,18 @@ router.post('/login', async (req, res) => {
       user: userData,
       language: user.preferred_language || 'en'
     });
-
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error', { error: error.message, stack: error.stack });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Logout
 router.post('/logout', (req, res) => {
-  console.log('[LOGOUT] sessionID:', req.sessionID, 'session:', req.session, 'cookie:', req.headers.cookie);
+  logger.info('Logout attempt', { sessionID: req.sessionID, userId: req.session.userId, username: req.user?.username });
   req.session.destroy((err) => {
     if (err) {
-      console.error('Logout error:', err);
+      logger.error('Logout error', { error: err.message, stack: err.stack });
       return res.status(500).json({ error: 'Could not log out' });
     }
     // Clear cookie using the same options as session creation
@@ -151,7 +134,7 @@ router.post('/logout', (req, res) => {
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       secure: process.env.NODE_ENV === 'production'
     });
-    console.log('[LOGOUT] cookie cleared');
+    logger.info('User logged out', { sessionID: req.sessionID });
     res.json({ message: 'Logged out successfully' });
   });
 });

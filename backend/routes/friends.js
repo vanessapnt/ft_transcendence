@@ -20,27 +20,22 @@ router.post('/add', requireAuth, (req, res) => {
     try {
         const userId = req.session.userId;
         const { username } = req.body;
-
         logger.info('Friend add attempt', { userId, targetUsername: username });
-
         if (!username) {
             logger.warn('Friend add failed: username missing', { userId });
             return res.status(400).json({ error: 'Username is required' });
         }
-
         // Get friend user
         const friendUser = statements.getUserByUsername.get(username);
         if (!friendUser) {
             logger.warn('Friend add failed: user not found', { userId, targetUsername: username });
             return res.status(404).json({ error: 'User not found' });
         }
-
         // Can't add yourself as friend
         if (friendUser.id === userId) {
             logger.warn('Friend add failed: cannot add self', { userId });
             return res.status(400).json({ error: 'You cannot add yourself as a friend' });
         }
-
         // Check if already friends (both directions)
         const alreadyFriend1 = statements.isFriend.get(userId, friendUser.id);
         const alreadyFriend2 = statements.isFriend.get(friendUser.id, userId);
@@ -48,11 +43,9 @@ router.post('/add', requireAuth, (req, res) => {
             logger.warn('Friend add failed: already friends', { userId, friendUserId: friendUser.id });
             return res.status(400).json({ error: 'Already friends with this user' });
         }
-
         // Add friend (bidirectional)
         statements.addFriend.run(userId, friendUser.id);
         statements.addFriend.run(friendUser.id, userId);
-
         logger.info('Friend added successfully', { userId, friendUserId: friendUser.id, friendUsername: username });
         res.json({
             message: 'Friend added successfully',
@@ -63,13 +56,8 @@ router.post('/add', requireAuth, (req, res) => {
                 avatar_path: friendUser.avatar_path
             }
         });
-
     } catch (error) {
         logger.error('Add friend error', { userId: req.session.userId, targetUsername: req.body.username, error: error.message });
-        console.error('Add friend error:', error);
-        if (error.message.includes('UNIQUE constraint')) {
-            return res.status(400).json({ error: 'Already friends with this user' });
-        }
         res.status(500).json({ error: 'Internal server error' });
     }
 });

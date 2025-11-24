@@ -73,12 +73,15 @@ if (!fs.existsSync(publicDir)) {
 app.use(express.static(publicDir));
 
 // Routes
-const i18nRoute = require('./routes/chang_lang');
+const i18nRoute = require('./routes/change_lang');
 app.use('/api/i18n', i18nRoute);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/oauth', require('./routes/oauth'));
 app.use('/api/friends', require('./routes/friends'));
+
+// Route technique pour logs ELK
+app.use('/api/log', require('./routes/log'));
 app.use('/api/matches', require('./routes/matches'));
 
 // Health check
@@ -139,6 +142,8 @@ setupChat(server);
 
 server.listen(PORT, () => {
   logger.info(`Backend server running on port ${PORT}`);
+  // Log technique pour forcer la création de l'index ELK
+  logger.info('ELK index bootstrap log', { type: 'technical', timestamp: new Date().toISOString() });
   console.log(`🚀 Backend server running on port ${PORT}`);
 });
 

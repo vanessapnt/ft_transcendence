@@ -26,6 +26,9 @@ services:
     networks:
       - transcendence-network
     restart: unless-stopped
+    depends_on:
+      logstash:
+        condition: service_healthy
 
   nginx:
     container_name: transcendence-nginx-prod

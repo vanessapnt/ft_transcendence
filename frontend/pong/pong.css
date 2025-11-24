@@ -408,11 +408,11 @@ body>* {
 }
 
 .edit-profile-form {
-        background: rgba(30, 30, 30, 0.35);
-        backdrop-filter: blur(60px);
-        -webkit-backdrop-filter: blur(60px);
-        border-radius: 18px;
-        box-shadow: 0 4px 32px 0 rgba(0,0,0,0.12);
+    background: rgba(30, 30, 30, 0.35);
+    backdrop-filter: blur(60px);
+    -webkit-backdrop-filter: blur(60px);
+    border-radius: 18px;
+    box-shadow: 0 4px 32px 0 rgba(0, 0, 0, 0.12);
     position: relative;
     z-index: 150;
     width: 100%;
@@ -455,7 +455,7 @@ body>* {
 .file-input-btn {
     display: inline-block;
     padding: 14px 36px;
-    background: rgba(0,255,80,0.18);
+    background: rgba(0, 255, 80, 0.18);
     color: #00ff80;
     border: none;
     border-radius: 30px;
@@ -464,7 +464,7 @@ body>* {
     font-size: 0.9em;
     font-weight: bold;
     text-shadow: 0 1px 8px #00ff80cc;
-    box-shadow: 0 2px 24px 0 rgba(0,255,80,0.10);
+    box-shadow: 0 2px 24px 0 rgba(0, 255, 80, 0.10);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     letter-spacing: 0.04em;
@@ -479,9 +479,9 @@ body>* {
 }
 
 .file-input-btn:hover {
-    background: rgba(0,255,80,0.22);
+    background: rgba(0, 255, 80, 0.22);
     color: #baffc9;
-    box-shadow: 0 0 12px #00ff80, 0 2px 16px 0 rgba(0,255,80,0.13);
+    box-shadow: 0 0 12px #00ff80, 0 2px 16px 0 rgba(0, 255, 80, 0.13);
     text-shadow: 0 1px 8px #00ff80cc;
 }
 
@@ -1703,7 +1703,7 @@ button:active {
 }
 
 .profile-panel-content {
-        position: relative;
+    position: relative;
     background: #000;
     border: 3px solid #00ff00;
     border-radius: 15px;

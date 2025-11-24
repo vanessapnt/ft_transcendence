@@ -9,20 +9,17 @@ router.post('/set-language', (req, res) => {
 
   // Save in session
   req.session.lang = language;
+  const logger = require('../logger');
+  logger.info('Language change', { userId: req.session.userId, language });
 
   // If user logged in, persist to DB
   if (req.session.userId) {
     try {
       // Exemple de noms courants ; adapte si tes statements ont un autre nom
-      if (statements.updatePreferredLanguage) {
-        statements.updatePreferredLanguage.run(language, req.session.userId);
-      } else if (statements.updateUserPreferredLanguage) {
-        statements.updateUserPreferredLanguage.run(language, req.session.userId);
-      } else if (statements.updateUser) {
-        // si updateUser existe, adapte les params : statements.updateUser.run(...).
-      }
+      statements.updateUserLanguage.run(language, req.session.userId);
+      logger.info('Language updated in DB', { userId: req.session.userId, language });
     } catch (err) {
-      console.error('Failed to save preferred language:', err);
+      logger.error('Failed to persist preferred language', { userId: req.session.userId, language, error: err.message });
     }
   }
 

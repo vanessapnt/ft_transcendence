@@ -20,21 +20,17 @@ router.post('/save', requireAuth, (req, res) => {
     try {
         const { player2_username, winner_username, player1_score, player2_score, match_type } = req.body;
         const player1_id = req.session.userId;
-
         logger.info('Match save attempt', { player1_id, player2_username, match_type, player1_score, player2_score });
-
         if (!player2_username) {
             logger.warn('Match save failed: player2_username missing', { player1_id });
             return res.status(400).json({ error: 'Player 2 username is required' });
         }
-
         // Get player 2 ID
         const player2 = statements.getUserByUsername.get(player2_username);
         if (!player2) {
             logger.warn('Match save failed: player2 not found', { player1_id, player2_username });
             return res.status(404).json({ error: 'Player 2 not found' });
         }
-
         let winner_id = null;
         if (winner_username) {
             const winner = statements.getUserByUsername.get(winner_username);
@@ -42,7 +38,6 @@ router.post('/save', requireAuth, (req, res) => {
                 winner_id = winner.id;
             }
         }
-
         // Save the match
         statements.saveMatch.run(
             player1_id,
@@ -52,7 +47,6 @@ router.post('/save', requireAuth, (req, res) => {
             player2_score || 0,
             match_type || 'duel'
         );
-
         logger.info('Match saved successfully', { player1_id, player2_id: player2.id, winner_id, player1_score, player2_score, match_type });
         res.json({
             message: 'Match saved successfully',
@@ -64,10 +58,8 @@ router.post('/save', requireAuth, (req, res) => {
                 player2_score
             }
         });
-
     } catch (error) {
         logger.error('Save match error', { player1_id: req.session.userId, error: error.message });
-        console.error('Save match error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

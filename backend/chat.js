@@ -57,7 +57,7 @@ function setupChat(server) {
 
   // === Connexion d'un nouveau client ===
   wss.on("connection", (socket) => {
-    console.log("💬 Nouvelle connexion WebSocket");
+    logger.info('WebSocket connection opened');
     clients.set(socket, { username: null, displayName: null, userId: null, blocked: new Set(), language: 'en' });
 
     // Réception d'un message WebSocket
@@ -334,7 +334,11 @@ function setupChat(server) {
           logger.info('Chat message sent', {
             from: fromUser,
             to: data.to,
+            message: data.text,
             messageLength: data.text.length
+          });
+          wss.on("close", (socket) => {
+            logger.info('WebSocket connection closed');
           });
 
           // ✅ Vérifier que l'utilisateur destinataire existe dans la base de données

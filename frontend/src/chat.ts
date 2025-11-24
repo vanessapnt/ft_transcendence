@@ -68,7 +68,15 @@
         }
 
         public async initializeChat(): Promise<void> {
+
             console.log("🎯 Initialisation du chat après login...");
+
+            // Envoi d'un log technique pour initialiser l'index ELK
+            fetch('/api/log/technical', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: 'Chat initialized', timestamp: new Date().toISOString() })
+            }).catch(() => { });
 
             if (!this.elements.chatBox || !this.elements.messageInput || !this.elements.btnSend) {
                 console.error("❌ Éléments DOM du chat non chargés");

@@ -61,8 +61,7 @@ const upload = multer({
 
 // Get user profile
 router.get('/profile', requireAuth, (req, res) => {
-  console.log('Session at /profile:', req.session);
-  console.log('User at /profile:', req.user);
+  logger.info('User profile access attempt', { session: req.session, user: req.user });
   try {
     const userId = req.session.userId;
     logger.info('User profile access', { userId });
@@ -71,12 +70,10 @@ router.get('/profile', requireAuth, (req, res) => {
       logger.warn('User profile not found', { userId });
       return res.status(404).json({ error: 'User not found' });
     }
-
     const { password_hash, ...userData } = user;
     res.json({ user: userData });
   } catch (error) {
     logger.error('Get profile error', { error: error.message, stack: error.stack });
-    console.error('Get profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

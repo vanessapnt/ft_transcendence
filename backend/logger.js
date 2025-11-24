@@ -10,6 +10,7 @@ const net = require('net');
 class LogstashTCPTransport extends winston.Transport {
     constructor(options = {}) {
         super(options);
+        console.log('[LogstashTCPTransport] Initialisation du transport TCP personnalisé pour Logstash');
         this.host = options.host || 'logstash';
         this.port = options.port || 5000;
         this.socket = null;

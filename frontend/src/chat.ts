@@ -81,16 +81,16 @@
                     const data = await res.json();
                     if (data.user && data.user.username) {
                         this.username = data.user.username;
-                        
+
                         this.conversationManager.setUsername(this.username);
                         this.messageRenderer.setUsername(this.username);
                         this.gameInviteHandler.setUsername(this.username);
-                        
+
                         await this.friendsManager.loadFriendsList();
                         this.conversationManager.loadFromStorage();
                         this.renderConversationTabs();
                         this.setupWebSocket();
-                        
+
                         console.log("✅ Chat complètement initialisé pour", this.username);
                     }
                 }
@@ -108,7 +108,7 @@
         private setupWebSocket(): void {
             const i18n = (window as any).i18n;
             const currentLanguage = i18n ? i18n.getCurrentLanguage() : 'en';
-            
+
             this.wsManager.setMessageCallback((data) => this.handleWebSocketMessage(data));
             this.wsManager.setSystemMessageCallback((text) => this.addSystemMessage(text));
             this.wsManager.connect(this.username || '', currentLanguage);
@@ -251,7 +251,7 @@
 
         private loadConversationHistory(user: string): void {
             if (this.conversationManager.isHistoryLoaded(user)) return;
-            
+
             console.log(`📜 Chargement de l'historique avec ${user}...`);
             this.conversationManager.markHistoryLoaded(user);
             this.wsManager.send({ type: "getHistory", target: user });
@@ -389,7 +389,7 @@
             try {
                 const res = await fetch(`/api/user/public/${encodeURIComponent(usernameToView)}`);
                 const i18n = (window as any).i18n;
-                
+
                 if (res.status === 404) {
                     this.addSystemMessage(i18n ? i18n.t('chat_profile_not_found', { username: usernameToView }) : `Ce joueur (${usernameToView}) n'a pas de profil enregistré.`);
                     return;
@@ -398,7 +398,7 @@
                     this.addSystemMessage(i18n ? i18n.t('chat_profile_error', { username: usernameToView }) : `Erreur en récupérant le profil de ${usernameToView}.`);
                     return;
                 }
-                
+
                 const data = await res.json();
                 const user = data.user || data;
 

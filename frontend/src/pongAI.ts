@@ -1,19 +1,14 @@
 (function() {
-
 let board: HTMLCanvasElement;
 let boardWidth: number = 800;
 let boardHeight: number = 500;
 let context: CanvasRenderingContext2D;
-
 let playerWidth: number = 10;
 let playerHeight: number = 60;
-
 let ballWidth: number = 10;
 let ballHeight: number = 10;
-
 let player1Score: number = 0;
 let player2Score: number = 0;
-
 let player1Name: string = "PLAYER 1";
 let player2Name: string = "AI";
 
@@ -25,10 +20,8 @@ function getPlayerName(key: string, fallback: string): string {
     return fallback;
 }
 
-const WINNING_SCORE: number = 1;
-
+const WINNING_SCORE: number = 5;
 let GameEndCallback: ((winner: string) => void) | null = null;
-
 let isGameRunning: boolean = false;
 let isPaused: boolean = false;
 let predictedImpactY: number | null = null;
@@ -40,6 +33,8 @@ interface Player {
     width: number;
     height: number;
     velocityY: number;
+    lastDecisionTime?: number;
+    targetY?: number;
 }
 
 let player1: Player = {
@@ -107,11 +102,46 @@ function setupEventListeners(): void {
     document.addEventListener("keydown", playerMoves);
     document.addEventListener("keyup", PlayerStops);
     document.getElementById("resume-btn")?.addEventListener("click", switchPause);
+    attachAIKeyListeners();
 }
 
 function removeEventListeners(): void {
     document.removeEventListener("keydown", playerMoves);
     document.removeEventListener("keyup", PlayerStops);
+    detachAIKeyListeners();
+}
+
+// Handlers and helpers to simulate keyboard input for the AI (ArrowUp / ArrowDown)
+function player2KeyDown(e: KeyboardEvent): void {
+    if (e.code === "ArrowUp") {
+        player2.velocityY = -3;
+    } else if (e.code === "ArrowDown") {
+        player2.velocityY = 3;
+    }
+}
+
+function player2KeyUp(e: KeyboardEvent): void {
+    if (e.code === "ArrowUp" || e.code === "ArrowDown") {
+        player2.velocityY = 0;
+    }
+}
+
+function simulateKey(keyCode: "ArrowUp" | "ArrowDown", durationMs: number): void {
+    const kd = new KeyboardEvent('keydown', { code: keyCode });
+    const ku = new KeyboardEvent('keyup', { code: keyCode });
+    document.dispatchEvent(kd);
+    setTimeout(() => document.dispatchEvent(ku), durationMs);
+}
+
+// Attach AI key listeners along with existing listeners
+function attachAIKeyListeners(): void {
+    document.addEventListener('keydown', player2KeyDown);
+    document.addEventListener('keyup', player2KeyUp);
+}
+
+function detachAIKeyListeners(): void {
+    document.removeEventListener('keydown', player2KeyDown);
+    document.removeEventListener('keyup', player2KeyUp);
 }
 
 function update(): void {
@@ -120,39 +150,55 @@ function update(): void {
     
     animationFrameId = requestAnimationFrame(update);
     context.clearRect(0, 0, board.width, board.height);
-
     context.fillStyle = "white";
+    
+    // Player 1 movement
     let nextPlayer1Y: number = player1.y + player1.velocityY;
     if (!outOfBounds(nextPlayer1Y, playerHeight))
         player1.y = nextPlayer1Y;
     context.fillRect(player1.x, player1.y, playerWidth, playerHeight);
-
-    if (ball.velocityX > 0) {
-        if (ball.x > boardWidth / 3) {
-            if (predictedImpactY === null)
-                predictedImpactY = findImpact(ball, player2, board);
-            
-            let centerPlayer2 = player2.y + player2.height / 2;
-            if (Math.abs(predictedImpactY - centerPlayer2) > 3) {
-                if (predictedImpactY > centerPlayer2) {
-                    player2.y += 3;
-                } else {
-                    player2.y -= 3;
-                }
-            }
-        }
-    } else {
-        predictedImpactY = null;
-
-        let centerY = (boardHeight / 2) - (playerHeight / 2);
+    
+    // AI decision making (limited to 1Hz refresh rate)
+    const currentTime = Date.now();
+    if (!player2.lastDecisionTime) player2.lastDecisionTime = currentTime;
+    
+    if (currentTime - player2.lastDecisionTime >= 1000) {
+        player2.lastDecisionTime = currentTime;
         
-        if (Math.abs(centerY - player2.y) > 3) {
-            if (centerY > player2.y) {
-                player2.y += 2;
-            } else {
-                player2.y -= 2;
+        // AI has a 1Hz 'vision' — predict impact and simulate human key presses
+        if (ball.velocityX > 0 && ball.x > boardWidth / 3) {
+            predictedImpactY = findImpact(ball, player2, board);
+            // Decide direction based on predicted impact
+            const centerPlayer2 = player2.y + player2.height / 2;
+            const targetY = (predictedImpactY !== null ? predictedImpactY : boardHeight / 2);
+            const diff = targetY - centerPlayer2;
+            const absDiff = Math.abs(diff);
+            if (absDiff >= 6) {
+                const key: "ArrowUp" | "ArrowDown" = diff > 0 ? "ArrowDown" : "ArrowUp";
+                // Estimate duration to hold key so paddle moves approx absDiff pixels
+                const estimatedMs = Math.min(900, Math.max(120, Math.round((absDiff / 3) * 16)));
+                // Add a small random jitter so AI isn't perfect every time
+                const jitter = Math.round((Math.random() - 0.5) * 120);
+                simulateKey(key, Math.max(80, estimatedMs + jitter));
+            }
+        } else {
+            predictedImpactY = null;
+            // Bring AI back to center occasionally
+            const centerPlayer2 = player2.y + player2.height / 2;
+            const diff = (boardHeight / 2) - centerPlayer2;
+            const absDiff = Math.abs(diff);
+            if (absDiff >= 10) {
+                const key: "ArrowUp" | "ArrowDown" = diff > 0 ? "ArrowDown" : "ArrowUp";
+                const estimatedMs = Math.min(700, Math.max(120, Math.round((absDiff / 3) * 16)));
+                simulateKey(key, estimatedMs + Math.round((Math.random() - 0.5) * 200));
             }
         }
+    }
+    
+    // Player 2 movement is driven by velocity set by (real or synthetic) keyboard events
+    let nextPlayer2Y = player2.y + player2.velocityY;
+    if (!outOfBounds(nextPlayer2Y, player2.height)) {
+        player2.y = nextPlayer2Y;
     }
     
     if (player2.y < 0) player2.y = 0;
@@ -160,16 +206,19 @@ function update(): void {
         player2.y = boardHeight - player2.height;
     
     context.fillRect(player2.x, player2.y, playerWidth, playerHeight);
-
+    
+    // Ball movement
     ball.x += ball.velocityX;
     ball.y += ball.velocityY;
     context.fillRect(ball.x, ball.y, ballWidth, ballHeight);
-
+    
+    // Ball collision with top/bottom walls
     if (outOfBounds(ball.y, ballHeight)) {
         ball.velocityY *= -1;
         predictedImpactY = null;
     }
-
+    
+    // Ball collision with player 1
     if (detectCollision(ball, player1)) {
         if (ball.x >= player1.x + playerWidth / 2) {
             ball.velocityX *= -1;
@@ -179,6 +228,7 @@ function update(): void {
             ball.velocityY *= -1;
         }
     }
+    // Ball collision with player 2 (AI)
     else if (detectCollision(ball, player2)) {
         if (ball.x + ball.width <= player2.x + playerWidth / 2) {
             ball.velocityX *= -1;
@@ -187,7 +237,8 @@ function update(): void {
             ball.velocityY *= -1;
         }
     }
-
+    
+    // Scoring
     if (ball.x < 0) {
         player2Score++;
         checkWinner();
@@ -198,19 +249,20 @@ function update(): void {
         checkWinner();
         serve(-1);
     }
-
-    // Use translated player names or custom names
+    
+    // Draw scores and player names
     const displayPlayer1Name = player1Name === "PLAYER 1" ? getPlayerName("player_1", "PLAYER 1") : player1Name;
     const displayPlayer2Name = getPlayerName("ai", "AI");
-
+    
     context.font = "16px 'Press Start 2P', monospace";
     context.fillText(displayPlayer1Name, boardWidth/5 - 30, 35);
     context.fillText(displayPlayer2Name, boardWidth*4/5 - 75, 35);
-
+    
     context.font = "32px 'Press Start 2P', monospace";
     context.fillText(player1Score.toString(), boardWidth/5, 75);
     context.fillText(player2Score.toString(), boardWidth*4/5 - 45, 75);
-
+    
+    // Draw center line
     for (let i = 10; i < board.height; i += 25)
         context.fillRect(board.width / 2 - 10, i, 5, 5);
 }
@@ -267,7 +319,6 @@ function playerMoves(e: KeyboardEvent): void {
         switchPause();
         return;
     }
-
     if (e.code == "KeyW") {
         player1.velocityY = -3;
     }
@@ -309,9 +360,12 @@ function findImpact(ball: Ball, player2: Player, board: HTMLCanvasElement): numb
     
     const initialDistance = player2.x - ball.x;
     
+    // Simulate ball trajectory until it reaches AI paddle
     while(ballX < player2.x) {
         ballX += ballVelocityX;
         ballY += ballVelocityY;
+        
+        // Handle wall bounces
         if (ballY <= 0) {
             ballY = 0;
             ballVelocityY *= -1;
@@ -321,7 +375,8 @@ function findImpact(ball: Ball, player2: Player, board: HTMLCanvasElement): numb
             ballVelocityY *= -1;
         }
     }
-
+    
+    // Add proximity-based error (less accurate when ball is far)
     const currentDistance = player2.x - ball.x;
     const proximityFactor = Math.max(0, currentDistance / initialDistance);
     
@@ -344,7 +399,7 @@ class PongGameAI {
         board.height = boardHeight;
         board.width = boardWidth;
         context = board.getContext("2d")!;
-
+        
         player1Score = 0;
         player2Score = 0;
         isGameRunning = true;
@@ -355,29 +410,28 @@ class PongGameAI {
         player2.y = (boardHeight / 2) - (playerHeight / 2);
         player1.velocityY = 0;
         player2.velocityY = 0;
+        player2.lastDecisionTime = undefined;
+        player2.targetY = undefined;
         
         serve(1);
-
         removeEventListeners();
         setupEventListeners();
         
         update();
     }
-
-    setPlayerName(name: string): void { // TODO à utiliser après login
+    
+    setPlayerName(name: string): void {
         player1Name = name;
     }
-
+    
     setCallback(callback: (winner: string) => void): void {
         GameEndCallback = callback;
     }
-
-    stop(): void
-    {
+    
+    stop(): void {
         isGameRunning = false;
         isPaused = false;
-        if (animationFrameId !== null)
-        {
+        if (animationFrameId !== null) {
             cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
         }
@@ -389,5 +443,4 @@ if (!(window as any).PONG) {
     (window as any).PONG = {};
 }
 (window as any).PONG.PongGameAI = new PongGameAI();
-
 })();

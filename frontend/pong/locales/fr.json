@@ -27,7 +27,7 @@
   "login_error_notfound": "Utilisateur introuvable.",
   "login_error_failed": "Connexion échouée (erreur inconnue)",
   "login_error_server": "Erreur serveur : impossible de se connecter",
-  "no_account": "S'inscrire",
+  "no_account_signup": "S'inscrire",
   "already_have_account": "Se connecter",
   "login_github": "Se connecter avec GitHub",
   "login_google": "Se connecter avec Google",
@@ -72,6 +72,8 @@
   "chat_profile_not_found": "Ce joueur ({{username}}) n'a pas de profil enregistré (invité ou non inscrit).",
   "chat_profile_error": "Erreur en récupérant le profil de {{username}}.",
   "chat_profile_load_error": "Erreur lors du chargement du profil de {{username}}.",
+  "chat_add_friend": "Ajouter un ami",
+  "chat_friends_only": "Amis uniquement",
 
 
   "edit_profile": "Modifier le profil",
@@ -79,6 +81,7 @@
   "edit_profile_avatar": "Avatar",
   "edit_profile_username": "Nom d'utilisateur (non modifiable)",
   "edit_profile_displayname": "Nom d'affichage",
+  "edit_profile_displayname_placeholder": "Nom d'affichage",
   "edit_profile_language": "Langue préférée",
   "edit_profile_save": "Enregistrer",
   "edit_profile_cancel": "Annuler",
@@ -87,8 +90,10 @@
   "edit_profile_error_failed": "Mise à jour échouée",
   "edit_profile_error_avatar": "Téléchargement de l'avatar échoué",
   "edit_profile_error_server": "Erreur serveur",
-  "edit_profile_no_file": "Aucun fichier sélectionné",
+  "edit_profile_no_file_chosen": "Aucun fichier sélectionné",
   "edit_profile_choose_file": "Choisir un fichier",
+
+  "profile_display_match_history": "HISTORIQUE DES MATCHS",
   "logout": "Se déconnecter",
   "select_mode": "SÉLECTIONNER LE MODE",
   "local_2_players": "LOCAL 2 JOUEURS",

@@ -4,11 +4,72 @@
     box-sizing: border-box;
 }
 
+@keyframes starfield {
+    0% {
+        transform: translateY(0);
+    }
+
+    100% {
+        transform: translateY(-2000px);
+    }
+}
+
+@keyframes twinkle {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
 body {
-    background: #000;
+    background: #1a1a1a;
     color: #00ff00;
     font-family: 'Press Start 2P', cursive;
     overflow: hidden;
+    position: relative;
+}
+
+body::before,
+body::after {
+    content: '';
+    position: fixed;
+    top: -1000px;
+    left: 0;
+    width: 100%;
+    height: 3000px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+body::before {
+    background-image:
+        radial-gradient(circle, #00ff00 1px, transparent 1px),
+        radial-gradient(circle, #00ff00 1px, transparent 1px),
+        radial-gradient(circle, #00ff00 2px, transparent 2px),
+        radial-gradient(circle, rgba(0, 255, 0, 0.8) 1px, transparent 1px);
+    background-size: 200px 200px, 300px 300px, 150px 150px, 250px 250px;
+    background-position: 0 0, 40px 60px, 130px 270px, 70px 100px;
+    animation: starfield 80s linear infinite, twinkle 3s ease-in-out infinite;
+}
+
+body::after {
+    background-image:
+        radial-gradient(circle, rgba(0, 255, 0, 0.6) 1px, transparent 1px),
+        radial-gradient(circle, rgba(0, 255, 0, 0.7) 2px, transparent 2px),
+        radial-gradient(circle, rgba(0, 255, 0, 0.5) 1px, transparent 1px);
+    background-size: 180px 180px, 280px 280px, 220px 220px;
+    background-position: 50px 50px, 120px 180px, 190px 290px;
+    animation: starfield 120s linear infinite, twinkle 5s ease-in-out infinite;
+}
+
+body>* {
+    position: relative;
+    z-index: 1;
 }
 
 /* Language Selector Styling */
@@ -198,11 +259,27 @@ body {
     border-bottom: 1px solid rgba(0, 255, 0, 0.2);
 }
 
+
+@keyframes pongGlow {
+
+    0%,
+    100% {
+        text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
+        transform: scale(1);
+    }
+
+    50% {
+        text-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00, 0 0 40px #00ff00, 0 0 50px #00ff00;
+        transform: scale(1.05);
+    }
+}
+
 #home-view h1 {
     font-size: 4rem;
     margin-bottom: 2rem;
     color: #00ff00;
     text-shadow: 0 0 10px #00ff00;
+    animation: pongGlow 3s ease-in-out infinite;
 }
 
 .menu-buttons {
@@ -936,7 +1013,7 @@ button:active {
     left: 0;
     width: 100vw;
     height: calc(100vh - 80px);
-    background: #000;
+    background: transparent;
     padding: 20px;
     border: none;
     box-shadow: none;
@@ -1130,7 +1207,7 @@ button:active {
     transition: all 0.3s ease;
 }
 
-.switch-container input[type="checkbox"]:checked + .switch-slider {
+.switch-container input[type="checkbox"]:checked+.switch-slider {
     background: #00ff00;
 }
 
@@ -1146,7 +1223,7 @@ button:active {
     transition: all 0.3s ease;
 }
 
-.switch-container input[type="checkbox"]:checked + .switch-slider::after {
+.switch-container input[type="checkbox"]:checked+.switch-slider::after {
     left: 22px;
     background: #000;
 }

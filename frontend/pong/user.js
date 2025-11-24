@@ -155,8 +155,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         window.currentAvatarUrl = null;
         window.currentUsername = null;
         window.currentDisplayName = null;
-        // Restaurer la langue du navigateur en supprimant la langue préférée de l'utilisateur
-        localStorage.removeItem('preferred_language');
+        // Après logout, restaurer la langue du navigateur (ou 'en'), mais sans supprimer preferred_language du localStorage
         const browserLang = ((_a = navigator.language) === null || _a === void 0 ? void 0 : _a.split('-')[0]) || 'en';
         if (window.changeLang) {
             window.changeLang(browserLang);
@@ -392,6 +391,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
                     if (res.ok && user.username && user.display_name && user.id) {
                         messageDiv.className = 'auth-message success';
                         messageDiv.textContent = i18n ? i18n.t('login_success') : 'Login successful!';
+                        // Appliquer la langue préférée renvoyée par le backend
+                        if (data.language && window.changeLang) {
+                            yield window.changeLang(data.language);
+                        }
                         setUser(user.username, user.display_name, user.id, user.avatar_path || user.avatar_url || '/avatars/default_avatar.png');
                         form.style.display = 'none';
                         menu.style.display = '';

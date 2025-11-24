@@ -1,5 +1,6 @@
 services:
   frontend:
+    container_name: transcendence-frontend-prod
     build: ./frontend
     environment:
       - NODE_ENV=production
@@ -8,6 +9,7 @@ services:
     restart: unless-stopped
 
   backend:
+    container_name: transcendence-backend-prod
     build: ./backend
     environment:
       - NODE_ENV=production
@@ -26,6 +28,7 @@ services:
     restart: unless-stopped
 
   nginx:
+    container_name: transcendence-nginx-prod
     build: ./nginx
     ports:
       - "8080:80"

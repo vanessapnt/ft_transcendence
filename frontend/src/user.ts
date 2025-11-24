@@ -172,8 +172,7 @@
         (window as any).currentUsername = null;
         (window as any).currentDisplayName = null;
 
-        // Restaurer la langue du navigateur en supprimant la langue préférée de l'utilisateur
-        localStorage.removeItem('preferred_language');
+        // Après logout, restaurer la langue du navigateur (ou 'en'), mais sans supprimer preferred_language du localStorage
         const browserLang = navigator.language?.split('-')[0] || 'en';
         if ((window as any).changeLang) {
             (window as any).changeLang(browserLang);
@@ -424,11 +423,15 @@
                         credentials: 'include',
                         body: JSON.stringify({ username, password })
                     });
-                    const data: ApiResponse = await res.json();
+                    const data: ApiResponse & { language?: string } = await res.json();
                     const user = data.user as UserData;
                     if (res.ok && user.username && user.display_name && user.id) {
                         messageDiv.className = 'auth-message success';
                         messageDiv.textContent = i18n ? i18n.t('login_success') : 'Login successful!';
+                        // Appliquer la langue préférée renvoyée par le backend
+                        if (data.language && (window as any).changeLang) {
+                            await (window as any).changeLang(data.language);
+                        }
                         setUser(user.username, user.display_name, user.id, user.avatar_path || user.avatar_url || '/avatars/default_avatar.png');
                         form.style.display = 'none';
                         menu.style.display = '';

@@ -144,6 +144,7 @@
                 const data = await response.json();
                 const matches = data.matches || [];
                 renderMatchHistory(matches, userId);
+                renderWinLossStats(matches, userId);
 
             } catch (error) {
                 console.error('Error loading match history:', error);
@@ -166,11 +167,11 @@
             if (!matches || matches.length === 0) {
                 const emptyMessage = document.createElement('div');
                 emptyMessage.className = 'match-empty';
-                  if ((window as any).i18n && typeof (window as any).i18n.t === 'function') {
-						emptyMessage.textContent = (window as any).i18n.t('profile_display_match_history');
-					} else {
-                        emptyMessage.textContent = 'No match history yet';
-					}
+                if ((window as any).i18n && typeof (window as any).i18n.t === 'function') {
+                    emptyMessage.textContent = (window as any).i18n.t('profile_display_match_history');
+                } else {
+                    emptyMessage.textContent = 'No match history yet';
+                }
                 historyContainer.appendChild(emptyMessage);
                 return;
             }
@@ -210,6 +211,86 @@
 
                 historyContainer.appendChild(matchItem);
             });
+        }
+
+        function renderWinLossStats(matches: any[], userId: number): void {
+            const statsContainer = document.getElementById('profile-stats') as HTMLElement;
+            const pie = document.getElementById('profile-stats-pie') as HTMLCanvasElement;
+            const pieEmpty = document.getElementById('profile-stats-pie-empty') as HTMLElement;
+            if (!statsContainer) return;
+
+            const i18n = (window as any).i18n;
+
+            let wins = 0, losses = 0, draws = 0;
+            matches.forEach((match: any) => {
+                if (match.winner_id === userId) wins++;
+                else if (match.winner_id && match.winner_id !== userId) losses++;
+                else draws++;
+            });
+
+            const total = wins + losses + draws;
+            let ratio: string;
+            if (wins === 0 && losses === 0) {
+                ratio = '0%';
+            } else if (losses === 0) {
+                ratio = '100%';
+            } else {
+                ratio = ((wins / (wins + losses)) * 100).toFixed(0) + '%';
+            }
+
+            statsContainer.innerHTML = `
+                <div><strong>${i18n ? i18n.t('profile_stats_wins') : 'Wins'}:</strong> ${wins}</div>
+                <div><strong>${i18n ? i18n.t('profile_stats_losses') : 'Losses'}:</strong> ${losses}</div>
+                <div><strong>${i18n ? i18n.t('profile_stats_draws') : 'Draws'}:</strong> ${draws}</div>
+                <div><strong>${i18n ? i18n.t('profile_stats_ratio') : 'Win/Loss Ratio'}:</strong> ${ratio}</div>
+                <div><strong>${i18n ? i18n.t('profile_stats_total') : 'Total Games'}:</strong> ${total}</div>
+            `;
+
+            if (pie && (window as any).Chart) {
+                // Destroy previous chart if exists
+                if ((window as any).profileStatsPieChart) {
+                    (window as any).profileStatsPieChart.destroy();
+                }
+                if (wins === 0 && losses === 0 && draws === 0) {
+                    pie.style.display = 'none';
+                    if (pieEmpty) pieEmpty.style.display = '';
+                    return;
+                } else {
+                    pie.style.display = '';
+                    if (pieEmpty) pieEmpty.style.display = 'none';
+                }
+                (window as any).profileStatsPieChart = new (window as any).Chart(pie, {
+                    type: 'pie',
+                    data: {
+                        labels: [
+                            i18n ? i18n.t('profile_stats_victories') : 'Victories',
+                            i18n ? i18n.t('profile_stats_defeats') : 'Defeats', 
+                            i18n ? i18n.t('profile_stats_ties') : 'Ties'
+                        ],
+                        datasets: [{
+                            data: [wins, losses, draws],
+                            backgroundColor: [
+                                '#4caf50', '#f44336', '#ffc107'
+                            ],
+                            borderColor: ['#2ecc71', '#e74c3c', '#f1c40f'],
+                            borderWidth: 2,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: true }
+                        },
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        animation: {
+                            animateRotate: true,
+                            animateScale: true
+                        }
+                    }
+                });
+            }
         }
 
         console.log('✅ Profile management initialized');

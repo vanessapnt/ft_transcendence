@@ -334,6 +334,9 @@
                         setUser(user.username, user.display_name, user.id, user.avatar_path || '/avatars/default_avatar.png');
                         form.style.display = 'none';
                         menu.style.display = '';
+                        
+                        // Rediriger vers #home après inscription réussie
+                        window.location.hash = '#home';
                     } else {
                         messageDiv.className = 'auth-message error';
                         messageDiv.textContent = data.error || data.message || (i18n ? i18n.t('signup_error_failed') : 'Registration failed');
@@ -437,6 +440,9 @@
                         menu.style.display = '';
                         const userInfo = document.getElementById('user-info');
                         if (userInfo) userInfo.style.display = 'block';
+                        
+                        // Rediriger vers #home après connexion réussie
+                        window.location.hash = '#home';
                     } else {
                         messageDiv.className = 'auth-message error';
                         let reason = data.error || data.message || '';
@@ -602,9 +608,6 @@
                 }
 
                 if (updateOk) {
-                    messageDiv.className = 'auth-message success';
-                    messageDiv.textContent = i18n ? i18n.t('edit_profile_success') : 'Profile updated!';
-
                     // Change language if it was updated
                     if (selectedLanguage !== currentLang && (window as any).changeLang) {
                         await (window as any).changeLang(selectedLanguage);
@@ -615,11 +618,6 @@
                         (window as any).currentAvatarUrl;
 
                     setUser(currentUsername, display_name, (window as any).currentUserId, finalAvatar);
-
-                    // Close form after short delay
-                    setTimeout(() => {
-                        window.history.back();
-                    }, 1000);
                 }
             } catch (err) {
                 messageDiv.className = 'auth-message error';

@@ -25,7 +25,7 @@
         return fallback;
     }
 
-    const WINNING_SCORE: number = 1;
+    const WINNING_SCORE: number = 5;
 
     let GameEndCallback: ((winner: string) => void) | null = null; // par defaut null mais on peut lui assigner callback(Tournament.onMatchEnd)
 

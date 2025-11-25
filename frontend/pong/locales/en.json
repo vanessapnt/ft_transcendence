@@ -84,7 +84,7 @@
   "edit_profile_displayname_placeholder": "Display Name",
   "edit_profile_language": "Preferred Language",
   "edit_profile_save": "Save",
-  "edit_profile_cancel": "Cancel",
+  "edit_profile_cancel": "Back",
   "edit_profile_success": "Profile updated!",
   "edit_profile_error_required": "Display name is required",
   "edit_profile_error_failed": "Update failed",

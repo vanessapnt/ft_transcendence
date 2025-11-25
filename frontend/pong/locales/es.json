@@ -83,7 +83,7 @@
   "edit_profile_displayname_placeholder": "Nombre para mostrar",
   "edit_profile_language": "Idioma preferido",
   "edit_profile_save": "Guardar",
-  "edit_profile_cancel": "Cancelar",
+  "edit_profile_cancel": "Volver",
   "edit_profile_success": "¡Perfil actualizado!",
   "edit_profile_error_required": "El nombre para mostrar es requerido",
   "edit_profile_error_failed": "Actualización fallida",

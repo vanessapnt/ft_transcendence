@@ -244,7 +244,7 @@
                 <div><strong>Total Games:</strong> ${total}</div>
             `;
 
-            if (pie && window.Chart) {
+            if (pie && (window as any).Chart) {
                 // Destroy previous chart if exists
                 if ((window as any).profileStatsPieChart) {
                     (window as any).profileStatsPieChart.destroy();

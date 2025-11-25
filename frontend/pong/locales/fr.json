@@ -84,7 +84,7 @@
   "edit_profile_displayname_placeholder": "Nom d'affichage",
   "edit_profile_language": "Langue préférée",
   "edit_profile_save": "Enregistrer",
-  "edit_profile_cancel": "Annuler",
+  "edit_profile_cancel": "Retour",
   "edit_profile_success": "Profil mis à jour !",
   "edit_profile_error_required": "Le nom d'affichage est requis",
   "edit_profile_error_failed": "Mise à jour échouée",

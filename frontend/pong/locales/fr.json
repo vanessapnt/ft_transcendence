@@ -76,6 +76,7 @@
   "chat_friends_only": "Amis uniquement",
 
 
+  "profile": "Profil",
   "edit_profile": "Modifier le profil",
   "edit_profile_title": "Modifier le profil",
   "edit_profile_avatar": "Avatar",
@@ -92,8 +93,19 @@
   "edit_profile_error_server": "Erreur serveur",
   "edit_profile_no_file_chosen": "Aucun fichier sélectionné",
   "edit_profile_choose_file": "Choisir un fichier",
+  "choose_avatar": "Choisir un avatar",
 
   "profile_display_match_history": "HISTORIQUE DES MATCHS",
+  "profile_display_stats": "RATIO VICTOIRES/DÉFAITES",
+  "profile_stats_wins": "Victoires",
+  "profile_stats_losses": "Défaites",
+  "profile_stats_draws": "Nuls",
+  "profile_stats_ratio": "Ratio Victoires/Défaites",
+  "profile_stats_total": "Nombre total de parties",
+  "profile_stats_victories": "Victoires",
+  "profile_stats_defeats": "Défaites",
+  "profile_stats_ties": "Nuls",
+  "profile_stats_no_data": "Aucune donnée à afficher",
   "logout": "Se déconnecter",
   "select_mode": "SÉLECTIONNER LE MODE",
   "local_2_players": "LOCAL 2 JOUEURS",

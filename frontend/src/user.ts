@@ -608,9 +608,6 @@
                 }
 
                 if (updateOk) {
-                    messageDiv.className = 'auth-message success';
-                    messageDiv.textContent = i18n ? i18n.t('edit_profile_success') : 'Profile updated!';
-
                     // Change language if it was updated
                     if (selectedLanguage !== currentLang && (window as any).changeLang) {
                         await (window as any).changeLang(selectedLanguage);

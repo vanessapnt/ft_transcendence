@@ -219,6 +219,8 @@
             const pieEmpty = document.getElementById('profile-stats-pie-empty') as HTMLElement;
             if (!statsContainer) return;
 
+            const i18n = (window as any).i18n;
+
             let wins = 0, losses = 0, draws = 0;
             matches.forEach((match: any) => {
                 if (match.winner_id === userId) wins++;
@@ -237,11 +239,11 @@
             }
 
             statsContainer.innerHTML = `
-                <div><strong>Wins:</strong> ${wins}</div>
-                <div><strong>Losses:</strong> ${losses}</div>
-                <div><strong>Draws:</strong> ${draws}</div>
-                <div><strong>Win/Loss Ratio:</strong> ${ratio}</div>
-                <div><strong>Total Games:</strong> ${total}</div>
+                <div><strong>${i18n ? i18n.t('profile_stats_wins') : 'Wins'}:</strong> ${wins}</div>
+                <div><strong>${i18n ? i18n.t('profile_stats_losses') : 'Losses'}:</strong> ${losses}</div>
+                <div><strong>${i18n ? i18n.t('profile_stats_draws') : 'Draws'}:</strong> ${draws}</div>
+                <div><strong>${i18n ? i18n.t('profile_stats_ratio') : 'Win/Loss Ratio'}:</strong> ${ratio}</div>
+                <div><strong>${i18n ? i18n.t('profile_stats_total') : 'Total Games'}:</strong> ${total}</div>
             `;
 
             if (pie && (window as any).Chart) {
@@ -260,7 +262,11 @@
                 (window as any).profileStatsPieChart = new (window as any).Chart(pie, {
                     type: 'pie',
                     data: {
-                        labels: ['Victoires', 'Défaites', 'Nuls'],
+                        labels: [
+                            i18n ? i18n.t('profile_stats_victories') : 'Victories',
+                            i18n ? i18n.t('profile_stats_defeats') : 'Defeats', 
+                            i18n ? i18n.t('profile_stats_ties') : 'Ties'
+                        ],
                         datasets: [{
                             data: [wins, losses, draws],
                             backgroundColor: [

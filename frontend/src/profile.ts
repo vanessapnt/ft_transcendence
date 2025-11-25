@@ -167,11 +167,11 @@
             if (!matches || matches.length === 0) {
                 const emptyMessage = document.createElement('div');
                 emptyMessage.className = 'match-empty';
-                  if ((window as any).i18n && typeof (window as any).i18n.t === 'function') {
-						emptyMessage.textContent = (window as any).i18n.t('profile_display_match_history');
-					} else {
-                        emptyMessage.textContent = 'No match history yet';
-					}
+                if ((window as any).i18n && typeof (window as any).i18n.t === 'function') {
+                    emptyMessage.textContent = (window as any).i18n.t('profile_display_match_history');
+                } else {
+                    emptyMessage.textContent = 'No match history yet';
+                }
                 historyContainer.appendChild(emptyMessage);
                 return;
             }
